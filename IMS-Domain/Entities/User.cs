@@ -1,0 +1,55 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
+using System.Text;
+
+namespace IMS_Domain.Entities
+{
+    public class User
+    {
+        [Key]
+        public int Id { get; set; }
+        
+        public string FullName { get; set; } = null!;
+
+        public required string Email { get; set; }
+
+        public required string PasswordHash { get; set; }
+
+        public int DeptId { get; set; }
+
+        public int RoleId { get; set; }
+
+        public string? PasswordResetToken { get; set; }
+
+        public DateTime? ResetTokenExpires { get; set; }
+
+        public string? ProfileImg { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        public bool IsDeleted { get; set; } = false;
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public int? CreatedBy { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
+
+        public int? UpdatedBy { get; set; }
+
+        public DateTime? DeletedAt { get; set; }
+
+        public int? DeletedBy { get; set; }
+
+        // Navigation
+        public Roles Role { get; set; } = null!;
+        public Department Department { get; set; }
+        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+
+
+    }
+
+}
