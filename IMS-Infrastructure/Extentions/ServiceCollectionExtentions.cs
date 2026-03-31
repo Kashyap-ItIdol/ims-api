@@ -21,6 +21,7 @@ namespace IMS_Infrastructure.Extentions
 
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+            services.AddScoped<IRoleRepository, RoleRepository>();
 
             services.AddScoped<ITokenService, TokenService>();
 
