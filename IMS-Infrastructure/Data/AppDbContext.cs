@@ -55,7 +55,7 @@ namespace IMS_Infrastructure.Data
                     DeptId = 1,
                     IsActive = true,
                     IsDeleted = false,
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) // fixed date to avoid migration issues
+                    CreatedDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) // fixed date to avoid migration issues
                 }
             );
         }

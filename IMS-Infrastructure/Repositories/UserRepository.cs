@@ -17,11 +17,11 @@ namespace IMS_Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<User?> GetByUsernameAsync(string username)
+        public async Task<User?> GetByEmailAsync(string email)
         {
             return await _context.Users
                 .Include(x => x.Role) 
-                .FirstOrDefaultAsync(x => x.Email == username && !x.IsDeleted);
+                .FirstOrDefaultAsync(x => x.Email == email && !x.IsDeleted);
         }
 
         public async Task AddAsync(User user)

@@ -25,7 +25,7 @@ namespace IMS_Application.Services
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
         {
-            var user = await _userRepo.GetByUsernameAsync(dto.Username);
+            var user = await _userRepo.GetByEmailAsync(dto.Username);
 
             if (user == null || user.PasswordHash != Hash(dto.Password))
                 throw new Exception("Invalid credentials");
@@ -35,20 +35,20 @@ namespace IMS_Application.Services
 
         public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
         {
-            var existingUser = await _userRepo.GetByUsernameAsync(dto.Username);
+            var existingUser = await _userRepo.GetByEmailAsync(dto.Email);
 
             if (existingUser != null)
                 throw new Exception("User already exists");
 
             var user = new User
             {
-                Email = dto.Username,
+                Email = dto.Email,
                 FullName = dto.FullName,
                 PasswordHash = Hash(dto.Password),
-                RoleId = 2,
+                RoleId = dto.RoleId,
                 DeptId = dto.DeptId,
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow
+                CreatedDate = DateTime.UtcNow
             };
 
             await _userRepo.AddAsync(user);
