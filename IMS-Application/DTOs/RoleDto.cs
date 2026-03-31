@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace IMS_Application.DTOs
+﻿namespace IMS_Application.DTOs
 {
     public class RoleDto
     {

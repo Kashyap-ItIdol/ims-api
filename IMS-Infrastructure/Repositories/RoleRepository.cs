@@ -2,12 +2,8 @@
 using AutoMapper.QueryableExtensions;
 using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
-using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IMS_Infrastructure.Repositories
 {
@@ -31,11 +27,13 @@ namespace IMS_Infrastructure.Repositories
 
         public async Task<RoleDto> GetRoleByIdAsync(int id)
         {
-            return await _context.Roles
+            var result = await _context.Roles
             .AsNoTracking()
             .Where(r => r.Id == id)
             .ProjectTo<RoleDto>(_mapper.ConfigurationProvider)
             .FirstOrDefaultAsync();
+
+            return result ?? throw new Exception("Role not found");
         }
     }
 }

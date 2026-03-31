@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Data;
-using System.Text;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace IMS_Domain.Entities
 {
@@ -11,7 +6,7 @@ namespace IMS_Domain.Entities
     {
         [Key]
         public int Id { get; set; }
-        
+
         public string FullName { get; set; } = null!;
 
         public required string Email { get; set; }
@@ -46,7 +41,7 @@ namespace IMS_Domain.Entities
 
         // Navigation
         public Roles Role { get; set; } = null!;
-        public Department Department { get; set; }
+        public Department Department { get; set; } = null!;
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
 
