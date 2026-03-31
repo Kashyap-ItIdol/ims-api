@@ -4,7 +4,6 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using IMS_Application.Extentions;
 using IMS_Infrastructure.Extentions;
-using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +36,10 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
+builder.Services.AddAutoMapper(
+    _ => { },
+    typeof(ApplicationAssemblyMarker)
+);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 

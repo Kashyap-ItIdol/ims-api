@@ -45,7 +45,8 @@ namespace IMS_Application.Services
                 Email = dto.Username,
                 FullName = dto.FullName,
                 PasswordHash = Hash(dto.Password),
-                RoleId = 3,
+                RoleId = 2,
+                DeptId = dto.DeptId,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };

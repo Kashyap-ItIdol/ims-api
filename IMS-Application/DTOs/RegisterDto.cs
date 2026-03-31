@@ -9,5 +9,6 @@ namespace IMS_Application.DTOs
         public string Username { get; set; } = null!;
         public string Password { get; set; } = null!;
         public string FullName { get; set; } = null!;
+        public int DeptId { get; set; }
     }
 }
