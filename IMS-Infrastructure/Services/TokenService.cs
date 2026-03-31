@@ -25,8 +25,11 @@ namespace IMS_Infrastructure.Services
                 new Claim(ClaimTypes.Role, user.Role.Name)
             };
 
+            var jwtKey = _config["JwtSettings:Key"]
+                    ?? throw new InvalidOperationException("JWT Key is not configured");
+
             var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_config["JwtSettings:Key"])
+                Encoding.UTF8.GetBytes(jwtKey)
             );
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
