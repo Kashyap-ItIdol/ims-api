@@ -28,15 +28,13 @@ namespace IMS_Infrastructure.Data.Configurations
                    .IsRequired();
 
             // Relationships
-            builder.HasOne(x => x.Role)
-                   .WithMany()
-                   .HasForeignKey(x => x.RoleId)
-                   .OnDelete(DeleteBehavior.Restrict);
-
             builder.HasOne(x => x.Department)
-                   .WithMany()
-                   .HasForeignKey(x => x.DepartmentId)
-                   .OnDelete(DeleteBehavior.Restrict);
+                   .WithMany(d => d.Users)
+                   .HasForeignKey(x => x.DepartmentId);
+
+            builder.HasOne(x => x.Role)
+                   .WithMany(r => r.Users)
+                   .HasForeignKey(x => x.RoleId);
 
             // Soft Delete
             builder.HasQueryFilter(x => !x.IsDeleted);
