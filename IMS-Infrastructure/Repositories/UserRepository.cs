@@ -2,9 +2,6 @@
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IMS_Infrastructure.Repositories
 {
@@ -17,11 +14,13 @@ namespace IMS_Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<User?> GetByUsernameAsync(string username)
+        public async Task<User> GetByEmailAsync(string email)
         {
-            return await _context.Users
-                .Include(x => x.Role) 
-                .FirstOrDefaultAsync(x => x.Email == username && !x.IsDeleted);
+            var result =  await _context.Users
+                .Include(x => x.Role)
+                .FirstOrDefaultAsync(x => x.Email == email && !x.IsDeleted);
+
+            return result ?? throw new Exception("User not found");
         }
 
         public async Task AddAsync(User user)

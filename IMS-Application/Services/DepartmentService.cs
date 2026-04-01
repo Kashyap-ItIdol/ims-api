@@ -1,9 +1,6 @@
 ﻿using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
 using IMS_Application.Services.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IMS_Application.Services
 {

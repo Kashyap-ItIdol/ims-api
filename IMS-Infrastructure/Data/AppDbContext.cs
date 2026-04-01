@@ -1,15 +1,12 @@
 ﻿using IMS_Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace IMS_Infrastructure.Data
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) 
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
 
         }
@@ -55,7 +52,7 @@ namespace IMS_Infrastructure.Data
                     DeptId = 1,
                     IsActive = true,
                     IsDeleted = false,
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) // fixed date to avoid migration issues
+                    CreatedDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) // fixed date to avoid migration issues
                 }
             );
         }
