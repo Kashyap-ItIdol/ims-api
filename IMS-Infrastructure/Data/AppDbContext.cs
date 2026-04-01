@@ -49,7 +49,7 @@ namespace IMS_Infrastructure.Data
                     Email = "admin@example.com",
                     PasswordHash = passwordHash,
                     RoleId = 1,
-                    DeptId = 1,
+                    DepartmentId = 1,
                     IsActive = true,
                     IsDeleted = false,
                     CreatedDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) // fixed date to avoid migration issues

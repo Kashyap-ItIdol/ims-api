@@ -13,7 +13,7 @@ namespace IMS_Domain.Entities
 
         public required string PasswordHash { get; set; }
 
-        public int DeptId { get; set; }
+        public int DepartmentId { get; set; }
 
         public int RoleId { get; set; }
 

@@ -46,7 +46,7 @@ namespace IMS_Application.Services
                 FullName = dto.FullName,
                 PasswordHash = Hash(dto.Password),
                 RoleId = dto.RoleId,
-                DeptId = dto.DeptId,
+                DepartmentId = dto.DeptId,
                 IsActive = true,
                 CreatedDate = DateTime.UtcNow
             };
