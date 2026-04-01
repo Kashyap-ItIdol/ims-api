@@ -35,9 +35,9 @@ namespace IMS_Application.Services
 
         public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
         {
-            var existingUser = await _userRepo.GetByEmailAsync(dto.Email);
+            var existingUser = await _userRepo.CheckUserExixst(dto.Email);
 
-            if (existingUser != null)
+            if (existingUser)
                 throw new Exception("User already exists");
 
             var user = new User
@@ -53,6 +53,8 @@ namespace IMS_Application.Services
 
             await _userRepo.AddAsync(user);
 
+            user = await _userRepo.GetByEmailAsync(user.Email);
+
             return await GenerateTokens(user);
         }
 
@@ -66,7 +68,9 @@ namespace IMS_Application.Services
             token.IsRevoked = true;
             await _refreshRepo.SaveAsync();
 
-            return await GenerateTokens(token.User);
+            var user = await _userRepo.GetByEmailAsync(token.User.Email);
+
+            return await GenerateTokens(user);
         }
 
         private async Task<AuthResponseDto> GenerateTokens(User user)

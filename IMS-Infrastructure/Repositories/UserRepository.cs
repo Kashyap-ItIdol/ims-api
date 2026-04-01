@@ -18,9 +18,20 @@ namespace IMS_Infrastructure.Repositories
         {
             var result =  await _context.Users
                 .Include(x => x.Role)
+                .Include(x => x.Department)
                 .FirstOrDefaultAsync(x => x.Email == email && !x.IsDeleted);
 
-            return result ?? throw new Exception("User not found");
+            return result ?? throw new Exception("User not found.");
+        }
+
+        public async Task<bool> CheckUserExixst(string email)
+        {
+            var result = await _context.Users
+                .Include(x => x.Role)
+                .Include(x => x.Department)
+                .FirstOrDefaultAsync(x => x.Email == email && !x.IsDeleted);
+
+            return result == null ? false : true;
         }
 
         public async Task AddAsync(User user)
