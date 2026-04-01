@@ -1,10 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace IMS_Domain.Entities
+﻿namespace IMS_Domain.Entities
 {
     public class User
     {
-        [Key]
         public int Id { get; set; }
 
         public string FullName { get; set; } = null!;
@@ -14,8 +11,10 @@ namespace IMS_Domain.Entities
         public required string PasswordHash { get; set; }
 
         public int DepartmentId { get; set; }
+        public Department Department { get; set; } = null!;
 
         public int RoleId { get; set; }
+        public Role Role { get; set; } = null!;
 
         public string? PasswordResetToken { get; set; }
 
@@ -25,26 +24,23 @@ namespace IMS_Domain.Entities
 
         public bool IsActive { get; set; } = true;
 
+        public bool IsVerified { get; set; } = false;
+
         public bool IsDeleted { get; set; } = false;
 
-        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public int? CreatedBy { get; set; }
 
-        public DateTime? UpdatedDate { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
         public int? UpdatedBy { get; set; }
 
-        public DateTime? DeletedDate { get; set; }
+        public DateTime? DeletedAt { get; set; }
 
         public int? DeletedBy { get; set; }
 
         // Navigation
-        public Roles Role { get; set; } = null!;
-        public Department Department { get; set; } = null!;
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
-
-
     }
-
 }

@@ -19,7 +19,7 @@ namespace IMS_Infrastructure.Repositories
 
         public async Task<List<DepartmentDto>> GetAllDepartmentsAsync()
         {
-            return await _context.Department
+            return await _context.Departments
                 .AsNoTracking()
                 .ProjectTo<DepartmentDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
@@ -27,7 +27,7 @@ namespace IMS_Infrastructure.Repositories
 
         public async Task<DepartmentDto> GetDepartmentByIdAsync(int id)
         {
-            var result =  await _context.Department
+            var result =  await _context.Departments
             .AsNoTracking()
             .Where(r => r.Id == id)
             .ProjectTo<DepartmentDto>(_mapper.ConfigurationProvider)
