@@ -32,22 +32,23 @@ namespace IMS_Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Department");
+                    b.ToTable("Departments");
 
                     b.HasData(
                         new
                         {
                             Id = 1,
-                            Name = "Backend Developer"
+                            Name = "Backend"
                         },
                         new
                         {
                             Id = 2,
-                            Name = "Frontend Developer"
+                            Name = "Frontend"
                         },
                         new
                         {
@@ -57,7 +58,7 @@ namespace IMS_Infrastructure.Migrations
                         new
                         {
                             Id = 4,
-                            Name = "QA Engineer"
+                            Name = "QA"
                         },
                         new
                         {
@@ -67,17 +68,17 @@ namespace IMS_Infrastructure.Migrations
                         new
                         {
                             Id = 6,
-                            Name = "DevOps Engineer"
+                            Name = "DevOps"
                         },
                         new
                         {
                             Id = 7,
-                            Name = "UI/UX Designer"
+                            Name = "UI/UX"
                         },
                         new
                         {
                             Id = 8,
-                            Name = "Mobile App Developer"
+                            Name = "Mobile App"
                         });
                 });
 
@@ -97,19 +98,24 @@ namespace IMS_Infrastructure.Migrations
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Expires");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("IMS_Domain.Entities.Roles", b =>
+            modelBuilder.Entity("IMS_Domain.Entities.Role", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -119,7 +125,8 @@ namespace IMS_Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
@@ -166,21 +173,23 @@ namespace IMS_Infrastructure.Migrations
                     b.Property<int>("DepartmentId")
                         .HasColumnType("int");
 
-                    b.Property<int>("DeptId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("FullName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsVerified")
                         .HasColumnType("bit");
 
                     b.Property<string>("PasswordHash")
@@ -207,9 +216,16 @@ namespace IMS_Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
                     b.HasIndex("DepartmentId");
 
+                    b.HasIndex("Email")
+                        .IsUnique();
+
                     b.HasIndex("RoleId");
+
+                    b.HasIndex("IsDeleted", "IsActive");
 
                     b.ToTable("Users");
                 });
@@ -228,13 +244,13 @@ namespace IMS_Infrastructure.Migrations
             modelBuilder.Entity("IMS_Domain.Entities.User", b =>
                 {
                     b.HasOne("IMS_Domain.Entities.Department", "Department")
-                        .WithMany()
+                        .WithMany("Users")
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("IMS_Domain.Entities.Roles", "Role")
-                        .WithMany()
+                    b.HasOne("IMS_Domain.Entities.Role", "Role")
+                        .WithMany("Users")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -242,6 +258,16 @@ namespace IMS_Infrastructure.Migrations
                     b.Navigation("Department");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.Department", b =>
+                {
+                    b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.Role", b =>
+                {
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.User", b =>
