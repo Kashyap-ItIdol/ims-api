@@ -25,15 +25,18 @@ namespace IMS_Infrastructure.Services
                 new Claim(ClaimTypes.Role, user.Role.Name)
             };
 
+            var jwtKey = _config["JwtSettings:Key"]
+                    ?? throw new InvalidOperationException("JWT Key is not configured");
+
             var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_config["Jwt:Key"])
+                Encoding.UTF8.GetBytes(jwtKey)
             );
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
+                issuer: _config["JwtSettings:Issuer"],
+                audience: _config["JwtSettings:Audience"],
                 claims: claims,
                 expires: DateTime.UtcNow.AddMinutes(15),
                 signingCredentials: creds

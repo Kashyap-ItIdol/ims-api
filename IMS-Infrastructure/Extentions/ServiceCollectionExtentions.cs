@@ -6,9 +6,6 @@ using IMS_Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IMS_Infrastructure.Extentions
 {
@@ -21,6 +18,7 @@ namespace IMS_Infrastructure.Extentions
 
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+            services.AddScoped<IRoleRepository, RoleRepository>();
 
             services.AddScoped<ITokenService, TokenService>();
 

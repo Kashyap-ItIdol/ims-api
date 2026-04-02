@@ -1,6 +1,6 @@
 ﻿namespace IMS_Domain.Entities
 {
-    public class Department
+    public class Role
     {
         public int Id { get; set; }
 
