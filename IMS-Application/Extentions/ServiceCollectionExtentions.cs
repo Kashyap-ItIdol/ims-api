@@ -1,6 +1,9 @@
 ﻿using IMS_Application.Services;
 using IMS_Application.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace IMS_Application.Extentions
 {
@@ -9,7 +12,6 @@ namespace IMS_Application.Extentions
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
             services.AddScoped<IAuthService, AuthService>();
-            services.AddScoped<IRoleService, RoleService>();
 
             return services;
         }

@@ -25,7 +25,7 @@ namespace IMS_Application.Services
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
         {
-            var user = await _userRepo.GetByEmailAsync(dto.Username);
+            var user = await _userRepo.GetByUsernameAsync(dto.Username);
 
             if (user == null || user.PasswordHash != Hash(dto.Password))
                 throw new Exception("Invalid credentials");
@@ -35,26 +35,22 @@ namespace IMS_Application.Services
 
         public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
         {
-            var existingUser = await _userRepo.CheckUserExixst(dto.Email);
+            var existingUser = await _userRepo.GetByUsernameAsync(dto.Username);
 
-            if (existingUser)
+            if (existingUser != null)
                 throw new Exception("User already exists");
 
             var user = new User
             {
-                Email = dto.Email,
+                Email = dto.Username,
                 FullName = dto.FullName,
                 PasswordHash = Hash(dto.Password),
-                RoleId = dto.RoleId,
-                DepartmentId = dto.DeptId,
+                RoleId = 3,
                 IsActive = true,
-                CreatedBy = dto.CreatedBy,
                 CreatedAt = DateTime.UtcNow
             };
 
             await _userRepo.AddAsync(user);
-
-            user = await _userRepo.GetByEmailAsync(user.Email);
 
             return await GenerateTokens(user);
         }
@@ -69,9 +65,7 @@ namespace IMS_Application.Services
             token.IsRevoked = true;
             await _refreshRepo.SaveAsync();
 
-            var user = await _userRepo.GetByEmailAsync(token.User.Email);
-
-            return await GenerateTokens(user);
+            return await GenerateTokens(token.User);
         }
 
         private async Task<AuthResponseDto> GenerateTokens(User user)
