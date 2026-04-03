@@ -1,5 +1,9 @@
 using IMS_Application.Extentions;
+using IMS_Application.Interfaces;
+using IMS_Application.Services;
+using IMS_Application.Services.Interfaces;
 using IMS_Infrastructure.Extentions;
+using IMS_Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -47,6 +51,8 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers();
+
+
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

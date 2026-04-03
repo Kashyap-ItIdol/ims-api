@@ -8,37 +8,39 @@ namespace IMS_Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<User> builder)
         {
-            // Indexes
-            builder.HasIndex(x => x.Email).IsUnique();
-            builder.HasIndex(x => x.RoleId);
-            builder.HasIndex(x => x.DepartmentId);
-            builder.HasIndex(x => new { x.IsDeleted, x.IsActive });
-            builder.HasIndex(x => x.CreatedAt);
+            builder.ToTable("Users");
 
-            // validations
-            builder.Property(x => x.FullName)
-                   .IsRequired()
-                   .HasMaxLength(150);
+            builder.HasKey(u => u.Id);
 
-            builder.Property(x => x.Email)
-                   .IsRequired()
-                   .HasMaxLength(150);
+            builder.Property(u => u.FullName)
+                .IsRequired()
+                .HasMaxLength(255);
 
-            builder.Property(x => x.PasswordHash)
-                   .IsRequired();
+            builder.Property(u => u.Email)
+                .IsRequired()
+                .HasMaxLength(255);
 
-            // Relationships
-            builder.HasOne(x => x.Department)
-                   .WithMany(d => d.Users)
-                   .HasForeignKey(x => x.DepartmentId);
+            builder.Property(u => u.PasswordHash)
+                .IsRequired();
 
-            builder.HasOne(x => x.Role)
-                   .WithMany(r => r.Users)
-                   .HasForeignKey(x => x.RoleId);
+            builder.Property(u => u.IsActive)
+                .HasDefaultValue(true);
 
-            // Soft Delete
-            builder.HasQueryFilter(x => !x.IsDeleted);
+            builder.Property(u => u.IsVerified)
+                .HasDefaultValue(false);
 
+            builder.Property(u => u.IsDeleted)
+                .HasDefaultValue(false);
+
+            builder.HasOne(u => u.Department)
+                .WithMany(d => d.Users)
+                .HasForeignKey(u => u.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(u => u.Role)
+                .WithMany(r => r.Users)
+                .HasForeignKey(u => u.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

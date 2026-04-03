@@ -8,28 +8,34 @@ namespace IMS_Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<PurchaseDetail> builder)
         {
+            builder.ToTable("PurchaseDetails");
 
-            builder.Property(p => p.Vendor)
-                   .IsRequired()
-                   .HasMaxLength(200);
+            builder.HasKey(pd => pd.Id);
 
-            builder.Property(p => p.InvoiceNumber)
-                   .IsRequired()
-                   .HasMaxLength(100);
+            builder.Property(pd => pd.Vendor)
+                .IsRequired()
+                .HasMaxLength(255);
 
-            builder.Property(p => p.PurchaseCost)
-                   .HasPrecision(18, 2);
+            builder.Property(pd => pd.PurchaseDate)
+                .IsRequired();
 
-            builder.Property(p => p.PurchaseDate)
-                   .IsRequired();
+            builder.Property(pd => pd.WarrantyExpiry)
+                .IsRequired();
 
-            builder.Property(p => p.AmcExpiry)
-                   .IsRequired();
+            builder.Property(pd => pd.PurchaseCost)
+                .HasColumnType("decimal(18,2)");
 
-            builder.HasOne(p => p.Inventory)
-                   .WithOne(i => i.PurchaseDetail)
-                   .HasForeignKey<PurchaseDetail>(p => p.InventoryId)
-                   .OnDelete(DeleteBehavior.Cascade);
+            builder.Property(pd => pd.InvoiceNumber)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            builder.Property(pd => pd.AmcExpiry)
+                .IsRequired();
+
+            builder.HasOne(pd => pd.Inventory)
+                .WithOne(i => i.PurchaseDetail)
+                .HasForeignKey<PurchaseDetail>(pd => pd.InventoryId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

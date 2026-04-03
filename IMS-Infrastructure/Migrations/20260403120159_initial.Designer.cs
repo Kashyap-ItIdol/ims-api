@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IMS_Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260402073812_Inventory")]
-    partial class Inventory
+    [Migration("20260403120159_initial")]
+    partial class initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,6 +25,60 @@ namespace IMS_Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("IMS_Domain.Entities.Accessory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccessoryName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Brand")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int?>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Condition")
+                        .HasColumnType("int");
+
+                    b.Property<int>("InventoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime>("PurchaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SerialNumber")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int?>("SubCategoryId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("InventoryId");
+
+                    b.HasIndex("SubCategoryId");
+
+                    b.ToTable("Accessories", (string)null);
+                });
+
             modelBuilder.Entity("IMS_Domain.Entities.Category", b =>
                 {
                     b.Property<int>("Id")
@@ -33,14 +87,34 @@ namespace IMS_Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Name")
+                    b.Property<string>("CategoryName")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Category");
+                    b.HasIndex("CategoryName")
+                        .IsUnique();
+
+                    b.ToTable("Categories", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CategoryName = "Laptop"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CategoryName = "Desktop"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CategoryName = "Accessories"
+                        });
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.Department", b =>
@@ -111,42 +185,48 @@ namespace IMS_Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Brand")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
-                    b.Property<string>("InventoryName")
+                    b.Property<int>("Condition")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ItemName")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("Model")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("PurchaseDetailId")
+                        .HasColumnType("int");
 
                     b.Property<string>("SerialNumber")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
-                    b.Property<int>("SubcategoryId")
+                    b.Property<int>("SubCategoryId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("SerialNumber")
-                        .IsUnique();
+                    b.HasIndex("SubCategoryId");
 
-                    b.HasIndex("SubcategoryId");
-
-                    b.ToTable("Inventory");
+                    b.ToTable("Inventories", (string)null);
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.InventoryAssignment", b =>
@@ -160,8 +240,13 @@ namespace IMS_Infrastructure.Migrations
                     b.Property<DateTime>("AssignedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("AssignedTo")
+                    b.Property<int?>("AssignedTo")
                         .HasColumnType("int");
+
+                    b.Property<string>("DeskNumber")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<DateTime?>("ExpectedReturnDate")
                         .HasColumnType("datetime2");
@@ -171,19 +256,16 @@ namespace IMS_Infrastructure.Migrations
 
                     b.Property<string>("Location")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("Table")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AssignedTo");
+
                     b.HasIndex("InventoryId");
 
-                    b.ToTable("InventoryAssignments");
+                    b.ToTable("InventoryAssignments", (string)null);
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.PurchaseDetail", b =>
@@ -202,11 +284,10 @@ namespace IMS_Infrastructure.Migrations
 
                     b.Property<string>("InvoiceNumber")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<decimal>("PurchaseCost")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("PurchaseDate")
@@ -214,10 +295,10 @@ namespace IMS_Infrastructure.Migrations
 
                     b.Property<string>("Vendor")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
-                    b.Property<DateTime?>("WarrantyExpiry")
+                    b.Property<DateTime>("WarrantyExpiry")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
@@ -225,7 +306,7 @@ namespace IMS_Infrastructure.Migrations
                     b.HasIndex("InventoryId")
                         .IsUnique();
 
-                    b.ToTable("PurchaseDetail");
+                    b.ToTable("PurchaseDetails", (string)null);
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.RefreshToken", b =>
@@ -271,29 +352,12 @@ namespace IMS_Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Roles");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Admin"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "Employee"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Name = "Support Engineer"
-                        });
+                    b.ToTable("Roles", (string)null);
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.SubCategory", b =>
@@ -307,16 +371,16 @@ namespace IMS_Infrastructure.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("SubCategoryName")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("SubCategory");
+                    b.ToTable("SubCategories", (string)null);
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.User", b =>
@@ -344,22 +408,28 @@ namespace IMS_Infrastructure.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("FullName")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("IsVerified")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -385,18 +455,36 @@ namespace IMS_Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAt");
-
                     b.HasIndex("DepartmentId");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
 
                     b.HasIndex("RoleId");
 
-                    b.HasIndex("IsDeleted", "IsActive");
+                    b.ToTable("Users", (string)null);
+                });
 
-                    b.ToTable("Users");
+            modelBuilder.Entity("IMS_Domain.Entities.Accessory", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("IMS_Domain.Entities.Inventory", "Inventory")
+                        .WithMany("Accessories")
+                        .HasForeignKey("InventoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IMS_Domain.Entities.SubCategory", "SubCategory")
+                        .WithMany()
+                        .HasForeignKey("SubCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Inventory");
+
+                    b.Navigation("SubCategory");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.Inventory", b =>
@@ -407,26 +495,33 @@ namespace IMS_Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("IMS_Domain.Entities.SubCategory", "Subcategory")
+                    b.HasOne("IMS_Domain.Entities.SubCategory", "SubCategory")
                         .WithMany("Inventory")
-                        .HasForeignKey("SubcategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("SubCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Category");
 
-                    b.Navigation("Subcategory");
+                    b.Navigation("SubCategory");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.InventoryAssignment", b =>
                 {
-                    b.HasOne("IMS_Domain.Entities.Inventory", "Inventory")
+                    b.HasOne("IMS_Domain.Entities.User", "User")
                         .WithMany("InventoryAssignments")
+                        .HasForeignKey("AssignedTo")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("IMS_Domain.Entities.Inventory", "Inventory")
+                        .WithMany("Assignments")
                         .HasForeignKey("InventoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Inventory");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.PurchaseDetail", b =>
@@ -454,9 +549,9 @@ namespace IMS_Infrastructure.Migrations
             modelBuilder.Entity("IMS_Domain.Entities.SubCategory", b =>
                 {
                     b.HasOne("IMS_Domain.Entities.Category", "Category")
-                        .WithMany("SubCategory")
+                        .WithMany("SubCategories")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Category");
@@ -467,13 +562,13 @@ namespace IMS_Infrastructure.Migrations
                     b.HasOne("IMS_Domain.Entities.Department", "Department")
                         .WithMany("Users")
                         .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("IMS_Domain.Entities.Role", "Role")
                         .WithMany("Users")
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Department");
@@ -485,7 +580,7 @@ namespace IMS_Infrastructure.Migrations
                 {
                     b.Navigation("Inventory");
 
-                    b.Navigation("SubCategory");
+                    b.Navigation("SubCategories");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.Department", b =>
@@ -495,7 +590,9 @@ namespace IMS_Infrastructure.Migrations
 
             modelBuilder.Entity("IMS_Domain.Entities.Inventory", b =>
                 {
-                    b.Navigation("InventoryAssignments");
+                    b.Navigation("Accessories");
+
+                    b.Navigation("Assignments");
 
                     b.Navigation("PurchaseDetail")
                         .IsRequired();
@@ -513,6 +610,8 @@ namespace IMS_Infrastructure.Migrations
 
             modelBuilder.Entity("IMS_Domain.Entities.User", b =>
                 {
+                    b.Navigation("InventoryAssignments");
+
                     b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618

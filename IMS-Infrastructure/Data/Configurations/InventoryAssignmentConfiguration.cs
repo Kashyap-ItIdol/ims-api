@@ -8,21 +8,28 @@ namespace IMS_Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<InventoryAssignment> builder)
         {
+            builder.ToTable("InventoryAssignments");
 
-            builder.Property(a => a.Location)
-                   .IsRequired()
-                   .HasMaxLength(150);
+            builder.HasKey(ia => ia.Id);
 
-            builder.Property(a => a.Table)
-                   .IsRequired()
-                   .HasMaxLength(100);
+            builder.Property(ia => ia.AssignedDate)
+                .IsRequired();
 
-            // Relationship with Inventory
-            builder.HasOne(a => a.Inventory)
-                   .WithMany(i => i.InventoryAssignments)
-                   .HasForeignKey(a => a.InventoryId)
-                   .OnDelete(DeleteBehavior.Cascade);
+            builder.Property(ia => ia.Location)
+                .HasMaxLength(255);
+
+            builder.Property(ia => ia.DeskNumber)
+                .HasMaxLength(255);
+
+            builder.HasOne(ia => ia.Inventory)
+                .WithMany(i => i.Assignments)
+                .HasForeignKey(ia => ia.InventoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(ia => ia.User)
+                .WithMany(u => u.InventoryAssignments)
+                .HasForeignKey(ia => ia.AssignedTo)
+                .OnDelete(DeleteBehavior.SetNull);
         }
-
     }
 }

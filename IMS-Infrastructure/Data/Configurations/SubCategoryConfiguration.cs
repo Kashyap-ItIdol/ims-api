@@ -8,16 +8,18 @@ namespace IMS_Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<SubCategory> builder)
         {
+            builder.ToTable("SubCategories");
 
-            builder.Property(s => s.Name)
-                   .IsRequired()
-                   .HasMaxLength(150);
+            builder.HasKey(sc => sc.Id);
 
-            // Relationship with Category
-            builder.HasOne(s => s.Category)
-                   .WithMany(c => c.SubCategory)
-                   .HasForeignKey(s => s.CategoryId)
-                   .OnDelete(DeleteBehavior.Cascade);
+            builder.Property(sc => sc.SubCategoryName)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            builder.HasOne(sc => sc.Category)
+                .WithMany(c => c.SubCategories)
+                .HasForeignKey(sc => sc.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

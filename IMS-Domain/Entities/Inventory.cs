@@ -1,29 +1,38 @@
-﻿namespace IMS_Domain.Entities
+﻿using System.Collections.Generic;
+using IMS_Domain.Constants;
+
+namespace IMS_Domain.Entities
 {
     public class Inventory
     {
         public int Id { get; set; }
 
-        public string InventoryName { get; set; }
+        public required string ItemName { get; set; }
 
-        public int CategoryId { get; set; }
+        public required int CategoryId { get; set; }
+        public required int SubCategoryId { get; set; }
 
-        public Category Category { get; set; }
+        public required string Brand { get; set; }
+        public required string Model { get; set; }
+        public required string SerialNumber { get; set; }
 
-        public int SubcategoryId { get; set; }
+        public required AssetStatus Status { get; set; }
+        public required ConditionType Condition { get; set; }
 
-        public SubCategory Subcategory { get; set; }
+        public int PurchaseDetailId { get; set; }
+
+        //public int AccesoryId { get; set; }
+
+        //public int AssignmentId { get; set; }
 
 
-        public string Model { get; set; }
+        // Navigation
+        public required Category Category { get; set; }
+        public required SubCategory SubCategory { get; set; }
 
-        public string SerialNumber { get; set; }
+        public required PurchaseDetail PurchaseDetail { get; set; }
 
-        public string Status { get; set; }
-
-        public PurchaseDetail PurchaseDetail { get; set; }
-
-        public ICollection<InventoryAssignment> InventoryAssignments { get; set; } = new List<InventoryAssignment>();
-
+        public ICollection<Accessory> Accessories { get; set; } = new List<Accessory>();
+        public ICollection<InventoryAssignment> Assignments { get; set; } = new List<InventoryAssignment>();
     }
 }

@@ -8,46 +8,46 @@ namespace IMS_Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<Inventory> builder)
         {
-            // Properties
-            builder.Property(i => i.InventoryName)
-                   .IsRequired()
-                   .HasMaxLength(200);
+            builder.ToTable("Inventories");
+
+            builder.HasKey(i => i.Id);
+
+            builder.Property(i => i.ItemName)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            builder.Property(i => i.Brand)
+                .IsRequired()
+                .HasMaxLength(255);
 
             builder.Property(i => i.Model)
-                   .IsRequired()
-                   .HasMaxLength(100);
+                .IsRequired()
+                .HasMaxLength(255);
 
             builder.Property(i => i.SerialNumber)
-                   .IsRequired()
-                   .HasMaxLength(100);
+                .IsRequired()
+                .HasMaxLength(255);
 
             builder.Property(i => i.Status)
-                   .IsRequired()
-                   .HasMaxLength(50);
+                .IsRequired();
 
-            // Relationships
+            builder.Property(i => i.Condition)
+                .IsRequired();
 
-            // Category (Many-to-One)
             builder.HasOne(i => i.Category)
-                   .WithMany(c => c.Inventory)
-                   .HasForeignKey(i => i.CategoryId)
-                   .OnDelete(DeleteBehavior.Restrict);
+                .WithMany(c => c.Inventory)
+                .HasForeignKey(i => i.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // SubCategory (Many-to-One)
-            builder.HasOne(i => i.Subcategory)
-                   .WithMany(s => s.Inventory)
-                   .HasForeignKey(i => i.SubcategoryId)
-                    .OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(i => i.SubCategory)
+                .WithMany(sc => sc.Inventory)
+                .HasForeignKey(i => i.SubCategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // One-to-One with PurchaseDetail
             builder.HasOne(i => i.PurchaseDetail)
-                   .WithOne(p => p.Inventory)
-                   .HasForeignKey<PurchaseDetail>(p => p.InventoryId);
-
-            // Indexes (optional but recommended)
-            builder.HasIndex(i => i.SerialNumber).IsUnique();
-            builder.HasIndex(i => i.CategoryId);
-            builder.HasIndex(i => i.SubcategoryId);
+                .WithMany()
+                .HasForeignKey(i => i.PurchaseDetailId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

@@ -1,13 +1,19 @@
-﻿namespace IMS_Domain.Entities
+﻿using System.Collections.Generic;
+
+namespace IMS_Domain.Entities
 {
     public class SubCategory
     {
         public int Id { get; set; }
 
-        public string Name { get; set; }
+        public int CategoryId { get; set; }
 
-        public int CategoryId { get; set; } //foreign key
-        public Category Category { get; set; } //navigation
-        public ICollection<Inventory> Inventory { get; set; } //navigation
+        public  required string SubCategoryName { get; set; }
+
+        
+
+        // Navigation
+        public required Category Category { get; set; }
+        public ICollection<Inventory> Inventory { get; set; } = new List<Inventory>();
     }
 }

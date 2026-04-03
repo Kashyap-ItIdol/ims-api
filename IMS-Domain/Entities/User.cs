@@ -41,6 +41,7 @@
         public int? DeletedBy { get; set; }
 
         // Navigation
+        public ICollection<InventoryAssignment> InventoryAssignments { get; set; } = new List<InventoryAssignment>();
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

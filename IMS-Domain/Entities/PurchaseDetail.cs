@@ -1,4 +1,6 @@
-﻿namespace IMS_Domain.Entities
+﻿using System;
+
+namespace IMS_Domain.Entities
 {
     public class PurchaseDetail
     {
@@ -6,18 +8,17 @@
 
         public int InventoryId { get; set; }
 
-        public Inventory Inventory { get; set; }
-
-        public string Vendor { get; set; }
-
-        public decimal PurchaseCost { get; set; }
-
-        public string InvoiceNumber { get; set; }
+        public required string Vendor { get; set; }
 
         public DateTime PurchaseDate { get; set; }
+        public required DateTime WarrantyExpiry { get; set; }
 
-        public DateTime? WarrantyExpiry { get; set; }
+        public decimal PurchaseCost { get; set; }
+        public required string InvoiceNumber { get; set; }
 
-        public DateTime AmcExpiry { get; set; }
+        public required DateTime AmcExpiry { get; set; }
+
+        // Navigation
+        public required Inventory Inventory { get; set; }
     }
 }
