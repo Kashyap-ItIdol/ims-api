@@ -1,4 +1,4 @@
-﻿using IMS_Application.Interfaces;
+using IMS_Application.Interfaces;
 using IMS_Application.Services.Interfaces;
 using IMS_Infrastructure.Data;
 using IMS_Infrastructure.Repositories;
@@ -19,6 +19,8 @@ namespace IMS_Infrastructure.Extentions
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+            //services.AddScoped<IInventoryRepository, InventoryRepository>();
 
             services.AddScoped<ITokenService, TokenService>();
 

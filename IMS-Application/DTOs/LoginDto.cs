@@ -1,8 +1,12 @@
-﻿namespace IMS_Application.DTOs
+﻿using System.ComponentModel;
+
+namespace IMS_Application.DTOs
 {
     public class LoginDto
     {
-        public string Username { get; set; } = null!;
-        public string Password { get; set; } = null!;
+        public required string EmailAddress { get; set; }
+        public required string Password { get; set; }
+        [DefaultValue(false)]
+        public bool RememberMe { get; set; } = false;
     }
 }

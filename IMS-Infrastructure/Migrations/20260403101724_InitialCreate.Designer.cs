@@ -4,6 +4,7 @@ using IMS_Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IMS_Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260403101724_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -38,33 +41,6 @@ namespace IMS_Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Category");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Computing Device"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "Peripherals"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Name = "Networking Equipment"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Name = "Infrastructure"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Name = "Accessories"
-                        });
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.Department", b =>
@@ -135,32 +111,13 @@ namespace IMS_Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Brand")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
-
-                    b.Property<string>("Condition")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("InventoryName")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("ItemPictureUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("Model")
                         .IsRequired()
@@ -179,11 +136,6 @@ namespace IMS_Infrastructure.Migrations
 
                     b.Property<int>("SubcategoryId")
                         .HasColumnType("int");
-
-                    b.Property<string>("Table")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
@@ -365,62 +317,6 @@ namespace IMS_Infrastructure.Migrations
                     b.HasIndex("CategoryId");
 
                     b.ToTable("SubCategory");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CategoryId = 1,
-                            Name = "Laptop"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CategoryId = 1,
-                            Name = "CPU"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CategoryId = 2,
-                            Name = "Mouse"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            CategoryId = 2,
-                            Name = "Keyboard"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            CategoryId = 3,
-                            Name = "WiFi Router"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            CategoryId = 3,
-                            Name = "Firewall"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            CategoryId = 4,
-                            Name = "Server"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            CategoryId = 4,
-                            Name = "UPS"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            CategoryId = 5,
-                            Name = "Charger"
-                        });
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.User", b =>

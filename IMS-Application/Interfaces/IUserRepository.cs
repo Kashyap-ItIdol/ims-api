@@ -4,8 +4,8 @@ namespace IMS_Application.Interfaces
 {
     public interface IUserRepository
     {
-        Task<User> GetByEmailAsync(string email);
+        Task<User?> GetByEmailAsync(string email);
         Task AddAsync(User user);
-        Task<bool> CheckUserExixst(string email);
+        Task<bool> UserExistsAsync(string email);
     }
 }

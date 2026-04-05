@@ -14,24 +14,20 @@ namespace IMS_Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<User> GetByEmailAsync(string email)
+        public async Task<User?> GetByEmailAsync(string email)
         {
-            var result =  await _context.Users
+            return await _context.Users
+                .AsNoTracking()
                 .Include(x => x.Role)
                 .Include(x => x.Department)
                 .FirstOrDefaultAsync(x => x.Email == email && !x.IsDeleted);
-
-            return result ?? throw new Exception("User not found.");
         }
 
-        public async Task<bool> CheckUserExixst(string email)
+        public async Task<bool> UserExistsAsync(string email)
         {
-            var result = await _context.Users
-                .Include(x => x.Role)
-                .Include(x => x.Department)
-                .FirstOrDefaultAsync(x => x.Email == email && !x.IsDeleted);
-
-            return result == null ? false : true;
+            return await _context.Users
+                .AsNoTracking()
+                .AnyAsync(x => x.Email == email && !x.IsDeleted);
         }
 
         public async Task AddAsync(User user)

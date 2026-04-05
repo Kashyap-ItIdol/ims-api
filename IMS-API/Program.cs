@@ -1,6 +1,9 @@
+using IMS_API.ExceptionHandlers;
+using IMS_API.Extensions;
 using IMS_Application.Extentions;
 using IMS_Infrastructure.Extentions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -38,6 +41,33 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.AddControllers();
+
+//  Validation Response Formatting (VERY IMPORTANT)
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(x => x.Value?.Errors.Count > 0)
+            .ToDictionary(
+                kvp => char.ToLowerInvariant(kvp.Key[0]) + kvp.Key.Substring(1),
+                kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+            );
+
+        var response = new
+        {
+            success = false,
+            message = "Validation failed",
+            data = (object?)null,
+            errors = errors
+        };
+
+        return new BadRequestObjectResult(response);
+    };
+});
+
+
 builder.Services.AddAutoMapper(
     _ => { },
     typeof(ApplicationAssemblyMarker)
@@ -46,7 +76,12 @@ builder.Services.AddAutoMapper(
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddControllers();
+builder.Services.AddValidation();
+
+
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -70,7 +105,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 
 var app = builder.Build();
+
 // Configure the HTTP request pipeline.
+app.UseExceptionHandler();
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {

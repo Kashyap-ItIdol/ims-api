@@ -1,4 +1,5 @@
-﻿using IMS_Application.DTOs;
+using IMS_API.Controllers.Base;
+using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,7 +7,7 @@ namespace IMS_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController : ControllerBase
+    public class AuthController : BaseController
     {
         private readonly IAuthService _authService;
 
@@ -17,24 +18,16 @@ namespace IMS_API.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginDto dto)
-        {
-            var result = await _authService.LoginAsync(dto);
-            return Ok(result);
-        }
+        public async Task<IActionResult> Login(LoginDto dto) =>
+            FromResult(await _authService.LoginAsync(dto));
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterDto dto)
-        {
-            var result = await _authService.RegisterAsync(dto);
-            return Ok(result);
-        }
+        public async Task<IActionResult> Register(RegisterDto dto) =>
+            FromResult(await _authService.RegisterAsync(dto));
 
         [HttpPost("refresh")]
-        public async Task<IActionResult> Refresh(RefreshTokenRequestDto dto)
-        {
-            var result = await _authService.RefreshTokenAsync(dto.RefreshToken);
-            return Ok(result);
-        }
+        public async Task<IActionResult> Refresh(RefreshTokenRequestDto dto) =>
+            FromResult(await _authService.RefreshTokenAsync(dto.RefreshToken));
+
     }
 }

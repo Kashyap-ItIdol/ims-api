@@ -1,4 +1,4 @@
-﻿using IMS_Application.Services;
+using IMS_Application.Services;
 using IMS_Application.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,6 +10,8 @@ namespace IMS_Application.Extentions
         {
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IRoleService, RoleService>();
+            services.AddScoped<IDepartmentService, DepartmentService>();
+            //services.AddScoped<IInventoryService, InventoryService>();
 
             return services;
         }
