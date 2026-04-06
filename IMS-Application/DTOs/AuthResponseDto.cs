@@ -4,5 +4,14 @@
     {
         public required string AccessToken { get; set; }
         public required string RefreshToken { get; set; }
+        public UserInfoDto User { get; set; } = null!;
+    }
+
+    public class UserInfoDto
+    {
+        public int Id { get; set; }
+        public string Email { get; set; } = null!;
+        public string FullName { get; set; } = null!;
+        public int RoleId { get; set; }
     }
 }

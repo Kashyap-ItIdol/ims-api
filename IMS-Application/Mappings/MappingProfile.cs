@@ -8,8 +8,9 @@ namespace IMS_Application.Mappings
     {
         public MappingProfile()
         {
-            CreateMap<Role, RoleDto>().ReverseMap();
-            CreateMap<Department, DepartmentDto>().ReverseMap();
+            CreateMap<User, UserInfoDto>()
+            .ForMember(dest => dest.RoleId,
+                       opt => opt.MapFrom(src => src.RoleId));
         }
     }
 }

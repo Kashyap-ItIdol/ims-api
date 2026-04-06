@@ -1,4 +1,4 @@
-﻿namespace IMS_Domain.Entities
+namespace IMS_Domain.Entities
 {
     public class Inventory
     {
@@ -14,12 +14,21 @@
 
         public SubCategory Subcategory { get; set; }
 
+        public string Brand { get; set; }
 
         public string Model { get; set; }
 
         public string SerialNumber { get; set; }
 
         public string Status { get; set; }
+
+        public string Condition { get; set; }
+
+        public string Location { get; set; }
+
+        public string Table { get; set; }
+
+        public string? ItemPictureUrl { get; set; }
 
         public PurchaseDetail PurchaseDetail { get; set; }
 

@@ -1,4 +1,5 @@
-﻿using IMS_Application.Services.Interfaces;
+﻿using IMS_API.Controllers.Base;
+using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,7 +8,7 @@ namespace IMS_API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Roles = "Admin")]
-    public class DepartmentController : ControllerBase
+    public class DepartmentController : BaseController
     {
         private readonly IDepartmentService _departmentService;
 
@@ -17,18 +18,11 @@ namespace IMS_API.Controllers
             _departmentService = departmentService;
         }
 
-        [HttpGet("get-all-departments")]
+        [HttpGet("lookup")]
         public async Task<IActionResult> GetAllDepartments()
         {
             var result = await _departmentService.GetAllDepartmentsAsync();
-            return Ok(result);
-        }
-
-        [HttpGet("get-department-by-id")]
-        public async Task<IActionResult> GetDepartmentById(int id)
-        {
-            var result = await _departmentService.GetDepartmentByIdAsync(id);
-            return Ok(result);
+            return FromResult(result);
         }
     }
 }

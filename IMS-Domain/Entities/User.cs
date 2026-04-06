@@ -10,8 +10,8 @@
 
         public required string PasswordHash { get; set; }
 
-        public int DepartmentId { get; set; }
-        public Department Department { get; set; } = null!;
+        public int? DepartmentId { get; set; }
+        public Department? Department { get; set; }
 
         public int RoleId { get; set; }
         public Role Role { get; set; } = null!;
