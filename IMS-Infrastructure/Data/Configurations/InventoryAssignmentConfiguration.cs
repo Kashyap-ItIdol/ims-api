@@ -2,34 +2,39 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace IMS_Infrastructure.Data.Configurations
+namespace IMS_Infrastructure.Configurations
 {
     public class InventoryAssignmentConfiguration : IEntityTypeConfiguration<InventoryAssignment>
     {
         public void Configure(EntityTypeBuilder<InventoryAssignment> builder)
         {
+            // Table
             builder.ToTable("InventoryAssignments");
 
-            builder.HasKey(ia => ia.Id);
+            // PK
+            builder.HasKey(a => a.Id);
 
-            builder.Property(ia => ia.AssignedDate)
-                .IsRequired();
+            // Properties
+            builder.Property(a => a.Location)
+                   .HasMaxLength(150);
 
-            builder.Property(ia => ia.Location)
-                .HasMaxLength(255);
+            builder.Property(a => a.DeskNumber)
+                   .HasMaxLength(50);
 
-            builder.Property(ia => ia.DeskNumber)
-                .HasMaxLength(255);
+            builder.Property(a => a.AssignedDate)
+                   .IsRequired();
 
-            builder.HasOne(ia => ia.Inventory)
-                .WithMany(i => i.Assignments)
-                .HasForeignKey(ia => ia.InventoryId)
-                .OnDelete(DeleteBehavior.Cascade);
+            // 🔥 Relationship: Assignment → Inventory
+            builder.HasOne(a => a.Inventory)
+                   .WithMany(i => i.Assignments)
+                   .HasForeignKey(a => a.InventoryId)
+                   .OnDelete(DeleteBehavior.Cascade);
 
-            builder.HasOne(ia => ia.User)
-                .WithMany(u => u.InventoryAssignments)
-                .HasForeignKey(ia => ia.AssignedTo)
-                .OnDelete(DeleteBehavior.SetNull);
+            // 🔥 Relationship: Assignment → User (optional)
+            builder.HasOne(a => a.User)
+                   .WithMany(u => u.InventoryAssignments)
+                   .HasForeignKey(a => a.UserId)
+                   .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

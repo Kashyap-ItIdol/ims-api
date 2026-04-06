@@ -10,6 +10,10 @@ namespace IMS_Application.Mappings
         {
             CreateMap<Role, RoleDto>().ReverseMap();
             CreateMap<Department, DepartmentDto>().ReverseMap();
+            CreateMap<InventoryCreateDto, Inventory>();
+            CreateMap<PurchaseDetailDto, PurchaseDetail>();
+            CreateMap<AccessoryDto, Accessory>();
+            CreateMap<InventoryAssignmentDto, InventoryAssignment>();
         }
     }
 }

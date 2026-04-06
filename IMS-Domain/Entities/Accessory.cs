@@ -3,9 +3,9 @@ using IMS_Domain.Constants;
 
 namespace IMS_Domain.Entities
 {
-    public class Accessory
+    public class Accessory : BaseEntity
     {
-        public int Id { get; set; }
+     //   public int Id { get; set; }
 
         public int InventoryId { get; set; }
 

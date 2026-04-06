@@ -2,13 +2,13 @@
 
 namespace IMS_Domain.Entities
 {
-    public class InventoryAssignment
+    public class InventoryAssignment : BaseEntity
     {
-        public int Id { get; set; }
+       // public int Id { get; set; }
 
         public int InventoryId { get; set; }
 
-        public int? AssignedTo { get; set; }
+        public int? UserId { get; set; }  // for Assign to 
 
         public DateTime AssignedDate { get; set; }
         public DateTime? ExpectedReturnDate { get; set; }

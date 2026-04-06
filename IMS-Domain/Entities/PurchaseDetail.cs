@@ -2,9 +2,9 @@
 
 namespace IMS_Domain.Entities
 {
-    public class PurchaseDetail
+    public class PurchaseDetail : BaseEntity
     {
-        public int Id { get; set; }
+      //  public int Id { get; set; }
 
         public int InventoryId { get; set; }
 

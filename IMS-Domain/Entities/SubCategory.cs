@@ -2,9 +2,9 @@
 
 namespace IMS_Domain.Entities
 {
-    public class SubCategory
+    public class SubCategory : BaseEntity
     {
-        public int Id { get; set; }
+      //  public int Id { get; set; }
 
         public int CategoryId { get; set; }
 

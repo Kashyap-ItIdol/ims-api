@@ -48,8 +48,7 @@ namespace IMS_Application.Services
                 RoleId = dto.RoleId,
                 DepartmentId = dto.DeptId,
                 IsActive = true,
-                CreatedBy = dto.CreatedBy,
-                CreatedAt = DateTime.UtcNow
+                CreatedBy = dto.CreatedBy
             };
 
             await _userRepo.AddAsync(user);

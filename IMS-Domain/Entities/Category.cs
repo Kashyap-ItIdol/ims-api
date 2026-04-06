@@ -2,9 +2,9 @@
 
 namespace IMS_Domain.Entities
 {
-    public class Category
+    public class Category : BaseEntity
     {
-        public int Id { get; set; }
+      //  public int Id { get; set; }
 
         public required string CategoryName { get; set; }
 

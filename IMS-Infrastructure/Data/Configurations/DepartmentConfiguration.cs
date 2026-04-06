@@ -8,6 +8,10 @@ namespace IMS_Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<Department> builder)
         {
+
+            builder.ToTable("Departments"); 
+            builder.HasKey(x => x.Id);      
+
             builder.Property(x => x.Name)
                    .IsRequired()
                    .HasMaxLength(100);

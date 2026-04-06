@@ -2,30 +2,34 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace IMS_Infrastructure.Data.Configurations
+namespace IMS_Infrastructure.Configurations
 {
     public class CategoryConfiguration : IEntityTypeConfiguration<Category>
     {
         public void Configure(EntityTypeBuilder<Category> builder)
         {
+            // Table
             builder.ToTable("Categories");
 
+            // PK
             builder.HasKey(c => c.Id);
 
+            // Properties
             builder.Property(c => c.CategoryName)
-                .IsRequired()
-                .HasMaxLength(150);
+                   .IsRequired()
+                   .HasMaxLength(100);
 
-            builder.HasIndex(x => x.CategoryName).IsUnique();
+            // 🔥 Relationship: Category → SubCategories (1:N)
             builder.HasMany(c => c.SubCategories)
-                .WithOne(sc => sc.Category)
-                .HasForeignKey(sc => sc.CategoryId);
+                   .WithOne(sc => sc.Category)
+                   .HasForeignKey(sc => sc.CategoryId)
+                   .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasData(
-    new Category { Id = 1, CategoryName = "Laptop" },
-    new Category { Id = 2, CategoryName = "Desktop" },
-    new Category { Id = 3, CategoryName = "Accessories" }
-);
+            // 🔥 Relationship: Category → Inventory (1:N)
+            builder.HasMany(c => c.Inventory)
+                   .WithOne(i => i.Category)
+                   .HasForeignKey(i => i.CategoryId)
+                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

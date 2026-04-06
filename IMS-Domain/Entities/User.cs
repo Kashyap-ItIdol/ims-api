@@ -1,8 +1,8 @@
 ﻿namespace IMS_Domain.Entities
 {
-    public class User
+    public class User : BaseEntity
     {
-        public int Id { get; set; }
+     //   public int Id { get; set; }
 
         public string FullName { get; set; } = null!;
 
@@ -26,19 +26,7 @@
 
         public bool IsVerified { get; set; } = false;
 
-        public bool IsDeleted { get; set; } = false;
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        public int? CreatedBy { get; set; }
-
-        public DateTime? UpdatedAt { get; set; }
-
-        public int? UpdatedBy { get; set; }
-
-        public DateTime? DeletedAt { get; set; }
-
-        public int? DeletedBy { get; set; }
+       
 
         // Navigation
         public ICollection<InventoryAssignment> InventoryAssignments { get; set; } = new List<InventoryAssignment>();
