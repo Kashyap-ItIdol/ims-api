@@ -1,4 +1,4 @@
-﻿using IMS_Domain.Entities;
+using IMS_Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -17,6 +17,10 @@ namespace IMS_Infrastructure.Data.Configurations
                    .IsRequired()
                    .HasMaxLength(100);
 
+            builder.Property(i => i.Brand)
+                   .IsRequired()
+                   .HasMaxLength(100);
+
             builder.Property(i => i.SerialNumber)
                    .IsRequired()
                    .HasMaxLength(100);
@@ -24,6 +28,21 @@ namespace IMS_Infrastructure.Data.Configurations
             builder.Property(i => i.Status)
                    .IsRequired()
                    .HasMaxLength(50);
+
+            builder.Property(i => i.Condition)
+                   .IsRequired()
+                   .HasMaxLength(50);
+
+            builder.Property(i => i.Location)
+                   .IsRequired()
+                   .HasMaxLength(150);
+
+            builder.Property(i => i.Table)
+                   .IsRequired()
+                   .HasMaxLength(100);
+
+            builder.Property(i => i.ItemPictureUrl)
+                   .HasMaxLength(500);
 
             // Relationships
 

@@ -30,7 +30,8 @@ namespace IMS_Infrastructure.Data.Configurations
             // Relationships
             builder.HasOne(x => x.Department)
                    .WithMany(d => d.Users)
-                   .HasForeignKey(x => x.DepartmentId);
+                   .HasForeignKey(x => x.DepartmentId)
+                   .IsRequired(false);
 
             builder.HasOne(x => x.Role)
                    .WithMany(r => r.Users)
