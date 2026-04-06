@@ -6,27 +6,21 @@ using IMS_Application.Interfaces;
 using IMS_Application.Services.Interfaces;
 using IMS_Domain.Entities;
 using Microsoft.Extensions.Logging;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace IMS_Application.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly IUserRepository _userRepo;
-        private readonly IRefreshTokenRepository _refreshRepo;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly ITokenService _tokenService;
         private readonly ILogger<AuthService> _logger;
         private readonly IMapper _mapper;
-
         public AuthService(
-            IUserRepository userRepo,
-            IRefreshTokenRepository refreshRepo,
+            IUnitOfWork unitOfWork,
             ITokenService tokenService,
             ILogger<AuthService> logger, IMapper mapper)
         {
-            _userRepo = userRepo;
-            _refreshRepo = refreshRepo;
+            _unitOfWork = unitOfWork;
             _tokenService = tokenService;
             _logger = logger;
             _mapper = mapper;
@@ -36,9 +30,9 @@ namespace IMS_Application.Services
         {
             try
             {
-                var email = dto.EmailAddress.Trim().ToLower();
+                var email = dto.Email.Trim().ToLower();
 
-                var user = await _userRepo.GetByEmailAsync(email);
+                var user = await _unitOfWork.Users.GetByEmailAsync(email);
 
                 if (user == null)
                     return Result<AuthResponseDto>.Failure(ErrorMessages.InvalidCredentials, 401);
@@ -48,16 +42,15 @@ namespace IMS_Application.Services
                 if (!passwordMatches)
                     return Result<AuthResponseDto>.Failure(ErrorMessages.InvalidPassword, 401);
 
-                var tokens = await GenerateTokens(user);
+                //  Generate Tokens AND attach the RefreshToken to the User object in memory
+                var responseDto = AttachTokensToUser(user, dto.RememberMe);
 
-                var response = new AuthResponseDto
-                {
-                    AccessToken = tokens.AccessToken,
-                    RefreshToken = tokens.RefreshToken,
-                    User = _mapper.Map<UserInfoDto>(user)
-                };
+                await _unitOfWork.SaveChangesAsync();
 
-                return Result<AuthResponseDto>.Success(response,SuccessMessages.LoginSuccess);
+                // Map the User Info (This will safely use the AutoMapper Flattening fix we added earlier!)
+                responseDto.User = _mapper.Map<UserInfoDto>(user);
+
+                return Result<AuthResponseDto>.Success(responseDto, SuccessMessages.LoginSuccess);
             }
             catch (OperationCanceledException)
             {
@@ -65,13 +58,13 @@ namespace IMS_Application.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during login for {Email}", dto.EmailAddress);
+                _logger.LogError(ex, "Unexpected error during login for {Email}", dto.Email);
 
                 return Result<AuthResponseDto>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
-        public async Task<Result<AuthResponseDto>> RegisterAsync(RegisterDto dto)
+        public async Task<Result<UserInfoDto>> RegisterAsync(RegisterDto dto)
         {
             try
             {
@@ -79,56 +72,39 @@ namespace IMS_Application.Services
 
                 _logger.LogInformation("Registration attempt for {Email}", email);
 
-                // Check if user already exists
-                var existingUser = await _userRepo.UserExistsAsync(email);
-                if (existingUser)
-                    return Result<AuthResponseDto>.Failure(ErrorMessages.UserAlreadyExists, 409);
+                // Check if user exists using the UoW
+                if (await _unitOfWork.Users.UserExistsAsync(email))
+                    return Result<UserInfoDto>.Failure(ErrorMessages.UserAlreadyExists, 409);
 
-                // Create user manual mapping  
+                //  user manual mapping  
                 var user = new User
                 {
                     Email = email,
                     FullName = dto.FullName,
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
 
-                    RoleId = dto.RoleId,
-                    DepartmentId = dto.DeptId,
+                    RoleId = 3,
+                    DepartmentId = dto.DepartmentId,
 
                     IsActive = true,
                     IsVerified = false,
                     IsDeleted = false,
 
                     CreatedBy = dto.CreatedBy,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    RefreshTokens = new List<RefreshToken>()
                 };
 
-                // Save user
-                await _userRepo.AddAsync(user);
+                //  Add the User (and its attached RefreshToken) to EF Core's memory tracking
+                await _unitOfWork.Users.AddAsync(user);
 
-                // IMPORTANT: reload with navigation properties (Role, Department)
-                var createdUser = await _userRepo.GetByEmailAsync(email);
+                // Commit EVERYTHING to the database in ONE atomic transaction
+                await _unitOfWork.SaveChangesAsync();
 
-                if (createdUser == null)
-                {
-                    _logger.LogError("User created but could not be retrieved: {Email}", email);
+                //  Map the final user data to the response
+                var userInfo = _mapper.Map<UserInfoDto>(user);
 
-                    return Result<AuthResponseDto>.Failure(
-                        ErrorMessages.UnexpectedError,
-                        500);
-                }
-
-                // Generate tokens
-                var tokens = await GenerateTokens(createdUser);
-
-                // Build response
-                var response = new AuthResponseDto
-                {
-                    AccessToken = tokens.AccessToken,
-                    RefreshToken = tokens.RefreshToken,
-                    User = _mapper.Map<UserInfoDto>(createdUser)
-                };
-
-                return Result<AuthResponseDto>.Success(response,SuccessMessages.RegisterSuccess);
+                return Result<UserInfoDto>.Success(userInfo, SuccessMessages.RegisterSuccess);
             }
             catch (OperationCanceledException)
             {
@@ -138,9 +114,7 @@ namespace IMS_Application.Services
             {
                 _logger.LogError(ex, "Unexpected error during registration for {Email}", dto.Email);
 
-                return Result<AuthResponseDto>.Failure(
-                    ErrorMessages.UnexpectedError,
-                    500);
+                return Result<UserInfoDto>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
@@ -148,23 +122,33 @@ namespace IMS_Application.Services
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(refreshToken))
-                    return Result<AuthResponseDto>.Failure("Refresh token is required.", 400);
+                // Get the User and ALL their tokens in one query
+                var user = await _unitOfWork.Users.GetUserByRefreshTokenAsync(refreshToken);
 
-                var token = await _refreshRepo.GetAsync(refreshToken);
-
-                if (token == null || token.IsRevoked || token.Expires < DateTime.UtcNow)
-                    return Result<AuthResponseDto>.Failure("Invalid or expired refresh token.", 401);
-
-                token.IsRevoked = true;
-                await _refreshRepo.SaveAsync();
-
-                var user = await _userRepo.GetByEmailAsync(token.User.Email);
                 if (user == null)
-                    return Result<AuthResponseDto>.Failure("Invalid or expired refresh token.", 401);
+                    return Result<AuthResponseDto>.Failure(ErrorMessages.InvalidRefreshToken, 401);
 
-                var tokens = await GenerateTokens(user);
-                return Result<AuthResponseDto>.Success(tokens);
+                // Find the exact token the user passed in
+                var existingToken = user.RefreshTokens.First(rt => rt.Token == refreshToken);
+
+                // Security Validation
+                if (existingToken.IsRevoked || existingToken.Expires < DateTime.UtcNow)
+                    return Result<AuthResponseDto>.Failure(ErrorMessages.InvalidOrExpiredToken, 401);
+
+                // Refresh Token Rotation (CRITICAL SECURITY)
+                // We revoke the token they just used so it can never be used again.
+                existingToken.IsRevoked = true;
+
+                // Generate NEW tokens and attach to User (Reusing our helper!)
+                // We pass 'true' to ensure they get another 30-day token.
+                var responseDto = AttachTokensToUser(user, rememberMe: true);
+
+                // Commit everything (Revoked status AND new token) in ONE transaction
+                await _unitOfWork.SaveChangesAsync();
+
+                responseDto.User = _mapper.Map<UserInfoDto>(user);
+
+                return Result<AuthResponseDto>.Success(responseDto,SuccessMessages.TokenRefreshSuccess);
             }
             catch (OperationCanceledException)
             {
@@ -173,39 +157,68 @@ namespace IMS_Application.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error during token refresh");
-                return Result<AuthResponseDto>.Failure(
-                    "An unexpected error occurred. Please try again later.",
-                    500);
+                return Result<AuthResponseDto>.Failure(ErrorMessages.UnexpectedError,500);
             }
         }
 
-        private async Task<AuthResponseDto> GenerateTokens(User user)
+        private AuthResponseDto AttachTokensToUser(User user, bool rememberMe)
         {
+            // Generate the raw strings
             var accessToken = _tokenService.GenerateAccessToken(user);
+            var refreshTokenString = _tokenService.GenerateRefreshToken();
 
+            var expirationDays = rememberMe ? 30 : 1;
+
+            // Create the token entity
             var refreshToken = new RefreshToken
             {
-                Token = _tokenService.GenerateRefreshToken(),
-                Expires = DateTime.UtcNow.AddDays(7),
-                UserId = user.Id,
+                Token = refreshTokenString,
+                Expires = DateTime.UtcNow.AddDays(expirationDays),
                 IsRevoked = false
             };
 
-            await _refreshRepo.AddAsync(refreshToken);
-            await _refreshRepo.SaveAsync();
+            // Attach the token to the user object
+            user.RefreshTokens ??= new List<RefreshToken>();
+            user.RefreshTokens.Add(refreshToken);
 
+            // Return the DTO structure (User mapping happens later)
             return new AuthResponseDto
             {
                 AccessToken = accessToken,
-                RefreshToken = refreshToken.Token
+                RefreshToken = refreshTokenString
             };
         }
 
-        //private string Hash(string password)
-        //{
-        //    using var sha = SHA256.Create();
-        //    var bytes = Encoding.UTF8.GetBytes(password);
-        //    return Convert.ToBase64String(sha.ComputeHash(bytes));
-        //}
+        public async Task<Result<bool>> LogoutAsync(string refreshToken)
+        {
+            try
+            {
+                // Find the user holding this token
+                var user = await _unitOfWork.Users.GetUserByRefreshTokenAsync(refreshToken);
+
+                if (user != null)
+                {
+                    // Find the exact token
+                    var tokenEntity = user.RefreshTokens.FirstOrDefault(rt => rt.Token == refreshToken);
+
+                    // If it exists and isn't already revoked, revoke it!
+                    if (tokenEntity != null && !tokenEntity.IsRevoked)
+                    {
+                        tokenEntity.IsRevoked = true;
+                        await _unitOfWork.SaveChangesAsync();
+                    }
+                }
+
+                // We always return success, even if the token was already dead, 
+                // because the end result is what the user wanted: they are logged out.
+                return Result<bool>.Success(true, SuccessMessages.LogoutSuccess);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during logout");
+                return Result<bool>.Failure("An error occurred during logout", 500);
+            }
+        }
+
     }
 }

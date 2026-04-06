@@ -88,42 +88,27 @@ namespace IMS_Infrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            Name = "Backend"
+                            Name = "Sales"
                         },
                         new
                         {
                             Id = 2,
-                            Name = "Frontend"
+                            Name = "Marketing"
                         },
                         new
                         {
                             Id = 3,
-                            Name = "Product Manager"
+                            Name = "Designing"
                         },
                         new
                         {
                             Id = 4,
-                            Name = "QA"
+                            Name = "Accounts"
                         },
                         new
                         {
                             Id = 5,
-                            Name = "BA"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Name = "DevOps"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Name = "UI/UX"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Name = "Mobile App"
+                            Name = "Developer"
                         });
                 });
 
@@ -335,12 +320,12 @@ namespace IMS_Infrastructure.Migrations
                         new
                         {
                             Id = 2,
-                            Name = "Employee"
+                            Name = "Support Engineer"
                         },
                         new
                         {
                             Id = 3,
-                            Name = "Support Engineer"
+                            Name = "Employee"
                         });
                 });
 
@@ -443,7 +428,7 @@ namespace IMS_Infrastructure.Migrations
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("int");
 
-                    b.Property<int>("DepartmentId")
+                    b.Property<int?>("DepartmentId")
                         .HasColumnType("int");
 
                     b.Property<string>("Email")
@@ -570,9 +555,7 @@ namespace IMS_Infrastructure.Migrations
                 {
                     b.HasOne("IMS_Domain.Entities.Department", "Department")
                         .WithMany("Users")
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("DepartmentId");
 
                     b.HasOne("IMS_Domain.Entities.Role", "Role")
                         .WithMany("Users")

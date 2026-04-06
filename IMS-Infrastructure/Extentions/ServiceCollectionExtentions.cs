@@ -16,11 +16,7 @@ namespace IMS_Infrastructure.Extentions
             services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(config.GetConnectionString("DefaultConnection")));
 
-            services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-            services.AddScoped<IRoleRepository, RoleRepository>();
-            services.AddScoped<IDepartmentRepository, DepartmentRepository>();
-            //services.AddScoped<IInventoryRepository, InventoryRepository>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.AddScoped<ITokenService, TokenService>();
 

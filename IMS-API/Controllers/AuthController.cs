@@ -1,7 +1,11 @@
 using IMS_API.Controllers.Base;
+using IMS_Application.Common.Constants;
+using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace IMS_API.Controllers
 {
@@ -18,16 +22,73 @@ namespace IMS_API.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginDto dto) =>
-            FromResult(await _authService.LoginAsync(dto));
+        [AllowAnonymous]
+        public async Task<IActionResult> Login(LoginDto dto)
+        {
+            var result = await _authService.LoginAsync(dto);
 
+            if (result.IsSuccess)
+            {
+                // 30 days for "Remember Me"
+                int? expireDays = dto.RememberMe ? 30 : null;
+
+                SetRefreshTokenCookie(result.Data!.RefreshToken, expireDays);
+            }
+
+            return FromResult(result);
+        }
+
+        // Only Admins can hit this endpoint
+        [Authorize(Roles = "Admin")]
         [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterDto dto) =>
-            FromResult(await _authService.RegisterAsync(dto));
+        public async Task<IActionResult> Register(RegisterDto dto)
+        {
+            // Optional but highly recommended: 
+            // Extract the Admin's ID directly from their JWT token to prevent spoofing
+            var adminId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            dto.CreatedBy = adminId;
 
-        [HttpPost("refresh")]
-        public async Task<IActionResult> Refresh(RefreshTokenRequestDto dto) =>
-            FromResult(await _authService.RefreshTokenAsync(dto.RefreshToken));
+            return FromResult(await _authService.RegisterAsync(dto));
+        }
 
+        [HttpPost("refreshToken")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RefreshToken()
+        {
+            // Extract the token from the secure cookie rather than the DTO
+            var refreshToken = Request.Cookies["refreshToken"];
+
+            if (string.IsNullOrEmpty(refreshToken))
+                return Unauthorized(new { success = false, message = ErrorMessages.NoRefreshToken });
+
+            // 3. Service handles the heavy database and token logic
+            var result = await _authService.RefreshTokenAsync(refreshToken);
+
+            // 4. Controller handles the HTTP response injection
+            if (result.IsSuccess)
+            {
+                SetRefreshTokenCookie(result.Data!.RefreshToken);
+            }
+
+            return FromResult(result);
+        }
+
+        [HttpPost("logout")]
+        [AllowAnonymous] // Allow anonymous so even if their access token expired, they can still clear their cookie
+        public async Task<IActionResult> Logout()
+        {
+            var refreshToken = Request.Cookies["refreshToken"];
+
+            if (!string.IsNullOrEmpty(refreshToken))
+            {
+                //  Revoke in the database
+                await _authService.LogoutAsync(refreshToken);
+
+                // Delete the HTTP-only cookie from the user's browser
+                DeleteRefreshTokenCookie();
+            }
+
+            return FromResult(Result<bool>.Success(true, SuccessMessages.LogoutSuccess));
+        }
     }
 }

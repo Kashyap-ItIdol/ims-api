@@ -5,19 +5,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IMS_Infrastructure.Repositories
 {
-    public class UserRepository : IUserRepository
+    public class UserRepository : Repository<User>, IUserRepository
     {
-        private readonly AppDbContext _context;
-
-        public UserRepository(AppDbContext context)
+        public UserRepository(AppDbContext context) : base(context)
         {
-            _context = context;
         }
 
         public async Task<User?> GetByEmailAsync(string email)
         {
-            return await _context.Users
-                .AsNoTracking()
+            return await _dbSet
                 .Include(x => x.Role)
                 .Include(x => x.Department)
                 .FirstOrDefaultAsync(x => x.Email == email && !x.IsDeleted);
@@ -25,15 +21,15 @@ namespace IMS_Infrastructure.Repositories
 
         public async Task<bool> UserExistsAsync(string email)
         {
-            return await _context.Users
-                .AsNoTracking()
-                .AnyAsync(x => x.Email == email && !x.IsDeleted);
+            return await _dbSet.IgnoreQueryFilters().AsNoTracking().AnyAsync(x => x.Email == email);
         }
 
-        public async Task AddAsync(User user)
+        public async Task<User?> GetUserByRefreshTokenAsync(string refreshToken)
         {
-            await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
+            return await _dbSet
+                .Include(u => u.RefreshTokens)
+                .Include(u => u.Role) //  need the Role to generate the new JWT claims!
+                .FirstOrDefaultAsync(u => u.RefreshTokens.Any(rt => rt.Token == refreshToken));
         }
     }
 }

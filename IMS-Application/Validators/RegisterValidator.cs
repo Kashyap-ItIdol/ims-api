@@ -15,7 +15,7 @@ namespace IMS_Application.Validators
             // Full Name
             RuleFor(x => x.FullName)
                 .NotEmpty().WithMessage("Full name is required")
-                .MinimumLength(3).WithMessage("Full name must be at least 3 characters");
+                .MinimumLength(2).WithMessage("Full name must be at least 2 characters");
 
             // Password
             RuleFor(x => x.Password)
@@ -25,15 +25,11 @@ namespace IMS_Application.Validators
             // Confirm Password
             RuleFor(x => x.ConfirmPassword)
                 .NotEmpty().WithMessage("Confirm password is required")
-                .Equal(x => x.Password).WithMessage("Passwords do not match");
+                .Equal(x => x.Password).WithMessage("Passwords don't match.Please double-check and try again");
 
             // Department
-            RuleFor(x => x.DeptId)
+            RuleFor(x => x.DepartmentId)
                 .GreaterThan(0).WithMessage("Department is required");
-
-            // Role
-            RuleFor(x => x.RoleId)
-                .GreaterThan(0).WithMessage("Role is required");
 
             // CreatedBy
             RuleFor(x => x.CreatedBy)

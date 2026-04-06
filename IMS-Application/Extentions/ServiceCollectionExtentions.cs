@@ -9,9 +9,7 @@ namespace IMS_Application.Extentions
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
             services.AddScoped<IAuthService, AuthService>();
-            services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<IDepartmentService, DepartmentService>();
-            //services.AddScoped<IInventoryService, InventoryService>();
 
             return services;
         }
