@@ -11,7 +11,7 @@ namespace IMS_Application.Interfaces
         Task<int> CreateTicketAsync(CreateTicketRequestDto dto, int createdBy);
         Task<Ticket> GetTicketByIdAsync(int ticketId);
         Task<List<Ticket>> SearchTicketsAsync(string query, int userId, string roleName);
-        Task<TicketComment> AddCommentAsync(int ticketId, AddTicketCommentRequestDto dto, int userId);
-        Task UpdateStatusAsync(int ticketId, UpdateTicketStatusRequestDto dto, int userId);
+        Task<TicketComment> AddCommentAsync(int ticketId, string commentText, int userId);
+        Task UpdateStatusAsync(int ticketId, string status, int userId);
     }
 }

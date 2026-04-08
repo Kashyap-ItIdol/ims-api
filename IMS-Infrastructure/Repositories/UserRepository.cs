@@ -28,7 +28,7 @@ namespace IMS_Infrastructure.Repositories
         {
             return await _dbSet
                 .Include(u => u.RefreshTokens)
-                .Include(u => u.Role) //  need the Role to generate the new JWT claims!
+                .Include(u => u.Role) 
                 .FirstOrDefaultAsync(u => u.RefreshTokens.Any(rt => rt.Token == refreshToken));
         }
 

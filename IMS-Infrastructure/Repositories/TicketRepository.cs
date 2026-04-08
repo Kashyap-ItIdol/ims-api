@@ -1,10 +1,9 @@
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 using IMS_Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace IMS_Infrastructure.Repositories
 {
@@ -21,14 +20,14 @@ namespace IMS_Infrastructure.Repositories
 
         public async Task AddTicketAsync(CreateTicketRequestDto request, int currentUserId)
         {
-            
+
             TicketType ticketType;
             if (!Enum.TryParse<TicketType>(request.TicketType, true, out ticketType))
-                throw new ArgumentException($"Invalid TypeName: {request.TicketType}"); 
+                throw new ArgumentException($"Invalid TypeName: {request.TicketType}");
 
             TicketPriority ticketPriority;
             if (!Enum.TryParse<TicketPriority>(request.Priority, true, out ticketPriority))
-                throw new ArgumentException($"Invalid PriorityName: {request.Priority}"); 
+                throw new ArgumentException($"Invalid PriorityName: {request.Priority}");
 
             var now = DateTime.UtcNow;
             var ticket = new Ticket
@@ -49,50 +48,12 @@ namespace IMS_Infrastructure.Repositories
             var assignment = new TicketAssignment
             {
                 TicketId = ticket.Id,
-                assignedTo = request.assignedTo, 
+                assignedTo = request.assignedTo,
                 assigned_by = currentUserId,
                 assigned_at = now,
                 status = "Active"
             };
             _context.TicketAssignments.Add(assignment);
-            await _context.SaveChangesAsync();
-        }
-
-
-
-        public async Task UpdateTicketStatusAsync(UpdateTicketStatusRequestDto request, int updatedBy)
-        {
-            var ticket = await _context.Tickets
-                .Include(t => t.TicketAssignments)
-                .FirstOrDefaultAsync(t => t.Id == request.TicketId);
-            if (ticket == null)
-            {
-                throw new ArgumentException("Ticket not found.");
-            }
-
-            if (updatedBy != ticket.CreatedBy && 
-                !ticket.TicketAssignments.Any(a => a.assignedTo == updatedBy && a.status == "Active"))
-            {
-                throw new ArgumentException("You are not authorized to update this ticket status.");
-            }
-
-            Status newStatus;
-            if (!Enum.TryParse<Status>(request.Status, true, out newStatus))
-                throw new ArgumentException($"Invalid status: {request.Status}.");
-
-            var history = new TicketStatusHistory
-            {
-                TicketId = request.TicketId,
-                OldStatusId = (int)ticket.Status,
-                NewStatusId = (int)newStatus,
-                ChangedBy = updatedBy,
-                ChangedAt = DateTime.UtcNow
-            };
-            _context.TicketStatusHistories.Add(history);
-
-            ticket.Status = newStatus;
-            ticket.UpdatedAt = DateTime.UtcNow;
-
             await _context.SaveChangesAsync();
         }
 
@@ -173,13 +134,13 @@ namespace IMS_Infrastructure.Repositories
         public async Task<int> CreateTicketAsync(CreateTicketRequestDto dto, int createdBy)
         {
             await AddTicketAsync(dto, createdBy);
-            
+
             return await _context.Tickets.MaxAsync(t => (int?)t.Id) ?? 0;
         }
 
-        public async Task<TicketComment> AddCommentAsync(int ticketId, AddTicketCommentRequestDto dto, int currentUserId)
+        public async Task<TicketComment> AddCommentAsync(int ticketId, string commentText, int currentUserId)
         {
-            if (string.IsNullOrWhiteSpace(dto.CommentText))
+            if (string.IsNullOrWhiteSpace(commentText))
             {
                 throw new ArgumentException("Comment text cannot be empty.");
             }
@@ -192,7 +153,7 @@ namespace IMS_Infrastructure.Repositories
                 throw new ArgumentException("Ticket not found.");
             }
 
-            if (currentUserId != ticket.CreatedBy && 
+            if (currentUserId != ticket.CreatedBy &&
                 !ticket.TicketAssignments.Any(a => a.assignedTo == currentUserId && a.status == "Active"))
             {
                 throw new ArgumentException("You are not authorized to comment on this ticket.");
@@ -202,7 +163,7 @@ namespace IMS_Infrastructure.Repositories
             {
                 TicketId = ticketId,
                 UserId = currentUserId,
-                CommentText = dto.CommentText,
+                CommentText = commentText,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -212,7 +173,7 @@ namespace IMS_Infrastructure.Repositories
             return comment;
         }
 
-        public async Task UpdateStatusAsync(int ticketId, UpdateTicketStatusRequestDto dto, int currentUserId)
+        public async Task UpdateStatusAsync(int ticketId, string status, int currentUserId)
         {
             var ticket = await _context.Tickets
                 .Include(t => t.TicketAssignments)
@@ -222,15 +183,15 @@ namespace IMS_Infrastructure.Repositories
                 throw new ArgumentException("Ticket not found.");
             }
 
-            if (currentUserId != ticket.CreatedBy && 
+            if (currentUserId != ticket.CreatedBy &&
                 !ticket.TicketAssignments.Any(a => a.assignedTo == currentUserId && a.status == "Active"))
             {
                 throw new ArgumentException("You are not authorized to update this ticket status.");
             }
 
             Status newStatus;
-            if (!Enum.TryParse<Status>(dto.Status, true, out newStatus))
-                throw new ArgumentException($"Invalid status: {dto.Status}.");
+            if (!Enum.TryParse<Status>(status, true, out newStatus))
+                throw new ArgumentException($"Invalid status: {status}.");
 
             var history = new TicketStatusHistory
             {

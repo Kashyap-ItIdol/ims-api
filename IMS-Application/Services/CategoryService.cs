@@ -21,25 +21,25 @@ namespace IMS_Application.Services
             _mapper = mapper;
         }
 
-        public async Task<Result<ListCategoriesDto>> CreateCategoryAsync(CreateCategoryRequestDto request, int currentUserId)
+        public async Task<Result<ListCategoriesDto>> CreateCategoryAsync(string name, int currentUserId)
         {
-           
-            var existingCategory = await _categoryRepository.GetByNameAsync(request.Name);
+
+            var existingCategory = await _categoryRepository.GetByNameAsync(name);
             if (existingCategory != null)
             {
-                
+
                 return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryalreadyExist, 400);
             }
 
             int createdBy = currentUserId;
             if (createdBy <= 0)
             {
-                return Result<ListCategoriesDto>.Failure(ErrorMessages.InvalidCredentials,401);
+                return Result<ListCategoriesDto>.Failure(ErrorMessages.InvalidCredentials, 401);
             }
 
             var category = new Category
             {
-                Name = request.Name,
+                Name = name,
                 CreatedBy = createdBy,
                 IsActive = true
             };
@@ -49,14 +49,9 @@ namespace IMS_Application.Services
             var CategoriesDto = new ListCategoriesDto
             {
                 Id = category.Id,
-                Name = request.Name,
+                Name = name,
                 CreatedBy = createdBy
             };
-
-            
-            var createdCategory = await _categoryRepository.GetByNameAsync(request.Name);
-            var allCategories = await _categoryRepository.GetAllActiveCategoryNamesAsync();
-
             return Result<ListCategoriesDto>.Success(CategoriesDto, SuccessMessages.CategoryCreated);
         }
 

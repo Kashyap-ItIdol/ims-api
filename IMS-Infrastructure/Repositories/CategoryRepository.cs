@@ -20,11 +20,12 @@ namespace IMS_Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<Category?> GetByNameAsync(string name)
+        public async Task<Category> GetByNameAsync(string name)
         {
-            return await _context.Categories
+            var category = await _context.Categories
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Name.ToLower() == name.ToLower());
+            return category ?? throw new InvalidOperationException($"{nameof(Category)} not found.");
         }
 
         public async Task<List<string>> GetAllActiveCategoryNamesAsync()

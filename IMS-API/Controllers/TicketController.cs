@@ -54,8 +54,8 @@ namespace IMS_API.Controllers
             }
         }
 
-        [HttpPost("{ticketId}/comments")]
-        public async Task<IActionResult> AddComment(int ticketId, [FromBody] AddTicketCommentRequestDto dto)
+[HttpPost("{ticketId}/comments")]
+        public async Task<IActionResult> AddComment(int ticketId, [FromQuery] string commentText)
         {
             try
             {
@@ -66,13 +66,13 @@ namespace IMS_API.Controllers
                     return BadRequest(errorResponse);
                 }
 
-                if (string.IsNullOrWhiteSpace(dto.CommentText))
+                if (string.IsNullOrWhiteSpace(commentText))
                 {
                     var errorResponse = Result<object>.Failure(ErrorMessages.CommentRequires, 400);
                     return BadRequest(errorResponse);
                 }
 
-                var result = await _ticketService.AddCommentAsync(ticketId, dto, currentUserId);
+                var result = await _ticketService.AddCommentAsync(ticketId, commentText, currentUserId);
 
                 var successResponse = Result<TicketCommentResponseDto>.Success(result,
                     SuccessMessages.CommentCreated
@@ -94,7 +94,7 @@ namespace IMS_API.Controllers
         }
 
         [HttpPatch("{ticketId}/status")]
-        public async Task<IActionResult> UpdateStatus(int ticketId, [FromBody] UpdateTicketStatusRequestDto dto)
+        public async Task<IActionResult> UpdateStatus(int ticketId, [FromQuery] string status)
         {
             try
             {
@@ -105,7 +105,7 @@ namespace IMS_API.Controllers
                     return BadRequest(errorResponse);
                 }
 
-                var result = await _ticketService.UpdateStatusAsync(ticketId, dto, currentUserId);
+                var result = await _ticketService.UpdateStatusAsync(ticketId, status, currentUserId);
 
                 var successResponse = Result<UpdateTicketStatusResponseDto>.Success(result,
                    SuccessMessages.StatusUpdated
