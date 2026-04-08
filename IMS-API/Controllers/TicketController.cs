@@ -10,7 +10,7 @@ using IMS_API.Controllers.Base;
 namespace IMS_API.Controllers
 {
     [Route("api/[controller]")]
-    [Authorize] // Require auth to get CreatedBy from claims
+    [Authorize] 
     public class TicketController : BaseController
     {
         private readonly ITicketService _ticketService;

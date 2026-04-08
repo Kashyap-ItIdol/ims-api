@@ -1,4 +1,5 @@
 using IMS_API.Controllers.Base;
+using IMS_Application.Common.Constants;
 using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -25,7 +26,7 @@ namespace IMS_API.Controllers
             var userIdClaim = User.FindFirst("userId")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdClaim, out int createdBy))
             {
-                return Unauthorized("User ID not found in claims");
+                return Unauthorized(new { success = false, message = ErrorMessages.UserNotFound });
             }
 
             var result = await _categoryService.CreateCategoryAsync(request, createdBy);

@@ -23,7 +23,7 @@ namespace IMS_Application.Services
 
         public async Task<Result<ListCategoriesDto>> CreateCategoryAsync(CreateCategoryRequestDto request, int currentUserId)
         {
-            // Check if category name already exists
+           
             var existingCategory = await _categoryRepository.GetByNameAsync(request.Name);
             if (existingCategory != null)
             {
@@ -53,7 +53,7 @@ namespace IMS_Application.Services
                 CreatedBy = createdBy
             };
 
-            // Fetch the created category for full details
+            
             var createdCategory = await _categoryRepository.GetByNameAsync(request.Name);
             var allCategories = await _categoryRepository.GetAllActiveCategoryNamesAsync();
 

@@ -11,11 +11,12 @@ namespace IMS_Application.Common.Constants
         public const string InvalidRefreshToken = "Invalid refresh token.";
         public const string InvalidOrExpiredToken = "Invalid or expired refresh token. Please log in again.";
         public const string NoRefreshToken = "No refresh token found.";
-
-        public const string CategoryalreadyExist = "Category Already Exist";
         public const string ServerError = "Internal server error.";
         public const string CommentRequires = "Comment text is required";
         public const string TicketIdNotExist = "Ticket ID does not exist";
+        public const string CategoryalreadyExist = "Category Already Exist";
+        public const string UserNotFound = "User ID not found in claims";
+
 
 
 
