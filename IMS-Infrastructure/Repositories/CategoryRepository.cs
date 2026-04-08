@@ -17,6 +17,7 @@ namespace IMS_Infrastructure.Repositories
         public async Task AddAsync(Category category)
         {
             _context.Categories.Add(category);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<Category?> GetByNameAsync(string name)

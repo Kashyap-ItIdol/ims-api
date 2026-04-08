@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace IMS_Infrastructure.Services
@@ -21,6 +22,7 @@ namespace IMS_Infrastructure.Services
         {
             var claims = new[]
             {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Email),
                 new Claim(ClaimTypes.Role, user.Role.Name),
                 new Claim("userId", user.Id.ToString())
@@ -29,9 +31,7 @@ namespace IMS_Infrastructure.Services
             var jwtKey = _config["JwtSettings:Key"]
                     ?? throw new InvalidOperationException("JWT Key is not configured");
 
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtKey)
-            );
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -48,7 +48,12 @@ namespace IMS_Infrastructure.Services
 
         public string GenerateRefreshToken()
         {
-            return Guid.NewGuid().ToString();
+            //  64 bytes of cryptographically secure randomness
+            var randomNumber = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+
+            return Convert.ToBase64String(randomNumber);
         }
     }
 }

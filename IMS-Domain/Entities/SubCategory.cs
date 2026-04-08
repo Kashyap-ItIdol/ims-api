@@ -20,5 +20,6 @@ namespace IMS_Domain.Entities
         public int? UpdatedBy { get; set; }
 
         public bool IsActive { get; set; } = true;
+        public ICollection<Inventory> Inventory { get; set; } = new List<Inventory>();
     }
 }

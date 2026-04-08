@@ -1,15 +1,16 @@
+using IMS_API.Controllers.Base;
 using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace IMS_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Roles = "Admin,SupportEngineer")]
-    public class CategoryController : ControllerBase
+    public class CategoryController : BaseController
     {
         private readonly ICategoryService _categoryService;
 
@@ -28,7 +29,7 @@ namespace IMS_API.Controllers
             }
 
             var result = await _categoryService.CreateCategoryAsync(request, createdBy);
-            return Ok(result);
+            return FromResult(result);
         }
 
         
@@ -36,7 +37,7 @@ namespace IMS_API.Controllers
         public async Task<IActionResult> GetAll()
         {
             var result = await _categoryService.GetAllCategoriesAsync();
-            return Ok(result);
+            return FromResult(result);
         }
     }
 }

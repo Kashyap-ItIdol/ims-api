@@ -22,40 +22,13 @@ namespace IMS_Infrastructure.Repositories
         public async Task AddTicketAsync(CreateTicketRequestDto request, int currentUserId)
         {
             
-            var lowerType = request.TypeId switch
-            {
-                1 => "hardware",
-                2 => "software",
-                3 => "server",
-                4 => "website",
-                _ => throw new ArgumentException($"Invalid TypeId: {request.TypeId}")
-            };
-
             TicketType ticketType;
-            if (lowerType == "hardware") ticketType = TicketType.Hardware;
-            else if (lowerType == "software") ticketType = TicketType.Software;
-            else if (lowerType == "server") ticketType = TicketType.Server;
-            else if (lowerType == "website") ticketType = TicketType.Website;
-            else throw new ArgumentException($"Invalid TicketType from TypeId: {request.TypeId}");
-
-            var priorityStr = request.PriorityId switch
-            {
-                1 => "low",
-                2 => "medium",
-                3 => "high",
-                4 => "critical",
-                _ => throw new ArgumentException("Invalid PriorityId.")
-            };
+            if (!Enum.TryParse<TicketType>(request.TicketType, true, out ticketType))
+                throw new ArgumentException($"Invalid TypeName: {request.TicketType}"); 
 
             TicketPriority ticketPriority;
-            switch (priorityStr)
-            {
-                case "low": ticketPriority = TicketPriority.Low; break;
-                case "medium": ticketPriority = TicketPriority.Medium; break;
-                case "high": ticketPriority = TicketPriority.High; break;
-                case "critical": ticketPriority = TicketPriority.Critical; break;
-                default: throw new ArgumentException("Invalid TicketPriority.");
-            }
+            if (!Enum.TryParse<TicketPriority>(request.Priority, true, out ticketPriority))
+                throw new ArgumentException($"Invalid PriorityName: {request.Priority}"); 
 
             var now = DateTime.UtcNow;
             var ticket = new Ticket
@@ -76,7 +49,7 @@ namespace IMS_Infrastructure.Repositories
             var assignment = new TicketAssignment
             {
                 TicketId = ticket.Id,
-                assignedTo = currentUserId, 
+                assignedTo = request.assignedTo, 
                 assigned_by = currentUserId,
                 assigned_at = now,
                 status = "Active"
@@ -103,14 +76,9 @@ namespace IMS_Infrastructure.Repositories
                 throw new ArgumentException("You are not authorized to update this ticket status.");
             }
 
-            Status newStatus = request.StatusId switch
-            {
-                1 => Status.Open,
-                2 => Status.InProgress,
-                3 => Status.Solved,
-                4 => Status.Closed,
-                _ => throw new ArgumentException("Invalid StatusId.")
-            };
+            Status newStatus;
+            if (!Enum.TryParse<Status>(request.Status, true, out newStatus))
+                throw new ArgumentException($"Invalid status: {request.Status}.");
 
             var history = new TicketStatusHistory
             {
@@ -260,14 +228,9 @@ namespace IMS_Infrastructure.Repositories
                 throw new ArgumentException("You are not authorized to update this ticket status.");
             }
 
-            Status newStatus = dto.StatusId switch
-            {
-                1 => Status.Open,
-                2 => Status.InProgress,
-                3 => Status.Solved,
-                4 => Status.Closed,
-                _ => throw new ArgumentException("Invalid StatusId.")
-            };
+            Status newStatus;
+            if (!Enum.TryParse<Status>(dto.Status, true, out newStatus))
+                throw new ArgumentException($"Invalid status: {dto.Status}.");
 
             var history = new TicketStatusHistory
             {

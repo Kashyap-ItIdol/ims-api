@@ -1,9 +1,11 @@
 using AutoMapper;
+using IMS_Application.Common.Constants;
+using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
 using IMS_Application.Services.Interfaces;
 using IMS_Domain.Entities;
-using System.Security.Claims;
+
 
 
 namespace IMS_Application.Services
@@ -19,19 +21,20 @@ namespace IMS_Application.Services
             _mapper = mapper;
         }
 
-        public async Task<ApiResponse<object>> CreateCategoryAsync(CreateCategoryRequestDto request, int currentUserId)
+        public async Task<Result<ListCategoriesDto>> CreateCategoryAsync(CreateCategoryRequestDto request, int currentUserId)
         {
             // Check if category name already exists
             var existingCategory = await _categoryRepository.GetByNameAsync(request.Name);
             if (existingCategory != null)
             {
-                return ApiResponse<object>.APIResponse(400, "Category name already exists", null, false);
+                
+                return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryalreadyExist, 400);
             }
 
             int createdBy = currentUserId;
             if (createdBy <= 0)
             {
-                return ApiResponse<object>.APIResponse(401, "Invalid CreatedBy", null, false);
+                return Result<ListCategoriesDto>.Failure(ErrorMessages.InvalidCredentials,401);
             }
 
             var category = new Category
@@ -43,18 +46,25 @@ namespace IMS_Application.Services
 
             await _categoryRepository.AddAsync(category);
 
+            var CategoriesDto = new ListCategoriesDto
+            {
+                Id = category.Id,
+                Name = request.Name,
+                CreatedBy = createdBy
+            };
+
             // Fetch the created category for full details
             var createdCategory = await _categoryRepository.GetByNameAsync(request.Name);
             var allCategories = await _categoryRepository.GetAllActiveCategoryNamesAsync();
 
-            return ApiResponse<object>.APIResponse(200, "create category successfully", createdCategory, true);
+            return Result<ListCategoriesDto>.Success(CategoriesDto, SuccessMessages.CategoryCreated);
         }
 
-        public async Task<ApiResponse<List<ListCategoriesDto>>> GetAllCategoriesAsync()
+        public async Task<Result<List<ListCategoriesDto>>> GetAllCategoriesAsync()
         {
             var categories = await _categoryRepository.GetAllActiveCategoriesAsync();
             var categoryDtos = _mapper.Map<List<ListCategoriesDto>>(categories);
-            return ApiResponse<List<ListCategoriesDto>>.APIResponse(200, "get all categories successfully", categoryDtos, true);
+            return Result<List<ListCategoriesDto>>.Success(categoryDtos, SuccessMessages.AllCategories);
         }
 
 

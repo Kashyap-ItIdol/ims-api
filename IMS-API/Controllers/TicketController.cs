@@ -1,15 +1,17 @@
+using IMS_Application.Common.Constants;
+using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using IMS_API.Controllers.Base;
 
 namespace IMS_API.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
     [Authorize] // Require auth to get CreatedBy from claims
-    public class TicketController : ControllerBase
+    public class TicketController : BaseController
     {
         private readonly ITicketService _ticketService;
 
@@ -17,6 +19,7 @@ namespace IMS_API.Controllers
         {
             _ticketService = ticketService;
         }
+
 
         [HttpPost("create")]
         public async Task<IActionResult> CreateTicket(CreateTicketRequestDto dto)
@@ -26,28 +29,27 @@ namespace IMS_API.Controllers
                 var userIdClaim = User.FindFirst("userId")?.Value;
                 if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int createdBy))
                 {
-                    var errorResponse = ApiResponse<object>.APIResponse(400, "Invalid user context.", null,false);
+                    var errorResponse = Result<object>.Failure(ErrorMessages.InvalidCredentials, 400);
                     return BadRequest(errorResponse);
                 }
 
                 var result = await _ticketService.CreateTicketAsync(dto, createdBy);
 
-                var successResponse = ApiResponse<TicketResponseDto>.APIResponse(201,
-                    "Ticket created successfully",
-                    null,
-                    true
+                var successResponse = Result<TicketResponseDto>.Success(null,
+                   SuccessMessages.TicketCreated
+                   
                 );
 
-                return Ok(successResponse);
+                return FromResult(successResponse);
             }
             catch (ArgumentException ex)
             {
-                var errorResponse = ApiResponse<object>.APIResponse(400,ex.Message, null, false);
+                var errorResponse = Result<object>.Failure(ex.Message, 400);
                 return BadRequest(errorResponse);
             }
             catch (Exception ex)
             {
-                var errorResponse = ApiResponse<object>.APIResponse(500, "Internal server error.", null, false);
+                var errorResponse = Result<object>.Failure(ErrorMessages.ServerError, 500);
                 return BadRequest(errorResponse);
             }
         }
@@ -60,34 +62,33 @@ namespace IMS_API.Controllers
                 var userIdClaim = User.FindFirst("userId")?.Value;
                 if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int currentUserId))
                 {
-                    var errorResponse = ApiResponse<object>.APIResponse(400, "Invalid user context.", null, false);
+                    var errorResponse = Result<object>.Failure(ErrorMessages.InvalidCredentials,400);
                     return BadRequest(errorResponse);
                 }
 
                 if (string.IsNullOrWhiteSpace(dto.CommentText))
                 {
-                    var errorResponse = ApiResponse<object>.APIResponse(400, "Comment text is required.", null, false);
+                    var errorResponse = Result<object>.Failure(ErrorMessages.CommentRequires, 400);
                     return BadRequest(errorResponse);
                 }
 
                 var result = await _ticketService.AddCommentAsync(ticketId, dto, currentUserId);
 
-                var successResponse = ApiResponse<TicketCommentResponseDto>.APIResponse(201,
-                    "Comment added successfully",
-                    result,
-                    true
+                var successResponse = Result<TicketCommentResponseDto>.Success(result,
+                    SuccessMessages.CommentCreated
                 );
 
-                return Ok(successResponse);
+                return FromResult(successResponse);
+
             }
             catch (ArgumentException ex)
             {
-                var errorResponse = ApiResponse<object>.APIResponse(400, ex.Message, null, false);
+                var errorResponse = Result<object>.Failure( ex.Message, 400);
                 return ticketId == 0 ? NotFound(errorResponse) : BadRequest(errorResponse);
             }
             catch (Exception ex)
             {
-                var errorResponse = ApiResponse<object>.APIResponse(500, "Internal server error.", null, false);
+                var errorResponse = Result<object>.Failure(ErrorMessages.ServerError, 500);
                 return BadRequest(errorResponse);
             }
         }
@@ -100,28 +101,26 @@ namespace IMS_API.Controllers
                 var userIdClaim = User.FindFirst("userId")?.Value;
                 if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int currentUserId))
                 {
-                    var errorResponse = ApiResponse<object>.APIResponse(400, "Invalid user context.", null, false);
+                    var errorResponse = Result<object>.Failure(ErrorMessages.InvalidCredentials, 400); 
                     return BadRequest(errorResponse);
                 }
 
                 var result = await _ticketService.UpdateStatusAsync(ticketId, dto, currentUserId);
 
-                var successResponse = ApiResponse<UpdateTicketStatusResponseDto>.APIResponse(200,
-                    "Status updated successfully",
-                    result,
-                    true
+                var successResponse = Result<UpdateTicketStatusResponseDto>.Success(result,
+                   SuccessMessages.StatusUpdated
                 );
 
-                return Ok(successResponse);
+                return FromResult(successResponse);
             }
             catch (ArgumentException ex)
             {
-                var errorResponse = ApiResponse<object>.APIResponse(400, ex.Message, null, false);
+                var errorResponse = Result<object>.Failure( ex.Message, 400);
                 return BadRequest(errorResponse);
             }
             catch (Exception ex)
             {
-                var errorResponse = ApiResponse<object>.APIResponse(500, "Internal server error.", null, false);
+                var errorResponse = Result<object>.Failure(ErrorMessages.ServerError, 500);
                 return BadRequest(errorResponse);
             }
         }
@@ -134,28 +133,26 @@ namespace IMS_API.Controllers
                 var userIdClaim = User.FindFirst("userId")?.Value;
                 if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int currentUserId))
                 {
-                    var errorResponse = ApiResponse<object>.APIResponse(400, "Invalid user context.", null, false);
+                    var errorResponse = Result<object>.Failure(ErrorMessages.InvalidCredentials, 400);
                     return BadRequest(errorResponse);
                 }
 
                 var result = await _ticketService.GetAllTicketsAsync(currentUserId);
 
-                var successResponse = ApiResponse<object>.APIResponse(200,
-                    "Tickets retrieved successfully",
-                    result,
-                    true
+                var successResponse = Result<object>.Success(result,
+                    SuccessMessages.AllTickets
                 );
 
-                return Ok(successResponse);
+                return FromResult(successResponse);
             }
             catch (ArgumentException ex)
             {
-                var errorResponse = ApiResponse<object>.APIResponse(400, ex.Message, null, false);
+                var errorResponse = Result<object>.Failure(ex.Message, 400);
                 return BadRequest(errorResponse);
             }
             catch (Exception ex)
             {
-                var errorResponse = ApiResponse<object>.APIResponse(500, "Internal server error.", null, false);
+                var errorResponse = Result<object>.Failure(ErrorMessages.ServerError, 500);
                 return BadRequest(errorResponse);
             }
         }
@@ -209,33 +206,31 @@ namespace IMS_API.Controllers
                 var userIdClaim = User.FindFirst("userId")?.Value;
                 if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int currentUserId))
                 {
-                    var errorResponse = ApiResponse<object>.APIResponse(400, "Invalid user context.", null, false);
+                    var errorResponse = Result<object>.Failure(ErrorMessages.InvalidCredentials, 400); 
                     return BadRequest(errorResponse);
                 }
 
                 var result = await _ticketService.GetTicketByIdAsync(ticketId, currentUserId);
                 if (result == null)
                 {
-                    var errorResponse = ApiResponse<object>.APIResponse(404, "Ticket ID does not exist", null, false);
+                    var errorResponse = Result<object>.Failure(ErrorMessages.TicketIdNotExist, 400);
                     return NotFound(errorResponse);
                 }
 
-                var successResponse = ApiResponse<object>.APIResponse(200,
-                    "Ticket retrieved successfully",
-                    result,
-                    true
+                var successResponse = Result<object>.Success(result,
+                   SuccessMessages.AllTickets
                 );
 
-                return Ok(successResponse);
+                return FromResult(successResponse);
             }
             catch (ArgumentException ex)
             {
-                var errorResponse = ApiResponse<object>.APIResponse(400, ex.Message, null, false);
+                var errorResponse = Result<object>.Failure(ex.Message, 400);
                 return BadRequest(errorResponse);
             }
             catch (Exception ex)
             {
-                var errorResponse = ApiResponse<object>.APIResponse(500, "Internal server error.", null, false);
+                var errorResponse = Result<object>.Failure(ErrorMessages.ServerError, 500);
                 return BadRequest(errorResponse);
             }
         }

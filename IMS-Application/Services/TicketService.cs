@@ -277,7 +277,7 @@ namespace IMS_Application.Services
             return new UpdateTicketStatusResponseDto
             {
                 message = "Ticket status updated successfully",
-                updatedStatus = dto.StatusId.ToString(),
+                updatedStatus = dto.Status,
                 updatedAt = DateTime.UtcNow
             };
         }

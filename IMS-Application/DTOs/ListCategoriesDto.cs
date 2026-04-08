@@ -6,5 +6,6 @@ namespace IMS_Application.DTOs
     {
         public int Id { get; set; }
         public required string Name { get; set; }
+        public int CreatedBy { get; set; }
     }
 }

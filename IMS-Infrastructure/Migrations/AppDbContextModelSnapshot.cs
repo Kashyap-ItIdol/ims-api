@@ -22,6 +22,40 @@ namespace IMS_Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("IMS_Domain.Entities.Category", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Categories", (string)null);
+                });
+
             modelBuilder.Entity("IMS_Domain.Entities.Department", b =>
                 {
                     b.Property<int>("Id")
@@ -37,49 +71,183 @@ namespace IMS_Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Departments");
+                    b.ToTable("Departments", (string)null);
 
                     b.HasData(
                         new
                         {
                             Id = 1,
-                            Name = "Backend"
+                            Name = "Sales"
                         },
                         new
                         {
                             Id = 2,
-                            Name = "Frontend"
+                            Name = "Marketing"
                         },
                         new
                         {
                             Id = 3,
-                            Name = "Product Manager"
+                            Name = "Designing"
                         },
                         new
                         {
                             Id = 4,
-                            Name = "QA"
+                            Name = "Accounts"
                         },
                         new
                         {
                             Id = 5,
-                            Name = "BA"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Name = "DevOps"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Name = "UI/UX"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Name = "Mobile App"
+                            Name = "Developer"
                         });
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.Inventory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Brand")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Condition")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("InventoryName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ItemPictureUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SerialNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("SubcategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Table")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("SerialNumber")
+                        .IsUnique();
+
+                    b.HasIndex("SubcategoryId");
+
+                    b.ToTable("Inventory");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.InventoryAssignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AssignedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("AssignedTo")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ExpectedReturnDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("InventoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Table")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryId");
+
+                    b.ToTable("InventoryAssignment");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.PurchaseDetail", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AmcExpiry")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("InventoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("InvoiceNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("PurchaseCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("PurchaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Vendor")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("WarrantyExpiry")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryId")
+                        .IsUnique();
+
+                    b.ToTable("PurchaseDetail");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.RefreshToken", b =>
@@ -141,13 +309,224 @@ namespace IMS_Infrastructure.Migrations
                         new
                         {
                             Id = 2,
-                            Name = "Employee"
+                            Name = "Support Engineer"
                         },
                         new
                         {
                             Id = 3,
-                            Name = "Support Engineer"
+                            Name = "Employee"
                         });
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.SubCategory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.ToTable("SubCategories", (string)null);
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.Ticket", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AssetId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(5000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TicketPriority")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TicketType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssetId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UpdatedAt");
+
+                    b.ToTable("Tickets");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.TicketAssignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("assignedTo")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("assigned_at")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("assigned_by")
+                        .HasColumnType("int");
+
+                    b.Property<string>("status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TicketId");
+
+                    b.HasIndex("assignedTo");
+
+                    b.HasIndex("assigned_at");
+
+                    b.HasIndex("assigned_by");
+
+                    b.ToTable("TicketAssignments");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.TicketComment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CommentText")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("TicketId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TicketComments");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.TicketStatusHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ChangedBy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NewStatusId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OldStatusId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TicketId1")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangedAt");
+
+                    b.HasIndex("ChangedBy");
+
+                    b.HasIndex("TicketId");
+
+                    b.HasIndex("TicketId1");
+
+                    b.ToTable("TicketStatusHistories");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.User", b =>
@@ -170,7 +549,7 @@ namespace IMS_Infrastructure.Migrations
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("int");
 
-                    b.Property<int>("DepartmentId")
+                    b.Property<int?>("DepartmentId")
                         .HasColumnType("int");
 
                     b.Property<string>("Email")
@@ -228,6 +607,70 @@ namespace IMS_Infrastructure.Migrations
                     b.HasIndex("IsDeleted", "IsActive");
 
                     b.ToTable("Users");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DepartmentId = 1,
+                            Email = "admin@example.com",
+                            FullName = "System Administrator",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsVerified = false,
+                            PasswordHash = "6G94qKPK8LYNjnTllCqm2G3BUM08AzOK7yW30tfjrMc=",
+                            RoleId = 1
+                        });
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.Category", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.Inventory", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.Category", "Category")
+                        .WithMany("Inventory")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("IMS_Domain.Entities.SubCategory", "Subcategory")
+                        .WithMany("Inventory")
+                        .HasForeignKey("SubcategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Subcategory");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.InventoryAssignment", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.Inventory", "Inventory")
+                        .WithMany("InventoryAssignments")
+                        .HasForeignKey("InventoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Inventory");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.PurchaseDetail", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.Inventory", "Inventory")
+                        .WithOne("PurchaseDetail")
+                        .HasForeignKey("IMS_Domain.Entities.PurchaseDetail", "InventoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Inventory");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.RefreshToken", b =>
@@ -241,13 +684,96 @@ namespace IMS_Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("IMS_Domain.Entities.SubCategory", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.Category", "Category")
+                        .WithMany("SubCategories")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IMS_Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("IMS_Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.Ticket", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.TicketAssignment", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.Ticket", null)
+                        .WithMany("TicketAssignments")
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IMS_Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("assignedTo")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("IMS_Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("assigned_by")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.TicketComment", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.Ticket", null)
+                        .WithMany("Comments")
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IMS_Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.TicketStatusHistory", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("ChangedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("IMS_Domain.Entities.Ticket", null)
+                        .WithMany()
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IMS_Domain.Entities.Ticket", null)
+                        .WithMany("TicketStatusHistories")
+                        .HasForeignKey("TicketId1");
+                });
+
             modelBuilder.Entity("IMS_Domain.Entities.User", b =>
                 {
                     b.HasOne("IMS_Domain.Entities.Department", "Department")
                         .WithMany("Users")
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("DepartmentId");
 
                     b.HasOne("IMS_Domain.Entities.Role", "Role")
                         .WithMany("Users")
@@ -260,14 +786,43 @@ namespace IMS_Infrastructure.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("IMS_Domain.Entities.Category", b =>
+                {
+                    b.Navigation("Inventory");
+
+                    b.Navigation("SubCategories");
+                });
+
             modelBuilder.Entity("IMS_Domain.Entities.Department", b =>
                 {
                     b.Navigation("Users");
                 });
 
+            modelBuilder.Entity("IMS_Domain.Entities.Inventory", b =>
+                {
+                    b.Navigation("InventoryAssignments");
+
+                    b.Navigation("PurchaseDetail")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("IMS_Domain.Entities.Role", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.SubCategory", b =>
+                {
+                    b.Navigation("Inventory");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.Ticket", b =>
+                {
+                    b.Navigation("Comments");
+
+                    b.Navigation("TicketAssignments");
+
+                    b.Navigation("TicketStatusHistories");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.User", b =>

@@ -1,0 +1,38 @@
+﻿using IMS_Application.Interfaces;
+using IMS_Domain.Entities;
+using IMS_Infrastructure.Data;
+
+namespace IMS_Infrastructure.Repositories
+{
+    public class UnitOfWork : IUnitOfWork
+    {
+        private readonly AppDbContext _context;
+
+        // Lazy loading the repository ensures we only create it if it's actually used in the request
+        private IUserRepository? _users;
+        public IUserRepository Users => _users ??= new UserRepository(_context);
+
+        // Implement the new generic properties
+        private IRepository<Role>? _roles;
+        public IRepository<Role> Roles => _roles ??= new Repository<Role>(_context);
+
+        private IRepository<Department>? _departments;
+        public IRepository<Department> Departments => _departments ??= new Repository<Department>(_context);
+
+        public UnitOfWork(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            return await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        public void Dispose()
+        {
+            _context.Dispose();
+            GC.SuppressFinalize(this);
+        }
+    }
+}
