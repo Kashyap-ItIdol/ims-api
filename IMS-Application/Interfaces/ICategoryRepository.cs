@@ -6,7 +6,7 @@ namespace IMS_Application.Interfaces
 {
     public interface ICategoryRepository
     {
-        Task<Category> GetByNameAsync(string name);
+        Task<Category?> GetByNameAsync(string name);
         Task AddAsync(Category category);
         Task<List<Category>> GetAllActiveCategoriesAsync();
         Task<List<string>> GetAllActiveCategoryNamesAsync();
