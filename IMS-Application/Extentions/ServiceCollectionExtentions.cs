@@ -10,6 +10,9 @@ namespace IMS_Application.Extentions
         {
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IRoleService, RoleService>();
+            
+            services.AddScoped<ITicketService, TicketService>();
+            services.AddScoped<ICategoryService, CategoryService>();
 
             return services;
         }

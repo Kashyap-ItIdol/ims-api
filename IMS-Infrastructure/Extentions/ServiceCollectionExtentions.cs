@@ -1,5 +1,6 @@
 ﻿using IMS_Application.Interfaces;
 using IMS_Application.Services.Interfaces;
+
 using IMS_Infrastructure.Data;
 using IMS_Infrastructure.Repositories;
 using IMS_Infrastructure.Services;
@@ -17,9 +18,13 @@ namespace IMS_Infrastructure.Extentions
                 options.UseSqlServer(config.GetConnectionString("DefaultConnection")));
 
             services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             services.AddScoped<IRoleRepository, RoleRepository>();
-
+            services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+            services.AddScoped<ITicketRepository, TicketRepository>();
+            services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<ITokenService, TokenService>();
 
             return services;

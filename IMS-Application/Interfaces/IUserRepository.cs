@@ -7,5 +7,6 @@ namespace IMS_Application.Interfaces
         Task<User> GetByEmailAsync(string email);
         Task AddAsync(User user);
         Task<bool> CheckUserExixst(string email);
+        Task<User?> GetByIdAsync(int id);
     }
 }

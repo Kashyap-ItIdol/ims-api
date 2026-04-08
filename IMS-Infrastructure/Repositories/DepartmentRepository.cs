@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IMS_Infrastructure.Repositories
 {
-    public class DepartmentRepository : IDepartmentRepository
+public class DepartmentRepository : IDepartmentRepository
     {
         private readonly AppDbContext _context;
         private readonly IMapper _mapper;

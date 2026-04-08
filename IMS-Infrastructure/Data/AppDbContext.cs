@@ -1,4 +1,5 @@
-﻿using IMS_Domain.Entities;
+﻿﻿
+using IMS_Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace IMS_Infrastructure.Data
@@ -14,14 +15,17 @@ namespace IMS_Infrastructure.Data
         public DbSet<Department> Departments { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<Category> Categories { get; set; }
+
+        public DbSet<SubCategory> SubCategories { get; set; }
+        public DbSet<Ticket> Tickets { get; set; }
+        public DbSet<TicketAssignment> TicketAssignments { get; set; }
+        public DbSet<TicketComment> TicketComments { get; set; }
+        public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; } 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-
-            // Automatically apply all configurations
+        {          
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         }
-
     }
 }
