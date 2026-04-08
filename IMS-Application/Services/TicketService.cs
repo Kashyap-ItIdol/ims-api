@@ -1,12 +1,8 @@
-using IMS_Application.DTOs;
-using IMS_Application.Services.Interfaces;
 using AutoMapper;
-using IMS_Domain.Entities;
+using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
-using System;
-using System.Linq;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using IMS_Application.Services.Interfaces;
+using IMS_Domain.Entities;
 
 namespace IMS_Application.Services
 {
@@ -38,7 +34,7 @@ namespace IMS_Application.Services
 
             var tickets = await _ticketRepository.GetTicketsForUserAsync(currentUserId, user.Role.Name);
 
-            // Collect unique user IDs for batch fetch
+
             var userIds = new HashSet<int>();
             userIds.Add(currentUserId);
             foreach (var ticket in tickets)
@@ -132,7 +128,7 @@ namespace IMS_Application.Services
             var tickets = await _ticketRepository.SearchTicketsAsync(q, currentUserId, user.Role.Name);
             Console.WriteLine($"[TICKET-SERVICE] Repo returned {tickets.Count} tickets");
 
-            // Collect unique user IDs for batch fetch
+
             var userIds = new HashSet<int>();
             userIds.Add(currentUserId);
             foreach (var ticket in tickets)
@@ -212,7 +208,7 @@ namespace IMS_Application.Services
 
         public async Task<TicketResponseDto> CreateTicketAsync(IMS_Application.DTOs.CreateTicketRequestDto dto, int createdBy)
         {
-            // Validate assignedTo is Support Engineer
+
             var assignee = await _userRepository.GetByIdAsync(dto.assignedTo);
             if (assignee == null || assignee.Role.Name != "Support Engineer")
             {
@@ -220,7 +216,7 @@ namespace IMS_Application.Services
             }
 
             var ticketId = await _ticketRepository.CreateTicketAsync(dto, createdBy);
-    
+
             var ticket = await _ticketRepository.GetTicketByIdAsync(ticketId);
             if (ticket == null)
             {
@@ -239,8 +235,8 @@ namespace IMS_Application.Services
             if (latestAssign != null)
             {
                 var assigneeUser = await _userRepository.GetByIdAsync(latestAssign.assignedTo);
-                assignedToInfo = assigneeUser != null 
-                    ? new UserInfo { id = assigneeUser.Id, name = assigneeUser.FullName } 
+                assignedToInfo = assigneeUser != null
+                    ? new UserInfo { id = assigneeUser.Id, name = assigneeUser.FullName }
                     : new UserInfo { id = 0, name = "Unassigned" };
             }
 
@@ -286,8 +282,6 @@ namespace IMS_Application.Services
         {
             var ticket = await _ticketRepository.GetTicketByIdAsync(ticketId);
             if (ticket == null) return null;
-
-            // Auth check
             if (currentUserId != ticket.CreatedBy && !ticket.TicketAssignments.Any(a => a.status == "Active" && a.assignedTo == currentUserId))
             {
                 throw new ArgumentException("You are not authorized to view this ticket.");
@@ -335,7 +329,7 @@ namespace IMS_Application.Services
                         CommentText = c.CommentText,
                         CreatedAt = c.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")
                     }).ToList()
-                
+
             };
             return dto;
         }
