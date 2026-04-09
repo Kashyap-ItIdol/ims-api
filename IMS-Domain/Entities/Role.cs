@@ -1,10 +1,10 @@
 ﻿namespace IMS_Domain.Entities
 {
-    public class Role : BaseEntity
+    public class Role
     {
-     //   public int Id { get; set; }
+        public int Id { get; set; }
 
-        public required string Name { get; set; } = null!;
+        public required string Name { get; set; }
 
         public ICollection<User> Users { get; set; } = new List<User>();
     }

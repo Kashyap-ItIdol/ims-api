@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.Json;
 using IMS_API.ExceptionHandlers;
 using IMS_API.Extensions;
 using IMS_Application.Extentions;
@@ -11,8 +13,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
-using System.Text;
-using System.Text.Json;
 
 // 1. Create the Bootstrap Logger to catch startup errors
 Log.Logger = new LoggerConfiguration()
@@ -62,6 +62,9 @@ try
     });
 
     builder.Services.AddControllers();
+
+    builder.Services.AddScoped<IAssetRepository, AssetRepository>();
+    builder.Services.AddScoped<IAssetService, AssetService>();
 
     //  Validation Response Formatting (VERY IMPORTANT)
     builder.Services.Configure<ApiBehaviorOptions>(options =>

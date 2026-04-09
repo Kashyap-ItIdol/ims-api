@@ -1,10 +1,10 @@
-﻿using IMS_Application.DTOs;
+﻿using IMS_Application.Common.Models;
+using IMS_Domain.Entities;
 
 namespace IMS_Application.Services.Interfaces
 {
     public interface IDepartmentService
     {
-        Task<List<DepartmentDto>> GetAllDepartmentsAsync();
-        Task<DepartmentDto> GetDepartmentByIdAsync(int id);
+        Task<Result<IEnumerable<Department>>> GetAllDepartmentsAsync();
     }
 }

@@ -1,15 +1,21 @@
 ﻿using System.Collections.Generic;
 
 namespace IMS_Domain.Entities
+
 {
-    public class Category : BaseEntity
+
+    public class Category
     {
-      //  public int Id { get; set; }
 
-        public required string CategoryName { get; set; }
+        public int Id { get; set; }
 
-        // Navigation
+        public string Name { get; set; } = null!;
+
         public ICollection<SubCategory> SubCategories { get; set; } = new List<SubCategory>();
-        public ICollection<Inventory> Inventory { get; set; } = new List<Inventory>();
+
+        public ICollection<Asset> Assets { get; set; } = new List<Asset>();
+
     }
+
+
 }
