@@ -39,5 +39,14 @@ namespace IMS_Infrastructure.Repositories
                 .Include(x => x.Department)
                 .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
         }
+
+        public async Task<Dictionary<int, User>> GetUsersByIdsAsync(IEnumerable<int> ids)
+        {
+            return await _context.Users
+                .Where(x => ids.Contains(x.Id) && !x.IsDeleted)
+                .Include(x => x.Role)
+                .Include(x => x.Department)
+                .ToDictionaryAsync(x => x.Id);
+        }
     }
 }

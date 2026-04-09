@@ -101,11 +101,7 @@ namespace IMS_Application.Services
             var userIds = new HashSet<int> { currentUserId };
             userIds.UnionWith(userIdsQuery);
 
-            var userTasks = userIds.Select(id => _userRepository.GetByIdAsync(id));
-            var usersList = await Task.WhenAll(userTasks);
-            var usersDict = userIds.Zip(usersList, (id, u) => new { id, u })
-                                   .Where(x => x.u != null)
-                                   .ToDictionary(x => x.id, x => x.u!);
+            var usersDict = await _userRepository.GetUsersByIdsAsync(userIds);
 
             return tickets.OrderBy(t => t.CreatedAt)
                           .Select(t => MapToTicketResponseDto(t, usersDict))
@@ -144,12 +140,7 @@ namespace IMS_Application.Services
                 }
             }
 
-            var usersDict = new Dictionary<int, User>();
-            foreach (var id in userIds)
-            {
-                var u = await _userRepository.GetByIdAsync(id);
-                if (u != null) usersDict[id] = u;
-            }
+            var usersDict = await _userRepository.GetUsersByIdsAsync(userIds);
 
             var result = new List<TicketResponseDto>();
             foreach (var ticket in tickets.OrderBy(t => t.CreatedAt))

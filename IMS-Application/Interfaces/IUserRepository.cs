@@ -7,5 +7,6 @@ namespace IMS_Application.Interfaces
         Task<User?> GetByEmailAsync(string email);
         Task<bool> UserExistsAsync(string email);
         Task<User?> GetUserByRefreshTokenAsync(string refreshToken);
+        Task<Dictionary<int, User>> GetUsersByIdsAsync(IEnumerable<int> ids);
     }
 }
