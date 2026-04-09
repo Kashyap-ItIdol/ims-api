@@ -133,7 +133,34 @@ namespace IMS_Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Categories", (string)null);
+                    b.ToTable("Category");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Computing Device"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Peripherals"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "Networking Equipment"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Name = "Infrastructure"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Name = "Accessories"
+                        });
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.Department", b =>
@@ -178,58 +205,27 @@ namespace IMS_Infrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IsDeleted = false,
-                            Name = "Backend"
+                            Name = "Sales"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IsDeleted = false,
-                            Name = "Frontend"
+                            Name = "Marketing"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IsDeleted = false,
-                            Name = "Product Manager"
+                            Name = "Designing"
                         },
                         new
                         {
                             Id = 4,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IsDeleted = false,
-                            Name = "QA"
+                            Name = "Accounts"
                         },
                         new
                         {
                             Id = 5,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IsDeleted = false,
-                            Name = "BA"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IsDeleted = false,
-                            Name = "DevOps"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IsDeleted = false,
-                            Name = "UI/UX"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IsDeleted = false,
-                            Name = "Mobile App"
+                            Name = "Developer"
                         });
                 });
 
@@ -249,28 +245,21 @@ namespace IMS_Infrastructure.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
-                    b.Property<int>("Condition")
-                        .HasColumnType("int");
+                    b.Property<string>("Condition")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                    b.Property<string>("InventoryName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
-                    b.Property<int?>("CreatedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("ItemPictureUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("DeletedBy")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ItemName")
+                    b.Property<string>("Location")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
@@ -296,6 +285,11 @@ namespace IMS_Infrastructure.Migrations
 
                     b.Property<int?>("UpdatedBy")
                         .HasColumnType("int");
+
+                    b.Property<string>("Table")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
@@ -497,7 +491,24 @@ namespace IMS_Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Roles", (string)null);
+                    b.ToTable("Roles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Admin"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Support Engineer"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "Employee"
+                        });
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.SubCategory", b =>
@@ -541,7 +552,63 @@ namespace IMS_Infrastructure.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("SubCategories", (string)null);
+                    b.ToTable("SubCategory");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CategoryId = 1,
+                            Name = "Laptop"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CategoryId = 1,
+                            Name = "CPU"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CategoryId = 2,
+                            Name = "Mouse"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CategoryId = 2,
+                            Name = "Keyboard"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            CategoryId = 3,
+                            Name = "WiFi Router"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            CategoryId = 3,
+                            Name = "Firewall"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            CategoryId = 4,
+                            Name = "Server"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            CategoryId = 4,
+                            Name = "UPS"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            CategoryId = 5,
+                            Name = "Charger"
+                        });
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.User", b =>
@@ -564,7 +631,7 @@ namespace IMS_Infrastructure.Migrations
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("int");
 
-                    b.Property<int>("DepartmentId")
+                    b.Property<int?>("DepartmentId")
                         .HasColumnType("int");
 
                     b.Property<string>("Email")
@@ -725,9 +792,7 @@ namespace IMS_Infrastructure.Migrations
                 {
                     b.HasOne("IMS_Domain.Entities.Department", "Department")
                         .WithMany("Users")
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("DepartmentId");
 
                     b.HasOne("IMS_Domain.Entities.Role", "Role")
                         .WithMany("Users")

@@ -25,19 +25,11 @@ namespace IMS_Infrastructure.Data.Configurations
             builder.Property(u => u.PasswordHash)
                 .IsRequired();
 
-            builder.Property(u => u.IsActive)
-                .HasDefaultValue(true);
-
-            builder.Property(u => u.IsVerified)
-                .HasDefaultValue(false);
-
-            builder.Property(u => u.IsDeleted)
-                .HasDefaultValue(false);
-
-            builder.HasOne(u => u.Department)
-                .WithMany(d => d.Users)
-                .HasForeignKey(u => u.DepartmentId)
-                .OnDelete(DeleteBehavior.Restrict);
+            // Relationships
+            builder.HasOne(x => x.Department)
+                   .WithMany(d => d.Users)
+                   .HasForeignKey(x => x.DepartmentId)
+                   .IsRequired(false);
 
             builder.HasOne(u => u.Role)
                 .WithMany(r => r.Users)

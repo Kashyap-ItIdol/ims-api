@@ -16,7 +16,11 @@ namespace IMS_Infrastructure.Data.Configurations
                 .IsRequired()
                 .HasMaxLength(255);
 
-            // Other configurations (if needed)
+            builder.HasData(
+                new Role { Id = 1, Name = "Admin" },
+                new Role { Id = 2, Name = "Support Engineer" },
+                new Role { Id = 3, Name = "Employee" }
+            );
         }
     }
 }
