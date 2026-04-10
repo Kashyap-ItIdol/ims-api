@@ -63,6 +63,9 @@ try
 
     builder.Services.AddControllers();
 
+    builder.Services.AddScoped<IUserService, UserService>();
+    builder.Services.AddScoped<IUserRepository, UserRepository>();
+
     builder.Services.AddScoped<IAssetRepository, AssetRepository>();
     builder.Services.AddScoped<IAssetService, AssetService>();
 

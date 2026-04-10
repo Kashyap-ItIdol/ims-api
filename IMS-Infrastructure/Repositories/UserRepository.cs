@@ -28,8 +28,42 @@ namespace IMS_Infrastructure.Repositories
         {
             return await _dbSet
                 .Include(u => u.RefreshTokens)
-                .Include(u => u.Role) //  need the Role to generate the new JWT claims!
+                .Include(u => u.Role) 
                 .FirstOrDefaultAsync(u => u.RefreshTokens.Any(rt => rt.Token == refreshToken));
+        }
+
+
+        // For user module
+
+        public async Task AddAsync(User user)
+        {
+            await _context.Users.AddAsync(user);
+        }
+
+        public async Task<List<User>> GetAllAsync()
+        {
+            return await _context.Users
+                .Include(x => x.Role)
+                .Include(x => x.Department)
+                .Where(x => !x.IsDeleted)
+                .ToListAsync();
+        }
+
+        public async Task<User?> GetByIdAsync(int id)
+        {
+            return await _context.Users
+                .Include(x => x.Role)
+                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+        }
+
+        public void Update(User user)
+        {
+            _context.Users.Update(user);
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
         }
     }
 }
