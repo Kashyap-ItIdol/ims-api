@@ -5,9 +5,8 @@ namespace IMS_Application.Interfaces
     public interface IUnitOfWork : IDisposable
     {
         IUserRepository Users { get; }
-
         IRepository<Department> Departments { get; }
-        // As you add more modules, you add them here (e.g., IProductRepository Products { get; })
+        IAssetRepository Assets { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace IMS_Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class assetUpdatedd : Migration
+    public partial class updateEntities : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

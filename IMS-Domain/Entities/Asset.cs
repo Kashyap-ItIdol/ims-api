@@ -38,13 +38,16 @@
         public DateTime? AmcExpiry { get; set; }
 
         public int? AssignedTo { get; set; }
+        public User? AssignedUser { get; set; }
+       
         public DateTime? AssignDate { get; set; }
 
         public DateTime? ExpectedReturnDate { get; set; }
 
         public bool IsClient { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow; public int? CreatedBy { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow; 
+        public int? CreatedBy { get; set; }
 
         public DateTime? UpdatedAt { get; set; }
 
@@ -60,6 +63,7 @@
 
         public AssetCondition AssetCondition { get; set; } = null!;
 
+        
 
     }
 

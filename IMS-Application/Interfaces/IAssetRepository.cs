@@ -9,6 +9,9 @@ namespace IMS_Application.Interfaces
     {
         Task AddRangeAsync(List<Asset> assets);
         Task<bool> SerialExistsAsync(string serialNo);
-        Task SaveChangesAsync();
+        // Task SaveChangesAsync();
+
+        Task<List<Asset>> GetAllAsync();
+
     }
 }

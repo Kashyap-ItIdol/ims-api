@@ -26,9 +26,23 @@ namespace IMS_Infrastructure.Repositories
                 .AnyAsync(x => x.SerialNo == serialNo);
         }
 
-        public async Task SaveChangesAsync()
+        //public async Task SaveChangesAsync()
+        //{
+        //    await _context.SaveChangesAsync();
+        //}
+
+        //public async Task<bool> TableAlreadyAssignedAsync(string tableNo)
+        //{
+        //    return await _context.Assets
+        //        .AnyAsync(x => x.TableNo == tableNo);
+        //}
+
+        public async Task<List<Asset>> GetAllAsync()
         {
-            await _context.SaveChangesAsync();
+            // Eager load the AssignedUser along with Location and TableNo
+            return await _context.Set<Asset>()
+                .Include(a => a.AssignedUser)  // Include related User (AssignedUser)
+                .ToListAsync();  // Fetch all assets with user data
         }
     }
 }

@@ -1,10 +1,12 @@
-﻿using IMS_Application.DTOs;
+﻿using IMS_API.Controllers.Base;
+using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
+
 [ApiController]
 [Route("api/[controller]")]
-public class AssetController : ControllerBase
+public class AssetController : BaseController
 {
     private readonly IAssetService _assetService;
 
@@ -13,19 +15,28 @@ public class AssetController : ControllerBase
         _assetService = assetService;
     }
 
-    // 🔵 Inventory Assets
     [HttpPost("inventory")]
     public async Task<IActionResult> AddInventoryAssets(AddAssetDto dto)
     {
-        await _assetService.AddAssetsAsync(dto, false);
-        return Ok("Inventory assets added");
+        var result = await _assetService.AddAssetsAsync(dto, false);
+        return FromResult(result);
     }
 
-    // 🟣 Client Assets
     [HttpPost("client")]
     public async Task<IActionResult> AddClientAssets(AddAssetDto dto)
     {
-        await _assetService.AddAssetsAsync(dto, true);
-        return Ok("Client assets added");
+        var result = await _assetService.AddAssetsAsync(dto, true);
+        return FromResult(result);
+    }
+
+    [HttpGet("get-all")]
+    public async Task<IActionResult> GetAllAssets()
+    {
+        var result = await _assetService.GetAllAssetsAsync();
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, result);
+
+        return Ok(result);
     }
 }

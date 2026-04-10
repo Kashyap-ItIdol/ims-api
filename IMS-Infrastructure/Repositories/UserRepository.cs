@@ -28,7 +28,7 @@ namespace IMS_Infrastructure.Repositories
         {
             return await _dbSet
                 .Include(u => u.RefreshTokens)
-                .Include(u => u.Role) 
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.RefreshTokens.Any(rt => rt.Token == refreshToken));
         }
 
@@ -64,6 +64,17 @@ namespace IMS_Infrastructure.Repositories
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> ExistsAsync(int userId)
+        {
+            return await _context.Users.AnyAsync(u => u.Id == userId);
+        }
+
+        public async Task<bool> TableAlreadyAssignedAsync(string tableNo)
+        {
+            return await _context.Users
+                .AnyAsync(u => u.TableNo == tableNo);
         }
     }
 }

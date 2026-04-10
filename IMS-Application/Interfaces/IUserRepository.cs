@@ -15,5 +15,9 @@ namespace IMS_Application.Interfaces
         Task AddAsync(User user);
         void Update(User user);
         Task SaveChangesAsync();
+
+        Task<bool> ExistsAsync(int userId);
+
+        Task<bool> TableAlreadyAssignedAsync(string tableNo);
     }
 }

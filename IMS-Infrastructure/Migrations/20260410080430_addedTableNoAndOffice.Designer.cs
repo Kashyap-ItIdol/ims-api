@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IMS_Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260409180654_assetUpdatedd")]
-    partial class assetUpdatedd
+    [Migration("20260410080430_addedTableNoAndOffice")]
+    partial class addedTableNoAndOffice
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -114,6 +114,8 @@ namespace IMS_Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AssignedTo");
 
                     b.HasIndex("CategoryId");
 
@@ -372,6 +374,9 @@ namespace IMS_Infrastructure.Migrations
                     b.Property<bool>("IsVerified")
                         .HasColumnType("bit");
 
+                    b.Property<string>("Location")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -387,6 +392,9 @@ namespace IMS_Infrastructure.Migrations
 
                     b.Property<int>("RoleId")
                         .HasColumnType("int");
+
+                    b.Property<string>("TableNo")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -408,6 +416,11 @@ namespace IMS_Infrastructure.Migrations
 
             modelBuilder.Entity("IMS_Domain.Entities.Asset", b =>
                 {
+                    b.HasOne("IMS_Domain.Entities.User", "AssignedUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedTo")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("IMS_Domain.Entities.Category", "Category")
                         .WithMany("Assets")
                         .HasForeignKey("CategoryId")
@@ -435,6 +448,8 @@ namespace IMS_Infrastructure.Migrations
                     b.Navigation("AssetCondition");
 
                     b.Navigation("AssetStatus");
+
+                    b.Navigation("AssignedUser");
 
                     b.Navigation("Category");
 
