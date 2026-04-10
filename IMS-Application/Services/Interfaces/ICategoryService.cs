@@ -5,7 +5,7 @@ namespace IMS_Application.Services.Interfaces
 {
     public interface ICategoryService
     {
-        Task<Result<ListCategoriesDto>> CreateCategoryAsync(string name, int currentUserId);
+        Task<Result<ListCategoriesDto>> CreateCategoryAsync(CreateCategoryRequestDto request, int createdBy);
         Task<Result<List<ListCategoriesDto>>> GetAllCategoriesAsync();
 
     }

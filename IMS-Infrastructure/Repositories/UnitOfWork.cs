@@ -19,6 +19,9 @@ namespace IMS_Infrastructure.Repositories
         private IRepository<Department>? _departments;
         public IRepository<Department> Departments => _departments ??= new Repository<Department>(_context);
 
+        private ICategoryRepository? _categories;
+        public ICategoryRepository Categories => _categories ??= new CategoryRepository(_context);
+
         public UnitOfWork(AppDbContext context)
         {
             _context = context;

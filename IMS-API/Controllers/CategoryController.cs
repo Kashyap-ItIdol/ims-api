@@ -1,5 +1,6 @@
 using IMS_API.Controllers.Base;
 using IMS_Application.Common.Constants;
+using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +21,7 @@ namespace IMS_API.Controllers
         }
 
         [HttpPost("settings/general/categories/Create")]
-        public async Task<IActionResult> Create([FromQuery] string name)
+        public async Task<IActionResult> Create([FromBody] CreateCategoryRequestDto request)
         {
             var userIdClaim = User.FindFirst("userId")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdClaim, out int createdBy))
@@ -28,7 +29,7 @@ namespace IMS_API.Controllers
                 return Unauthorized(new { success = false, message = ErrorMessages.UserNotFound });
             }
 
-            var result = await _categoryService.CreateCategoryAsync(name, createdBy);
+            var result = await _categoryService.CreateCategoryAsync(request, createdBy);
             return FromResult(result);
         }
 
