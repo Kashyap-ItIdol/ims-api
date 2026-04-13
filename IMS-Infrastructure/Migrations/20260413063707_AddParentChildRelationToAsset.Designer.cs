@@ -4,6 +4,7 @@ using IMS_Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IMS_Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260413063707_AddParentChildRelationToAsset")]
+    partial class AddParentChildRelationToAsset
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -334,137 +337,6 @@ namespace IMS_Infrastructure.Migrations
                     b.ToTable("SubCategories");
                 });
 
-            modelBuilder.Entity("IMS_Domain.Entities.Ticket", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("AssetId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TicketPriority")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TicketType")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Tickets");
-                });
-
-            modelBuilder.Entity("IMS_Domain.Entities.TicketAssignment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("TicketId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("assignedTo")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("assigned_at")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("assigned_by")
-                        .HasColumnType("int");
-
-                    b.Property<string>("status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TicketId");
-
-                    b.ToTable("TicketAssignments");
-                });
-
-            modelBuilder.Entity("IMS_Domain.Entities.TicketComment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CommentText")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("TicketId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TicketId");
-
-                    b.ToTable("TicketComments");
-                });
-
-            modelBuilder.Entity("IMS_Domain.Entities.TicketStatusHistory", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("ChangedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ChangedBy")
-                        .HasColumnType("int");
-
-                    b.Property<int>("NewStatusId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("OldStatusId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TicketId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TicketId");
-
-                    b.ToTable("TicketStatusHistories");
-                });
-
             modelBuilder.Entity("IMS_Domain.Entities.User", b =>
                 {
                     b.Property<int>("Id")
@@ -618,33 +490,6 @@ namespace IMS_Infrastructure.Migrations
                     b.Navigation("Category");
                 });
 
-            modelBuilder.Entity("IMS_Domain.Entities.TicketAssignment", b =>
-                {
-                    b.HasOne("IMS_Domain.Entities.Ticket", null)
-                        .WithMany("TicketAssignments")
-                        .HasForeignKey("TicketId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("IMS_Domain.Entities.TicketComment", b =>
-                {
-                    b.HasOne("IMS_Domain.Entities.Ticket", null)
-                        .WithMany("Comments")
-                        .HasForeignKey("TicketId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("IMS_Domain.Entities.TicketStatusHistory", b =>
-                {
-                    b.HasOne("IMS_Domain.Entities.Ticket", null)
-                        .WithMany("TicketStatusHistories")
-                        .HasForeignKey("TicketId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("IMS_Domain.Entities.User", b =>
                 {
                     b.HasOne("IMS_Domain.Entities.Department", "Department")
@@ -697,15 +542,6 @@ namespace IMS_Infrastructure.Migrations
             modelBuilder.Entity("IMS_Domain.Entities.SubCategory", b =>
                 {
                     b.Navigation("Assets");
-                });
-
-            modelBuilder.Entity("IMS_Domain.Entities.Ticket", b =>
-                {
-                    b.Navigation("Comments");
-
-                    b.Navigation("TicketAssignments");
-
-                    b.Navigation("TicketStatusHistories");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.User", b =>

@@ -21,7 +21,7 @@ namespace IMS_Infrastructure.Configurations
             builder.HasIndex(x => x.SerialNo)
                 .IsUnique();
 
-           
+
             builder.HasOne(x => x.Category)
                 .WithMany(c => c.Assets)
                 .HasForeignKey(x => x.CategoryId)
@@ -43,9 +43,14 @@ namespace IMS_Infrastructure.Configurations
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(a => a.AssignedUser)
-       .WithMany()
-       .HasForeignKey(a => a.AssignedTo)
-       .OnDelete(DeleteBehavior.Restrict);
+                .WithMany()
+                .HasForeignKey(a => a.AssignedTo)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(a => a.ParentAsset)
+                .WithMany(a => a.ChildAssets)
+                .HasForeignKey(a => a.ParentAssetId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

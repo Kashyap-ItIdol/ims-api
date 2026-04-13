@@ -6,6 +6,5 @@
         public string Name { get; set; } = null!;
         public ICollection<SubCategory> SubCategories { get; set; } = new List<SubCategory>();
         public ICollection<Asset> Assets { get; set; } = new List<Asset>();
-
     }
 }

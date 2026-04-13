@@ -19,5 +19,7 @@ namespace IMS_Application.Interfaces
         Task<bool> ExistsAsync(int userId);
 
         Task<bool> TableAlreadyAssignedAsync(string tableNo);
+
+      //  Task<List<User>> SearchAsync(string query);
     }
 }

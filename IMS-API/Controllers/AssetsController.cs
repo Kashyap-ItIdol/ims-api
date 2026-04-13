@@ -39,4 +39,43 @@ public class AssetController : BaseController
 
         return Ok(result);
     }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteAsset(int id)
+    {
+        var result = await _assetService.DeleteAssetAsync(id);
+        return FromResult(result);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateAsset(int id, UpdateAssetDto dto)
+    {
+        if (id != dto.Id)
+            return BadRequest("Id mismatch");
+
+        var result = await _assetService.UpdateAssetAsync(dto);
+        return FromResult(result);
+    }
+
+    //[HttpPost("assign")]
+    //public async Task<IActionResult> AssignAsset(AssignAssetDto dto)
+    //{
+    //    var result = await _assetService.AssignAssetAsync(dto);
+    //    return FromResult(result);
+    //}
+
+
+    //[HttpGet("suggested-employees")]
+    //public async Task<IActionResult> GetSuggestedEmployees()
+    //{
+    //    var result = await _assetService.GetSuggestedEmployeesAsync();
+    //    return FromResult(result);
+    //}
+
+    //[HttpGet("search-employees")]
+    //public async Task<IActionResult> SearchEmployees(string query)
+    //{
+    //    var result = await _assetService.SearchEmployeesAsync(query);
+    //    return FromResult(result);
+    //}
 }

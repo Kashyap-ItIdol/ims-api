@@ -20,7 +20,10 @@ namespace IMS_Infrastructure.Repositories
         public IRepository<Department> Departments => _departments ??= new Repository<Department>(_context);
 
         private IAssetRepository? _assets;
-        public IAssetRepository Assets => _assets ??= new AssetRepository(_context); // ✅ Use specialized repository
+        public IAssetRepository Assets => _assets ??= new AssetRepository(_context); 
+
+        //private ITicketRepository? _tickets;
+        //public ITicketRepository Tickets => _tickets ??= new TicketRepository(_context);
 
 
         public UnitOfWork(AppDbContext context)

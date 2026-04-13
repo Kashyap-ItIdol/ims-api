@@ -13,7 +13,6 @@
         public string? PasswordResetToken { get; set; }
         public DateTime? ResetTokenExpires { get; set; }
         public string? ProfileImg { get; set; }
-
         public string? Location { get; set; }  
         public string? TableNo { get; set; } 
         public bool IsActive { get; set; } = true;

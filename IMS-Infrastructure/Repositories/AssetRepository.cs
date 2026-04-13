@@ -26,23 +26,43 @@ namespace IMS_Infrastructure.Repositories
                 .AnyAsync(x => x.SerialNo == serialNo);
         }
 
-        //public async Task SaveChangesAsync()
+        public async Task<List<Asset>> GetAllAsync()
+        {
+
+            return await _context.Set<Asset>()
+                 .Where(a => a.IsActive) 
+                .Include(a => a.AssignedUser)
+                .Include(a => a.ChildAssets.Where(c => c.IsActive)) 
+                 .ToListAsync();
+        }
+
+        public async Task<bool> HasChildrenAsync(int id)
+        {
+            return await _context.Assets
+     .AnyAsync(a => a.ParentAssetId == id && a.IsActive);
+        }
+        public async Task<Asset?> GetByIdAsync(int id)
+        {
+            return await _context.Assets
+    .FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
+        }
+
+        public void SoftDelete(Asset asset)
+        {
+            asset.IsActive = false;
+        }
+
+        //public async Task<List<User>> SearchAsync(string query)
         //{
-        //    await _context.SaveChangesAsync();
+        //    return await _context.Users
+        //        .Where(u => u.FullName.Contains(query) && !u.IsDeleted)
+        //        .ToListAsync();
         //}
 
         //public async Task<bool> TableAlreadyAssignedAsync(string tableNo)
         //{
-        //    return await _context.Assets
-        //        .AnyAsync(x => x.TableNo == tableNo);
+        //    return await _context.Users
+        //        .AnyAsync(u => u.TableNo == tableNo && !u.IsDeleted);
         //}
-
-        public async Task<List<Asset>> GetAllAsync()
-        {
-            // Eager load the AssignedUser along with Location and TableNo
-            return await _context.Set<Asset>()
-                .Include(a => a.AssignedUser)  // Include related User (AssignedUser)
-                .ToListAsync();  // Fetch all assets with user data
-        }
     }
 }

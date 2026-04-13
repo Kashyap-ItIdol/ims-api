@@ -11,6 +11,9 @@ namespace IMS_Application.Mappings
             CreateMap<User, UserInfoDto>()
             .ForMember(dest => dest.RoleId,
                        opt => opt.MapFrom(src => src.RoleId));
+           
         }
     }
 }
+
+

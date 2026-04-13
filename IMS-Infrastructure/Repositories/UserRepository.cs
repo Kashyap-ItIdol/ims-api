@@ -76,5 +76,12 @@ namespace IMS_Infrastructure.Repositories
             return await _context.Users
                 .AnyAsync(u => u.TableNo == tableNo);
         }
+
+        //public async Task<List<User>> SearchAsync(string query)              
+        //{
+        //    return await _context.Users
+        //        .Where(u => u.FullName.Contains(query) && !u.IsDeleted)
+        //        .ToListAsync();
+        //}
     }
 }
