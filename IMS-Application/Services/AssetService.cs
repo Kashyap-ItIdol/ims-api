@@ -249,301 +249,142 @@ namespace IMS_Application.Services
             return Result<List<AssetResponseDto>>.Success(result);
         }
 
-        public async Task<Result<string>> DeleteAssetAsync(int id)
-        {
-            var asset = await _unitOfWork.Assets.GetByIdAsync(id);
-
-            if (asset == null)
-                return Result<string>.Failure("Asset not found", 404);
-
-
-            var hasChildren = await _unitOfWork.Assets.HasChildrenAsync(id);
-
-            if (hasChildren)
-                return Result<string>.Failure("Cannot delete parent asset. Remove child assets first.", 400);
-
-            _unitOfWork.Assets.SoftDelete(asset);
-            await _unitOfWork.SaveChangesAsync();
-
-            return Result<string>.Success("Asset deleted successfully");
-        }
 
         public async Task<Result<string>> UpdateAssetAsync(UpdateAssetDto dto)
         {
-            if (dto.MainAsset == null)
-                return Result<string>.Failure("Main asset data required", 400);
-
-
-            var asset = await _unitOfWork.Assets.GetByIdAsync(dto.Id);
+            var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(dto.Id);
 
             if (asset == null)
                 return Result<string>.Failure("Asset not found", 404);
 
+            var oldAssignedTo = asset.AssignedTo;
+            var oldStatusId = asset.StatusId;
 
-            Asset root = asset.ParentAssetId == null
-                ? asset
-                : await _unitOfWork.Assets.GetByIdAsync(asset.ParentAssetId.Value);
-
-            if (root == null)
-                return Result<string>.Failure("Parent asset not found", 404);
-
-
-            var serialExists = await _unitOfWork.Assets.SerialExistsAsync(dto.MainAsset.SerialNo);
-            if (serialExists && root.SerialNo != dto.MainAsset.SerialNo)
+            // 🚫 Serial check
+            if (await _unitOfWork.Assets.SerialExistsAsync(dto.SerialNo, dto.Id))
                 return Result<string>.Failure("Serial already exists", 400);
 
+            // 🚫 Status restriction
+            if ((dto.StatusId == 3 || dto.StatusId == 4) && dto.AssignedTo != null)
+                return Result<string>.Failure("Cannot assign asset in Repair or Scrap", 400);
 
-            root.ItemName = dto.MainAsset.ItemName;
-            root.Brand = dto.MainAsset.Brand;
-            root.Model = dto.MainAsset.Model;
-            root.SerialNo = dto.MainAsset.SerialNo;
-            root.StatusId = dto.MainAsset.StatusId;
-            root.CategoryId = dto.MainAsset.CategoryId;
-            root.SubCategoryId = dto.MainAsset.SubCategoryId;
-            root.ConditionId = dto.MainAsset.ConditionId;
-
-            root.Vendor = dto.MainAsset.Vendor!;
-            root.PurchaseCost = dto.MainAsset.PurchaseCost!.Value;
-            root.PurchaseDate = dto.MainAsset.PurchaseDate!.Value;
-            root.InvoiceNumber = dto.MainAsset.InvoiceNumber!;
-
-            root.WarrantyExpiry = dto.MainAsset.WarrantyExpiry;
-            root.AmcExpiry = dto.MainAsset.AmcExpiry;
-
-
+            // ✅ Validate user
             if (dto.AssignedTo.HasValue)
             {
                 var userExists = await _unitOfWork.Users.ExistsAsync(dto.AssignedTo.Value);
-
                 if (!userExists)
-                    return Result<string>.Failure($"User not found with id {dto.AssignedTo.Value}", 404);
+                    return Result<string>.Failure("User not found", 404);
+            }
 
+            // ✅ Update user location/table
+            if (dto.AssignedTo.HasValue)
+            {
                 var user = await _unitOfWork.Users.GetByIdAsync(dto.AssignedTo.Value);
-
-
-                if (dto.AssignedDate.HasValue && dto.ExpectedReturnDate.HasValue)
-                {
-                    if (dto.ExpectedReturnDate < dto.AssignedDate)
-                        return Result<string>.Failure("ExpectedReturnDate cannot be before AssignedDate", 400);
-                }
-
-                root.AssignedTo = dto.AssignedTo;
-                root.AssignDate = dto.AssignedDate ?? DateTime.UtcNow;
-                root.ExpectedReturnDate = dto.ExpectedReturnDate;
 
                 if (!string.IsNullOrEmpty(dto.Location))
                     user.Location = dto.Location;
 
                 if (!string.IsNullOrEmpty(dto.TableNo))
-                {
-                    var isTableUsed = await _unitOfWork.Users.TableAlreadyAssignedAsync(dto.TableNo);
-
-                    if (isTableUsed && user.TableNo != dto.TableNo)
-                        return Result<string>.Failure($"Table {dto.TableNo} already assigned", 400);
-
                     user.TableNo = dto.TableNo;
-                }
             }
+
+            // 🚫 Table validation
+            if (!string.IsNullOrEmpty(dto.TableNo))
+            {
+                var isUsed = await _unitOfWork.Users.TableAlreadyAssignedAsync(dto.TableNo);
+                if (isUsed)
+                    return Result<string>.Failure("Table already assigned", 400);
+            }
+
+            // 🚫 Date validation
+            if (dto.AssignedDate.HasValue && dto.ExpectedReturnDate.HasValue)
+            {
+                if (dto.ExpectedReturnDate < dto.AssignedDate)
+                    return Result<string>.Failure("Invalid return date", 400);
+            }
+
+            // 🔥 Detect type
+            bool isParent = asset.ParentAssetId == null;
+
+            // ============================================================
+            // 🔥 CASE 1: PARENT ASSET
+            // ============================================================
+
+            if (isParent)
+            {
+                // 🔴 Case: Assigned → New User
+                if (oldAssignedTo != dto.AssignedTo && dto.AssignedTo.HasValue)
+                {
+                    foreach (var child in asset.ChildAssets)
+                    {
+                        child.ParentAssetId = null;
+                    }
+                }
+
+                // 🟡 Case: Assigned → Available
+                // DO NOTHING to children
+            }
+
+            // ============================================================
+            // 🔥 CASE 2: CHILD ASSET
+            // ============================================================
+
             else
             {
-                root.AssignedTo = null;
-                root.AssignDate = null;
-                root.ExpectedReturnDate = null;
-            }
-
-
-            foreach (var child in dto.Children)
-            {
-                var action = child.Action.ToLower();
-
-
-                if (action == "delete" && child.Id.HasValue)
+                // 🔴 Assigned → Available
+                if (dto.AssignedTo == null)
                 {
-                    var existing = await _unitOfWork.Assets.GetByIdAsync(child.Id.Value);
-
-                    if (existing == null || existing.ParentAssetId != root.Id)
-                        return Result<string>.Failure("Invalid child asset", 400);
-
-                    existing.ParentAssetId = null;
+                    asset.ParentAssetId = null;
                 }
 
-
-                else if (action == "update" && child.Id.HasValue && child.Data != null)
+                // 🔴 Assigned to new user
+                if (dto.AssignedTo.HasValue && oldAssignedTo != dto.AssignedTo)
                 {
-                    var existing = await _unitOfWork.Assets.GetByIdAsync(child.Id.Value);
+                    var newParent = await _unitOfWork.Assets
+                        .GetPrimaryAssetByUserIdAsync(dto.AssignedTo.Value);
 
-                    if (existing == null || existing.ParentAssetId != root.Id)
-                        return Result<string>.Failure("Invalid child asset", 400);
-
-                    var exists = await _unitOfWork.Assets.SerialExistsAsync(child.Data.SerialNo);
-                    if (exists && existing.SerialNo != child.Data.SerialNo)
-                        return Result<string>.Failure("Serial already exists", 400);
-
-                    existing.ItemName = child.Data.ItemName;
-                    existing.Brand = child.Data.Brand;
-                    existing.Model = child.Data.Model;
-                    existing.SerialNo = child.Data.SerialNo;
-
-                    existing.StatusId = child.Data.StatusId;
-                    existing.CategoryId = child.Data.CategoryId;
-                    existing.SubCategoryId = child.Data.SubCategoryId;
-                    existing.ConditionId = child.Data.ConditionId;
-
-                    existing.Vendor = child.Data.IsPurchaseDetailsSame ? root.Vendor : child.Data.Vendor!;
-                    existing.PurchaseCost = child.Data.IsPurchaseDetailsSame ? root.PurchaseCost : child.Data.PurchaseCost!.Value;
-                    existing.PurchaseDate = child.Data.IsPurchaseDetailsSame ? root.PurchaseDate : child.Data.PurchaseDate!.Value;
-                    existing.InvoiceNumber = child.Data.IsPurchaseDetailsSame ? root.InvoiceNumber : child.Data.InvoiceNumber!;
-                }
-
-
-                else if (action == "add" && child.Data != null)
-                {
-                    var exists = await _unitOfWork.Assets.SerialExistsAsync(child.Data.SerialNo);
-                    if (exists)
-                        return Result<string>.Failure($"Serial already exists: {child.Data.SerialNo}", 400);
-
-                    var newChild = new Asset
+                    if (newParent != null)
                     {
-                        ItemName = child.Data.ItemName,
-                        Brand = child.Data.Brand,
-                        Model = child.Data.Model,
-                        SerialNo = child.Data.SerialNo,
-
-                        StatusId = child.Data.StatusId,
-                        CategoryId = child.Data.CategoryId,
-                        SubCategoryId = child.Data.SubCategoryId,
-                        ConditionId = child.Data.ConditionId,
-
-                        Vendor = child.Data.IsPurchaseDetailsSame ? root.Vendor : child.Data.Vendor!,
-                        PurchaseCost = child.Data.IsPurchaseDetailsSame ? root.PurchaseCost : child.Data.PurchaseCost!.Value,
-                        PurchaseDate = child.Data.IsPurchaseDetailsSame ? root.PurchaseDate : child.Data.PurchaseDate!.Value,
-                        InvoiceNumber = child.Data.IsPurchaseDetailsSame ? root.InvoiceNumber : child.Data.InvoiceNumber!,
-
-                        ParentAssetId = root.Id
-                    };
-
-                    await _unitOfWork.Assets.AddRangeAsync(new List<Asset> { newChild });
-                }
-
-
-                else if (action == "attach" && child.Id.HasValue)
-                {
-                    var existing = await _unitOfWork.Assets.GetByIdAsync(child.Id.Value);
-
-                    if (existing == null)
-                        return Result<string>.Failure("Asset not found", 404);
-
-                    if (existing.Id == root.Id)
-                        return Result<string>.Failure("Cannot attach asset to itself", 400);
-
-                    if (existing.ParentAssetId != null)
-                        return Result<string>.Failure("Asset already attached", 400);
-
-                    existing.ParentAssetId = root.Id;
+                        asset.ParentAssetId = newParent.Id;
+                    }
+                    else
+                    {
+                        asset.ParentAssetId = null;
+                    }
                 }
             }
 
-            var allAssets = await _unitOfWork.Assets.GetAllAsync();
+            // ============================================================
+            // 🔥 UPDATE COMMON FIELDS
+            // ============================================================
 
-            var children = allAssets.Where(x => x.ParentAssetId == root.Id).ToList();
+            asset.Image = dto.Image;
+            asset.ItemName = dto.ItemName;
+            asset.StatusId = dto.StatusId;
+            asset.CategoryId = dto.CategoryId;
+            asset.SubCategoryId = dto.SubCategoryId;
+            asset.ConditionId = dto.ConditionId;
+            asset.Brand = dto.Brand;
+            asset.Model = dto.Model;
+            asset.SerialNo = dto.SerialNo;
 
-            foreach (var child in children)
-            {
-                child.AssignedTo = root.AssignedTo;
-                child.AssignDate = root.AssignDate;
-                child.ExpectedReturnDate = root.ExpectedReturnDate;
-            }
+            asset.Vendor = dto.Vendor;
+            asset.PurchaseCost = dto.PurchaseCost;
+            asset.PurchaseDate = dto.PurchaseDate;
+            asset.InvoiceNumber = dto.InvoiceNumber;
+            asset.WarrantyExpiry = dto.WarrantyExpiry;
+            asset.AmcExpiry = dto.AmcExpiry;
+
+            asset.AssignedTo = dto.AssignedTo;
+            asset.AssignDate = dto.AssignedDate;
+            asset.ExpectedReturnDate = dto.ExpectedReturnDate;
+
+            asset.UpdatedAt = DateTime.UtcNow;
 
             await _unitOfWork.SaveChangesAsync();
 
             return Result<string>.Success("Asset updated successfully");
         }
-
-        //public async Task<Result<string>> AssignAssetAsync(AssignAssetDto dto)
-        //{
-        //    var asset = await _unitOfWork.Assets.GetByIdAsync(dto.AssetId);
-
-        //    if (asset == null)
-        //        return Result<string>.Failure("Asset not found", 404);
-
-        //    if (asset.AssignedTo != null)
-        //        return Result<string>.Failure("Asset already assigned", 400);
-
-        //    var user = await _unitOfWork.Users.GetByIdAsync(dto.EmployeeId);
-
-        //    if (user == null)
-        //        return Result<string>.Failure("User not found", 404);
-
-        //    if (dto.AssignedDate == default)
-        //        dto.AssignedDate = DateTime.UtcNow;
-
-        //    if (dto.ExpectedReturnDate.HasValue &&
-        //        dto.ExpectedReturnDate < dto.AssignedDate)
-        //    {
-        //        return Result<string>.Failure("Invalid return date", 400);
-        //    }
-
-        //    if (!string.IsNullOrEmpty(dto.TableNo))
-        //    {
-        //        var isUsed = await _unitOfWork.Users.TableAlreadyAssignedAsync(dto.TableNo);
-
-        //        if (isUsed && user.TableNo != dto.TableNo)
-        //            return Result<string>.Failure("Table already assigned", 400);
-
-        //        user.TableNo = dto.TableNo;
-        //    }
-
-        //    if (!string.IsNullOrEmpty(dto.Location))
-        //        user.Location = dto.Location;
-
-        //    // ✅ Assign
-        //    asset.AssignedTo = dto.EmployeeId;
-        //    asset.AssignDate = dto.AssignedDate;
-        //    asset.ExpectedReturnDate = dto.ExpectedReturnDate;
-
-        //    // ✅ Assign children
-        //    var allAssets = await _unitOfWork.Assets.GetAllAsync();
-
-        //    var children = allAssets.Where(x => x.ParentAssetId == asset.Id).ToList();
-
-        //    foreach (var child in children)
-        //    {
-        //        child.AssignedTo = dto.EmployeeId;
-        //        child.AssignDate = dto.AssignedDate;
-        //        child.ExpectedReturnDate = dto.ExpectedReturnDate;
-        //    }
-
-        //    await _unitOfWork.SaveChangesAsync();
-
-        //    return Result<string>.Success("Asset assigned successfully");
-        //}
-
-        //public async Task<Result<List<User>>> GetSuggestedEmployeesAsync()
-        //{
-        //    var userIds = await _unitOfWork.Tickets.GetRecentUserIdsAsync(5);
-
-        //    var users = new List<User>();
-
-        //    foreach (var id in userIds)
-        //    {
-        //        var user = await _unitOfWork.Users.GetByIdAsync(id);
-        //        if (user != null)
-        //            users.Add(user);
-        //    }
-
-        //    return Result<List<User>>.Success(users);
-        //}
-
-
-        //public async Task<Result<List<User>>> SearchEmployeesAsync(string query)
-        //{
-        //    var users = await _unitOfWork.Users.SearchAsync(query);
-        //    return Result<List<User>>.Success(users);
-        //}
-
-
-
-
 
 
 

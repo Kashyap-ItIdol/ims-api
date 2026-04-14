@@ -20,8 +20,8 @@
         public required DateTime PurchaseDate { get; set; }
         public required string InvoiceNumber { get; set; }
         public DateTime? WarrantyExpiry { get; set; }
-        public DateTime? AmcExpiry { get; set; }
-        public int? AssignedTo { get; set; }
+        public DateTime? AmcExpiry { get; set; }    
+        public int? AssignedTo { get; set; }    // user 
         public User? AssignedUser { get; set; }
         public DateTime? AssignDate { get; set; }
         public DateTime? ExpectedReturnDate { get; set; }

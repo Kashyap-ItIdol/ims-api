@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace IMS_Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class updateEntities : Migration
+    public partial class updateAssetTable : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -79,6 +79,27 @@ namespace IMS_Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Tickets",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TicketType = table.Column<int>(type: "int", nullable: false),
+                    TicketPriority = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    CreatedBy = table.Column<int>(type: "int", nullable: false),
+                    AssetId = table.Column<int>(type: "int", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Tickets", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "SubCategories",
                 columns: table => new
                 {
@@ -117,6 +138,8 @@ namespace IMS_Infrastructure.Migrations
                     PasswordResetToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ResetTokenExpires = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ProfileImg = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Location = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TableNo = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     IsVerified = table.Column<bool>(type: "bit", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
@@ -144,6 +167,74 @@ namespace IMS_Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "TicketAssignments",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TicketId = table.Column<int>(type: "int", nullable: false),
+                    assignedTo = table.Column<int>(type: "int", nullable: false),
+                    assigned_by = table.Column<int>(type: "int", nullable: false),
+                    assigned_at = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    status = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TicketAssignments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TicketAssignments_Tickets_TicketId",
+                        column: x => x.TicketId,
+                        principalTable: "Tickets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TicketComments",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TicketId = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    CommentText = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TicketComments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TicketComments_Tickets_TicketId",
+                        column: x => x.TicketId,
+                        principalTable: "Tickets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TicketStatusHistories",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TicketId = table.Column<int>(type: "int", nullable: false),
+                    OldStatusId = table.Column<int>(type: "int", nullable: false),
+                    NewStatusId = table.Column<int>(type: "int", nullable: false),
+                    ChangedBy = table.Column<int>(type: "int", nullable: false),
+                    ChangedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TicketStatusHistories", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TicketStatusHistories_Tickets_TicketId",
+                        column: x => x.TicketId,
+                        principalTable: "Tickets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Assets",
                 columns: table => new
                 {
@@ -158,6 +249,7 @@ namespace IMS_Infrastructure.Migrations
                     Brand = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Model = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     SerialNo = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    ParentAssetId = table.Column<int>(type: "int", nullable: true),
                     Vendor = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PurchaseCost = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     PurchaseDate = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -190,6 +282,12 @@ namespace IMS_Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
+                        name: "FK_Assets_Assets_ParentAssetId",
+                        column: x => x.ParentAssetId,
+                        principalTable: "Assets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_Assets_Categories_CategoryId",
                         column: x => x.CategoryId,
                         principalTable: "Categories",
@@ -199,6 +297,12 @@ namespace IMS_Infrastructure.Migrations
                         name: "FK_Assets_SubCategories_SubCategoryId",
                         column: x => x.SubCategoryId,
                         principalTable: "SubCategories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Assets_Users_AssignedTo",
+                        column: x => x.AssignedTo,
+                        principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -248,6 +352,11 @@ namespace IMS_Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Assets_AssignedTo",
+                table: "Assets",
+                column: "AssignedTo");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Assets_CategoryId",
                 table: "Assets",
                 column: "CategoryId");
@@ -256,6 +365,11 @@ namespace IMS_Infrastructure.Migrations
                 name: "IX_Assets_ConditionId",
                 table: "Assets",
                 column: "ConditionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Assets_ParentAssetId",
+                table: "Assets",
+                column: "ParentAssetId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Assets_SerialNo",
@@ -295,6 +409,21 @@ namespace IMS_Infrastructure.Migrations
                 column: "CategoryId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_TicketAssignments_TicketId",
+                table: "TicketAssignments",
+                column: "TicketId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TicketComments_TicketId",
+                table: "TicketComments",
+                column: "TicketId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TicketStatusHistories_TicketId",
+                table: "TicketStatusHistories",
+                column: "TicketId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Users_DepartmentId",
                 table: "Users",
                 column: "DepartmentId");
@@ -321,6 +450,15 @@ namespace IMS_Infrastructure.Migrations
                 name: "RefreshTokens");
 
             migrationBuilder.DropTable(
+                name: "TicketAssignments");
+
+            migrationBuilder.DropTable(
+                name: "TicketComments");
+
+            migrationBuilder.DropTable(
+                name: "TicketStatusHistories");
+
+            migrationBuilder.DropTable(
                 name: "AssetConditions");
 
             migrationBuilder.DropTable(
@@ -331,6 +469,9 @@ namespace IMS_Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Users");
+
+            migrationBuilder.DropTable(
+                name: "Tickets");
 
             migrationBuilder.DropTable(
                 name: "Categories");

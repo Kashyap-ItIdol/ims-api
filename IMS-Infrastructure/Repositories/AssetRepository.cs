@@ -36,33 +36,33 @@ namespace IMS_Infrastructure.Repositories
                  .ToListAsync();
         }
 
-        public async Task<bool> HasChildrenAsync(int id)
-        {
-            return await _context.Assets
-     .AnyAsync(a => a.ParentAssetId == id && a.IsActive);
-        }
         public async Task<Asset?> GetByIdAsync(int id)
         {
-            return await _context.Assets
-    .FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
+            return await _context.Set<Asset>()
+                .FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
         }
 
-        public void SoftDelete(Asset asset)
+        public async Task<Asset?> GetByIdWithChildrenAsync(int id)
         {
-            asset.IsActive = false;
+            return await _context.Set<Asset>()
+                .Include(x => x.AssignedUser)
+                .Include(x => x.ChildAssets)
+                .FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
         }
 
-        //public async Task<List<User>> SearchAsync(string query)
-        //{
-        //    return await _context.Users
-        //        .Where(u => u.FullName.Contains(query) && !u.IsDeleted)
-        //        .ToListAsync();
-        //}
+        public async Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId)
+        {
+            return await _context.Set<Asset>()
+                .FirstOrDefaultAsync(x => x.AssignedTo == userId && x.ParentAssetId == null);
+        }
 
-        //public async Task<bool> TableAlreadyAssignedAsync(string tableNo)
-        //{
-        //    return await _context.Users
-        //        .AnyAsync(u => u.TableNo == tableNo && !u.IsDeleted);
-        //}
+        public async Task<bool> SerialExistsAsync(string serialNo, int excludeId)
+        {
+            return await _context.Set<Asset>()
+                .AnyAsync(x => x.SerialNo == serialNo && x.Id != excludeId);
+        }
+
+
+
     }
 }

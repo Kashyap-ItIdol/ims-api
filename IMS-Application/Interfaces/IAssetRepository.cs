@@ -11,18 +11,13 @@ namespace IMS_Application.Interfaces
     {
         Task AddRangeAsync(List<Asset> assets);
         Task<bool> SerialExistsAsync(string serialNo);
-        // Task SaveChangesAsync();
         Task<List<Asset>> GetAllAsync();
-
-        // delete asset
-        Task<bool> HasChildrenAsync(int id);
-
-        // update asset
-
+        Task<Asset?> GetByIdWithChildrenAsync(int id);
         Task<Asset?> GetByIdAsync(int id);
-        void SoftDelete(Asset asset);
+        Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId);
+        Task<bool> SerialExistsAsync(string serialNo, int excludeId);
 
-      
+
     }
 
 }
