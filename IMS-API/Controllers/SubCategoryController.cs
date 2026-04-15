@@ -1,9 +1,7 @@
 using IMS_API.Controllers.Base;
-using IMS_Application.Common.Constants;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace IMS_API.Controllers
 {
@@ -22,11 +20,12 @@ namespace IMS_API.Controllers
         [HttpPost("Create")]
         public async Task<IActionResult> Create([FromQuery] string name, int categoryId)
         {
-            var userIdClaim = User.FindFirst("userId")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdClaim, out int createdBy))
+            var userResult = GetCurrentUserId();
+            if (!userResult.IsSuccess)
             {
-                return Unauthorized(new { success = false, message = ErrorMessages.UserNotFound });
+                return FromResult(userResult);
             }
+            int createdBy = userResult.Data;
 
             var result = await _subCategoryService.CreateSubCategoryAsync(name, categoryId, createdBy);
             return FromResult(result);
