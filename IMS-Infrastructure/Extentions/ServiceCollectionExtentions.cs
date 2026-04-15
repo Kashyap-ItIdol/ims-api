@@ -19,13 +19,10 @@ namespace IMS_Infrastructure.Extentions
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.AddScoped<IUserRepository, UserRepository>();
-            //services.AddScoped<IUserRepository, UserRepository>();
-            //services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-            //services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-            //services.AddScoped<IRoleRepository, RoleRepository>();
-            //services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+
             services.AddScoped<ITicketRepository, TicketRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
+            services.AddScoped<ISubCategoryRepository, SubCategoryRepository>();
             services.AddScoped<ITokenService, TokenService>();
 
             return services;

@@ -22,6 +22,12 @@ namespace IMS_Infrastructure.Repositories
         private ICategoryRepository? _categories;
         public ICategoryRepository Categories => _categories ??= new CategoryRepository(_context);
 
+        private ISubCategoryRepository? _subCategories;
+        public ISubCategoryRepository SubCategories => _subCategories ??= new SubCategoryRepository(_context);
+
+        private ITicketRepository? _tickets;
+        public ITicketRepository Tickets => _tickets ??= new TicketRepository(_context);
+
         public UnitOfWork(AppDbContext context)
         {
             _context = context;

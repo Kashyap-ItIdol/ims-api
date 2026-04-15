@@ -1,16 +1,15 @@
+using IMS_API.Controllers.Base;
 using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
-using IMS_API.Controllers.Base;
 
 namespace IMS_API.Controllers
 {
     [Route("api/[controller]")]
-    [Authorize] 
+    [Authorize]
     public class TicketController : BaseController
     {
         private readonly ITicketService _ticketService;
@@ -24,137 +23,76 @@ namespace IMS_API.Controllers
         [HttpPost("create")]
         public async Task<IActionResult> CreateTicket(CreateTicketRequestDto dto)
         {
-            try
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
             {
-                var userIdClaim = User.FindFirst("userId")?.Value;
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int createdBy))
-                {
-                    var errorResponse = Result<object>.Failure(ErrorMessages.InvalidCredentials, 400);
-                    return BadRequest(errorResponse);
-                }
-
-                var result = await _ticketService.CreateTicketAsync(dto, createdBy);
-
-                var successResponse = Result<TicketResponseDto>.Success(null,
-                   SuccessMessages.TicketCreated
-                   
-                );
-
-                return FromResult(successResponse);
+                return FromResult(userIdResult);
             }
-            catch (ArgumentException ex)
-            {
-                var errorResponse = Result<object>.Failure(ex.Message, 400);
-                return BadRequest(errorResponse);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = Result<object>.Failure(ErrorMessages.ServerError, 500);
-                return BadRequest(errorResponse);
-            }
+
+            var userId = userIdResult.Data!;
+            var result = await _ticketService.CreateTicketAsync(dto, userId);
+            return FromResult(result);
         }
 
-[HttpPost("{ticketId}/comments")]
+        [HttpPost("{ticketId}/comments")]
         public async Task<IActionResult> AddComment(int ticketId, [FromQuery] string commentText)
         {
-            try
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
             {
-                var userIdClaim = User.FindFirst("userId")?.Value;
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int currentUserId))
-                {
-                    var errorResponse = Result<object>.Failure(ErrorMessages.InvalidCredentials,400);
-                    return BadRequest(errorResponse);
-                }
-
-                if (string.IsNullOrWhiteSpace(commentText))
-                {
-                    var errorResponse = Result<object>.Failure(ErrorMessages.CommentRequires, 400);
-                    return BadRequest(errorResponse);
-                }
-
-                var result = await _ticketService.AddCommentAsync(ticketId, commentText, currentUserId);
-
-                var successResponse = Result<TicketCommentResponseDto>.Success(result,
-                    SuccessMessages.CommentCreated
-                );
-
-                return FromResult(successResponse);
-
+                return FromResult(userIdResult);
             }
-            catch (ArgumentException ex)
+
+            if (string.IsNullOrWhiteSpace(commentText))
             {
-                var errorResponse = Result<object>.Failure( ex.Message, 400);
-                return ticketId == 0 ? NotFound(errorResponse) : BadRequest(errorResponse);
+                return FromResult(Result<object>.Failure(ErrorMessages.CommentRequires, 400));
             }
-            catch (Exception ex)
-            {
-                var errorResponse = Result<object>.Failure(ErrorMessages.ServerError, 500);
-                return BadRequest(errorResponse);
-            }
+
+            var userId = userIdResult.Data!;
+            var result = await _ticketService.AddCommentAsync(ticketId, commentText, userId);
+            return FromResult(result);
         }
 
         [HttpPatch("{ticketId}/status")]
         public async Task<IActionResult> UpdateStatus(int ticketId, [FromQuery] string status)
         {
-            try
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
             {
-                var userIdClaim = User.FindFirst("userId")?.Value;
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int currentUserId))
-                {
-                    var errorResponse = Result<object>.Failure(ErrorMessages.InvalidCredentials, 400); 
-                    return BadRequest(errorResponse);
-                }
-
-                var result = await _ticketService.UpdateStatusAsync(ticketId, status, currentUserId);
-
-                var successResponse = Result<UpdateTicketStatusResponseDto>.Success(result,
-                   SuccessMessages.StatusUpdated
-                );
-
-                return FromResult(successResponse);
+                return FromResult(userIdResult);
             }
-            catch (ArgumentException ex)
-            {
-                var errorResponse = Result<object>.Failure( ex.Message, 400);
-                return BadRequest(errorResponse);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = Result<object>.Failure(ErrorMessages.ServerError, 500);
-                return BadRequest(errorResponse);
-            }
+
+            var userId = userIdResult.Data!;
+            var result = await _ticketService.UpdateStatusAsync(ticketId, status, userId);
+            return FromResult(result);
         }
 
         [HttpGet]
         public async Task<IActionResult> GetTickets()
         {
-            try
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
             {
-                var userIdClaim = User.FindFirst("userId")?.Value;
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int currentUserId))
-                {
-                    var errorResponse = Result<object>.Failure(ErrorMessages.InvalidCredentials, 400);
-                    return BadRequest(errorResponse);
-                }
-
-                var result = await _ticketService.GetAllTicketsAsync(currentUserId);
-
-                var successResponse = Result<object>.Success(result,
-                    SuccessMessages.AllTickets
-                );
-
-                return FromResult(successResponse);
+                return FromResult(userIdResult);
             }
-            catch (ArgumentException ex)
+
+            var userId = userIdResult.Data!;
+
+            var result = await _ticketService.GetAllTicketsAsync(userId);
+            return FromResult(result);
+        }
+        [HttpGet("{ticketId}")]
+        public async Task<IActionResult> GetTicket(int ticketId)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
             {
-                var errorResponse = Result<object>.Failure(ex.Message, 400);
-                return BadRequest(errorResponse);
+                return FromResult(userIdResult);
             }
-            catch (Exception ex)
-            {
-                var errorResponse = Result<object>.Failure(ErrorMessages.ServerError, 500);
-                return BadRequest(errorResponse);
-            }
+
+            var userId = (int)userIdResult.Data!;
+            var result = await _ticketService.GetTicketByIdAsync(ticketId, userId);
+            return FromResult(result);
         }
 
 
@@ -198,41 +136,7 @@ namespace IMS_API.Controllers
         //    }
         //}
 
-        [HttpGet("{ticketId}")]
-        public async Task<IActionResult> GetTicket(int ticketId)
-        {
-            try
-            {
-                var userIdClaim = User.FindFirst("userId")?.Value;
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int currentUserId))
-                {
-                    var errorResponse = Result<object>.Failure(ErrorMessages.InvalidCredentials, 400); 
-                    return BadRequest(errorResponse);
-                }
 
-                var result = await _ticketService.GetTicketByIdAsync(ticketId, currentUserId);
-                if (result == null)
-                {
-                    var errorResponse = Result<object>.Failure(ErrorMessages.TicketIdNotExist, 400);
-                    return NotFound(errorResponse);
-                }
-
-                var successResponse = Result<object>.Success(result,
-                   SuccessMessages.AllTickets
-                );
-
-                return FromResult(successResponse);
-            }
-            catch (ArgumentException ex)
-            {
-                var errorResponse = Result<object>.Failure(ex.Message, 400);
-                return BadRequest(errorResponse);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = Result<object>.Failure(ErrorMessages.ServerError, 500);
-                return BadRequest(errorResponse);
-            }
-        }
     }
 }
+

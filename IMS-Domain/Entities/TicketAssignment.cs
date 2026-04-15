@@ -1,10 +1,8 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace IMS_Domain.Entities
 {
     public class TicketAssignment
     {
-        
+
         public int Id { get; set; }
 
         public int TicketId { get; set; }

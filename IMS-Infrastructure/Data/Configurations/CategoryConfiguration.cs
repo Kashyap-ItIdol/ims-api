@@ -20,10 +20,27 @@ namespace IMS_Infrastructure.Data.Configurations
             builder.HasIndex(x => x.Name)
                    .IsUnique();
 
-            // Optional FK
             builder.HasOne<User>()
                    .WithMany()
                    .HasForeignKey(x => x.CreatedBy)
+                   .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Property(x => x.UpdatedAt);
+
+            builder.Property(x => x.UpdatedBy);
+
+            builder.HasOne<User>()
+                   .WithMany()
+                   .HasForeignKey(x => x.UpdatedBy)
+                   .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Property(x => x.DeletedAt);
+
+            builder.Property(x => x.DeletedBy);
+
+            builder.HasOne<User>()
+                   .WithMany()
+                   .HasForeignKey(x => x.DeletedBy)
                    .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasMany(x => x.SubCategories)

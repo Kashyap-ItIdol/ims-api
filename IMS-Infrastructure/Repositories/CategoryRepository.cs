@@ -34,5 +34,14 @@ namespace IMS_Infrastructure.Repositories
                 .Select(c => c.Name)
                 .ToListAsync();
         }
+
+        public async Task<Category?> GetByIdWithSubCategoriesAsync(int id)
+        {
+            return await _dbSet
+                .AsNoTracking()
+                .Include(c => c.SubCategories.Where(s => s.IsActive))
+                .FirstOrDefaultAsync(c => c.Id == id);
+        }
     }
 }
+

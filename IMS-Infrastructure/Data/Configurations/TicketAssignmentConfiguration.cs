@@ -8,18 +8,16 @@ namespace IMS_Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<TicketAssignment> builder)
         {
-            // Indexes
+
             builder.HasIndex(x => x.TicketId);
             builder.HasIndex(x => x.assignedTo);
             builder.HasIndex(x => x.assigned_by);
             builder.HasIndex(x => x.assigned_at);
 
-            // Validations
             builder.Property(x => x.status)
                    .IsRequired()
                    .HasMaxLength(50);
 
-            // Relationships
             builder.HasOne<Ticket>()
                    .WithMany(t => t.TicketAssignments)
                    .HasForeignKey(x => x.TicketId)

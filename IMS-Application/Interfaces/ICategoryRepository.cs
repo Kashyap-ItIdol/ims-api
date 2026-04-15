@@ -7,5 +7,7 @@ namespace IMS_Application.Interfaces
         Task<Category?> GetByNameAsync(string name);
         Task<List<Category>> GetAllActiveCategoriesAsync();
         Task<List<string>> GetAllActiveCategoryNamesAsync();
+        Task<Category?> GetByIdWithSubCategoriesAsync(int id);
     }
 }
+

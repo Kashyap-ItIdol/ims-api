@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace IMS_Application.DTOs
 {
     public class ListCategoriesDto

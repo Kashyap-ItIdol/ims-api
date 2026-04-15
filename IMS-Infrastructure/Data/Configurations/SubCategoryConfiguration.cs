@@ -20,7 +20,6 @@ namespace IMS_Infrastructure.Data.Configurations
             builder.HasIndex(x => x.Name)
                    .IsUnique();
 
-            // Optional FKs for audit fields
             builder.HasOne<User>()
                    .WithMany()
                    .HasForeignKey(x => x.CreatedBy)

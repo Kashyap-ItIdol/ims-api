@@ -1,8 +1,6 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace IMS_Domain.Entities
 {
-public enum TicketType
+    public enum TicketType
     {
         Hardware,
         Software,

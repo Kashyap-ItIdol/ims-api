@@ -8,25 +8,24 @@ namespace IMS_Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<TicketStatusHistory> builder)
         {
-            // Indexes
             builder.HasIndex(x => x.TicketId);
             builder.HasIndex(x => x.ChangedBy);
             builder.HasIndex(x => x.ChangedAt);
 
-            // Validations
             builder.Property(x => x.OldStatusId).IsRequired();
             builder.Property(x => x.NewStatusId).IsRequired();
 
-            // Relationships
             builder.HasOne<Ticket>()
-                   .WithMany()
+                   .WithMany(x => x.TicketStatusHistories)
                    .HasForeignKey(x => x.TicketId)
-                   .OnDelete(DeleteBehavior.Cascade);
+                   .OnDelete(DeleteBehavior.Cascade)
+                   .IsRequired();
 
             builder.HasOne<User>()
                    .WithMany()
                    .HasForeignKey(x => x.ChangedBy)
-                   .OnDelete(DeleteBehavior.Restrict);
+                   .OnDelete(DeleteBehavior.Restrict)
+                   .IsRequired();
         }
     }
 }
