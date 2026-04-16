@@ -11,5 +11,4 @@ namespace IMS_Application.Services.Interfaces
 
         Task<Result<string>> UpdateAssetAsync(UpdateAssetDto dto);
 
-
-} }
+    } }

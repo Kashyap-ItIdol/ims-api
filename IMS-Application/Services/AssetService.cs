@@ -249,7 +249,6 @@ namespace IMS_Application.Services
             return Result<List<AssetResponseDto>>.Success(result);
         }
 
-
         public async Task<Result<string>> UpdateAssetAsync(UpdateAssetDto dto)
         {
             var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(dto.Id);
@@ -257,110 +256,103 @@ namespace IMS_Application.Services
             if (asset == null)
                 return Result<string>.Failure("Asset not found", 404);
 
-            var oldAssignedTo = asset.AssignedTo;
-            var oldStatusId = asset.StatusId;
-
-            // 🚫 Serial check
+            // Serial check
             if (await _unitOfWork.Assets.SerialExistsAsync(dto.SerialNo, dto.Id))
                 return Result<string>.Failure("Serial already exists", 400);
 
-            // 🚫 Status restriction
-            if ((dto.StatusId == 3 || dto.StatusId == 4) && dto.AssignedTo != null)
-                return Result<string>.Failure("Cannot assign asset in Repair or Scrap", 400);
+            bool isParent = asset.ParentAssetId == null && asset.ChildAssets.Any();
+            bool isChild = asset.ParentAssetId != null;
 
-            // ✅ Validate user
-            if (dto.AssignedTo.HasValue)
+            if (dto.IsManualUnlink && isChild)
             {
-                var userExists = await _unitOfWork.Users.ExistsAsync(dto.AssignedTo.Value);
-                if (!userExists)
-                    return Result<string>.Failure("User not found", 404);
+                asset.ParentAssetId = null;
+                asset.StatusId = 1; // Available
+                asset.AssignedTo = null;
+                asset.AssignDate = null;
+
+                await _unitOfWork.SaveChangesAsync();
+                return Result<string>.Success("Child unlinked successfully");
             }
 
-            // ✅ Update user location/table
-            if (dto.AssignedTo.HasValue)
+            if (dto.IsFromParentContext)
             {
-                var user = await _unitOfWork.Users.GetByIdAsync(dto.AssignedTo.Value);
-
-                if (!string.IsNullOrEmpty(dto.Location))
-                    user.Location = dto.Location;
-
-                if (!string.IsNullOrEmpty(dto.TableNo))
-                    user.TableNo = dto.TableNo;
-            }
-
-            // 🚫 Table validation
-            if (!string.IsNullOrEmpty(dto.TableNo))
-            {
-                var isUsed = await _unitOfWork.Users.TableAlreadyAssignedAsync(dto.TableNo);
-                if (isUsed)
-                    return Result<string>.Failure("Table already assigned", 400);
-            }
-
-            // 🚫 Date validation
-            if (dto.AssignedDate.HasValue && dto.ExpectedReturnDate.HasValue)
-            {
-                if (dto.ExpectedReturnDate < dto.AssignedDate)
-                    return Result<string>.Failure("Invalid return date", 400);
-            }
-
-            // 🔥 Detect type
-            bool isParent = asset.ParentAssetId == null;
-
-            // ============================================================
-            // 🔥 CASE 1: PARENT ASSET
-            // ============================================================
-
-            if (isParent)
-            {
-                // 🔴 Case: Assigned → New User
-                if (oldAssignedTo != dto.AssignedTo && dto.AssignedTo.HasValue)
-                {
-                    foreach (var child in asset.ChildAssets)
-                    {
-                        child.ParentAssetId = null;
-                    }
-                }
-
-                // 🟡 Case: Assigned → Available
-                // DO NOTHING to children
-            }
-
-            // ============================================================
-            // 🔥 CASE 2: CHILD ASSET
-            // ============================================================
-
-            else
-            {
-                // 🔴 Assigned → Available
-                if (dto.AssignedTo == null)
+                // 🔹 CHILD → AVAILABLE (remove from parent)
+                if (isChild && dto.StatusId == 1)
                 {
                     asset.ParentAssetId = null;
+                    asset.AssignedTo = null;
+                    asset.AssignDate = null;
+
+                    await _unitOfWork.SaveChangesAsync();
+                    return Result<string>.Success("Child converted to independent asset");
                 }
 
-                // 🔴 Assigned to new user
-                if (dto.AssignedTo.HasValue && oldAssignedTo != dto.AssignedTo)
+                // 🔹 CHILD ASSIGN VALIDATION
+                if (isChild && dto.StatusId == 2)
                 {
-                    var newParent = await _unitOfWork.Assets
-                        .GetPrimaryAssetByUserIdAsync(dto.AssignedTo.Value);
+                    var parent = await _unitOfWork.Assets.GetByIdAsync(asset.ParentAssetId!.Value);
 
-                    if (newParent != null)
+                    if (parent?.AssignedTo == null)
+                        return Result<string>.Failure("Cannot assign child when parent is not assigned", 400);
+                }
+
+                // 🔹 PARENT LOGIC
+                if (isParent)
+                {
+                    // Reassign parent → break children
+                    if (asset.AssignedTo != dto.AssignedTo && dto.AssignedTo.HasValue)
                     {
-                        asset.ParentAssetId = newParent.Id;
+                        foreach (var child in asset.ChildAssets)
+                        {
+                            child.ParentAssetId = null;
+                        }
                     }
-                    else
+
+                    // Parent → Available
+                    if (dto.StatusId == 1)
                     {
-                        asset.ParentAssetId = null;
+                        asset.AssignedTo = null;
+                        asset.AssignDate = null;
                     }
                 }
+
+                // 🔹 NORMAL UPDATE
+                MapBasicFields(asset, dto);
+
+                asset.StatusId = dto.StatusId;
+                asset.AssignedTo = dto.AssignedTo;
+                asset.AssignDate = dto.AssignedDate;
+                asset.ExpectedReturnDate = dto.ExpectedReturnDate;
+
+                await _unitOfWork.SaveChangesAsync();
+                return Result<string>.Success("Asset updated successfully");
             }
+            else
+            {
+                // 🔴 DIRECT EDIT (child from list)
 
-            // ============================================================
-            // 🔥 UPDATE COMMON FIELDS
-            // ============================================================
+                if (dto.StatusId == 2)
+                    return Result<string>.Failure("Direct assign not allowed", 400);
 
+                MapBasicFields(asset, dto);
+
+                asset.StatusId = dto.StatusId;
+
+                if (dto.StatusId != 2)
+                {
+                    asset.AssignedTo = null;
+                    asset.AssignDate = null;
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+                return Result<string>.Success("Asset updated successfully");
+            }
+        }
+
+        private void MapBasicFields(Asset asset, UpdateAssetDto dto)
+        {
             asset.Image = dto.Image;
             asset.ItemName = dto.ItemName;
-            asset.StatusId = dto.StatusId;
             asset.CategoryId = dto.CategoryId;
             asset.SubCategoryId = dto.SubCategoryId;
             asset.ConditionId = dto.ConditionId;
@@ -372,21 +364,12 @@ namespace IMS_Application.Services
             asset.PurchaseCost = dto.PurchaseCost;
             asset.PurchaseDate = dto.PurchaseDate;
             asset.InvoiceNumber = dto.InvoiceNumber;
+
             asset.WarrantyExpiry = dto.WarrantyExpiry;
             asset.AmcExpiry = dto.AmcExpiry;
 
-            asset.AssignedTo = dto.AssignedTo;
-            asset.AssignDate = dto.AssignedDate;
-            asset.ExpectedReturnDate = dto.ExpectedReturnDate;
-
             asset.UpdatedAt = DateTime.UtcNow;
-
-            await _unitOfWork.SaveChangesAsync();
-
-            return Result<string>.Success("Asset updated successfully");
         }
-
-
 
     }
 
