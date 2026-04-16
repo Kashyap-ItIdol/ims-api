@@ -1,10 +1,12 @@
-﻿using IMS_Application.Common.Models;
+﻿using IMS_Application.Common.Constants;
+using IMS_Application.Common.Models;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace IMS_API.Controllers.Base
 {
     [ApiController]
-    public class BaseController  : ControllerBase
+    public class BaseController : ControllerBase
     {
         protected IActionResult FromResult<T>(Result<T> result)
         {
@@ -18,12 +20,22 @@ namespace IMS_API.Controllers.Base
                 });
             }
 
-            return StatusCode(result.StatusCode,new
+            return StatusCode(result.StatusCode, new
             {
                 success = true,
                 message = result.Message,
                 data = result.Data
             });
+        }
+
+        protected Result<int> GetCurrentUserId()
+        {
+            var claimValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(claimValue) || !int.TryParse(claimValue, out int userId))
+            {
+                return Result<int>.Failure(ErrorMessages.InvalidCredentials, 400);
+            }
+            return Result<int>.Success(userId);
         }
 
         protected void SetRefreshTokenCookie(string token, int? expireDays = null)

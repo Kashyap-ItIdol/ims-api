@@ -34,5 +34,6 @@ namespace IMS_Domain.Entities
 
         public ICollection<InventoryAssignment> InventoryAssignments { get; set; } = new List<InventoryAssignment>();
 
+
     }
 }

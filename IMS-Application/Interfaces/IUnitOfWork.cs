@@ -7,7 +7,10 @@ namespace IMS_Application.Interfaces
         IUserRepository Users { get; }
 
         IRepository<Department> Departments { get; }
-        // As you add more modules, you add them here (e.g., IProductRepository Products { get; })
+
+        ICategoryRepository Categories { get; }
+        ISubCategoryRepository SubCategories { get; }
+        ITicketRepository Tickets { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
