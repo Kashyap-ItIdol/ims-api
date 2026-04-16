@@ -11,4 +11,10 @@ namespace IMS_Application.Services.Interfaces
 
         Task<Result<string>> UpdateAssetAsync(UpdateAssetDto dto);
 
+        Task<Result<string>> DeleteAssetAsync(int id);
+
+        Task<Result<List<UserDto>>> GetSuggestedUsersAsync();
+        Task<Result<List<UserDto>>> SearchUsersAsync(string query);
+        Task<Result<string>> AssignAssetAsync(AssignAssetDto dto);
+
     } }

@@ -1,4 +1,5 @@
 ﻿using IMS_Application.Interfaces;
+using IMS_Domain.Constants;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -77,11 +78,25 @@ namespace IMS_Infrastructure.Repositories
                 .AnyAsync(u => u.TableNo == tableNo);
         }
 
-        //public async Task<List<User>> SearchAsync(string query)              
-        //{
-        //    return await _context.Users
-        //        .Where(u => u.FullName.Contains(query) && !u.IsDeleted)
-        //        .ToListAsync();
-        //}
+        public async Task<List<User>> SearchAsync(string query)
+        {
+            return await _context.Users
+                .Where(u => u.IsActive && !u.IsDeleted &&
+                       (u.FullName.Contains(query) || u.Email.Contains(query)))
+                .ToListAsync();
+        }
+
+        public async Task<List<User>> GetUsersWithOpenTicketsAsync()
+        {
+            var userIds = await _context.Tickets
+                .Where(t => t.Status == Status.Open)
+                .Select(t => t.CreatedBy)
+                .Distinct()
+                .ToListAsync();
+
+            return await _context.Users
+                .Where(u => userIds.Contains(u.Id) && u.IsActive && !u.IsDeleted)
+                .ToListAsync();
+        }
     }
 }

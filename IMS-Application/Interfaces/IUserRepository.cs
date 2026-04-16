@@ -20,6 +20,7 @@ namespace IMS_Application.Interfaces
 
         Task<bool> TableAlreadyAssignedAsync(string tableNo);
 
-      //  Task<List<User>> SearchAsync(string query);
+        Task<List<User>> GetUsersWithOpenTicketsAsync();
+        Task<List<User>> SearchAsync(string query);
     }
 }

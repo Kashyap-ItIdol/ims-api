@@ -50,5 +50,34 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteAsset(int id)
+    {
+        var result = await _assetService.DeleteAssetAsync(id);
+        return FromResult(result);
+    }
+
+    [HttpGet("suggest-users")]
+    public async Task<IActionResult> GetSuggestedUsers()
+    {
+        var result = await _assetService.GetSuggestedUsersAsync();
+        return FromResult(result);
+    }
+
+    [HttpGet("search-users")]
+    public async Task<IActionResult> SearchUsers(string query)
+    {
+        var result = await _assetService.SearchUsersAsync(query);
+        return FromResult(result);
+    }
+
+    [HttpPost("assign")]
+    public async Task<IActionResult> AssignAsset(AssignAssetDto dto)
+    {
+        var result = await _assetService.AssignAssetAsync(dto);
+        return FromResult(result);
+    }
+
+
 
 }

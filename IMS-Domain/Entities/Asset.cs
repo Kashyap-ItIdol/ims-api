@@ -25,6 +25,7 @@
         public User? AssignedUser { get; set; }
         public DateTime? AssignDate { get; set; }
         public DateTime? ExpectedReturnDate { get; set; }
+        public string? Notes { get; set; }
         public bool IsClient { get; set; }             // ?? also we need client id because how we identify which client asset is this
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow; 
         public int? CreatedBy { get; set; }

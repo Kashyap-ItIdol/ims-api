@@ -263,6 +263,7 @@ namespace IMS_Application.Services
             bool isParent = asset.ParentAssetId == null && asset.ChildAssets.Any();
             bool isChild = asset.ParentAssetId != null;
 
+            // delete child from parent asset 
             if (dto.IsManualUnlink && isChild)
             {
                 asset.ParentAssetId = null;
@@ -369,6 +370,120 @@ namespace IMS_Application.Services
             asset.AmcExpiry = dto.AmcExpiry;
 
             asset.UpdatedAt = DateTime.UtcNow;
+        }
+
+        public async Task<Result<string>> DeleteAssetAsync(int id)
+        {
+            var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(id);
+
+            if (asset == null)
+                return Result<string>.Failure("Asset not found", 404);
+
+            bool isParent = asset.ParentAssetId == null;
+            bool isChild = asset.ParentAssetId != null;
+
+            // ✅ SCENARIO 1: PARENT DELETE
+            if (isParent)
+            {
+                if (asset.ChildAssets.Any())
+                {
+                    foreach (var child in asset.ChildAssets)
+                    {
+                        // 🔹 Unlink child (DO NOT change status)
+                        child.ParentAssetId = null;
+                    }
+                }
+
+                // 🔹 Soft delete parent
+                asset.IsActive = false;
+            }
+
+            // ✅ SCENARIO 2: CHILD DELETE
+            if (isChild)
+            {
+                // 🔹 Unlink from parent first
+                asset.ParentAssetId = null;
+
+                // 🔹 Then soft delete
+                asset.IsActive = false;
+            }
+
+            
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result<string>.Success("Asset deleted successfully");
+        }
+
+        public async Task<Result<List<UserDto>>> GetSuggestedUsersAsync()
+        {
+            var users = await _unitOfWork.Users.GetUsersWithOpenTicketsAsync();
+
+            var result = users.Select(u => new UserDto
+            {
+                Id = u.Id,
+                FullName = u.FullName,
+                Email = u.Email
+            }).ToList();
+
+            return Result<List<UserDto>>.Success(result);
+        }
+
+        public async Task<Result<List<UserDto>>> SearchUsersAsync(string query)
+        {
+            var users = await _unitOfWork.Users.SearchAsync(query);
+
+            var result = users.Select(u => new UserDto
+            {
+                Id = u.Id,
+                FullName = u.FullName,
+                Email = u.Email
+            }).ToList();
+
+            return Result<List<UserDto>>.Success(result);
+        }
+
+        public async Task<Result<string>> AssignAssetAsync(AssignAssetDto dto)
+        {
+            var asset = await _unitOfWork.Assets.GetByIdAsync(dto.AssetId);
+
+            if (asset == null)
+                return Result<string>.Failure("Asset not found", 404);
+
+            // ✅ Only available assets can be assigned
+            if (asset.StatusId != 1)
+                return Result<string>.Failure("Only available assets can be assigned", 400);
+
+            var user = await _unitOfWork.Users.GetByIdAsync(dto.UserId);
+
+            if (user == null)
+                return Result<string>.Failure("User not found", 404);
+
+            // ✅ Table validation
+            if (!string.IsNullOrEmpty(dto.TableNo))
+            {
+                var isTableUsed = await _unitOfWork.Users.TableAlreadyAssignedAsync(dto.TableNo);
+
+                if (isTableUsed)
+                    return Result<string>.Failure($"Table {dto.TableNo} already assigned", 400);
+
+                user.TableNo = dto.TableNo;
+            }
+
+            // ✅ Update user location
+            if (!string.IsNullOrEmpty(dto.Location))
+                user.Location = dto.Location;
+
+            // ✅ Assign asset
+            asset.AssignedTo = dto.UserId;
+            asset.AssignDate = dto.AssignedDate;
+            asset.ExpectedReturnDate = dto.ExpectedReturnDate;
+
+            asset.StatusId = 2; // Assigned
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result<string>.Success("Asset assigned successfully");
         }
 
     }
