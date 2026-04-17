@@ -62,6 +62,19 @@ namespace IMS_Infrastructure.Repositories
                 .AnyAsync(x => x.SerialNo == serialNo && x.Id != excludeId);
         }
 
+        public async Task AddAsync(AssetHistory history)
+        {
+            await _context.AssetHistories.AddAsync(history);
+        }
+
+        public async Task<List<AssetHistory>> GetByAssetIdAsync(int assetId)
+        {
+            return await _context.AssetHistories
+                .Where(x => x.AssetId == assetId)
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
+        }
+
 
 
     }

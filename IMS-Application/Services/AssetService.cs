@@ -4,7 +4,6 @@ using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
 using IMS_Application.Services.Interfaces;
 using IMS_Domain.Entities;
-using AutoMapper;
 
 
 namespace IMS_Application.Services
@@ -408,7 +407,7 @@ namespace IMS_Application.Services
                 asset.IsActive = false;
             }
 
-            
+
 
             await _unitOfWork.SaveChangesAsync();
 
@@ -481,12 +480,228 @@ namespace IMS_Application.Services
 
             asset.StatusId = 2; // Assigned
 
+
+
+
             await _unitOfWork.SaveChangesAsync();
 
             return Result<string>.Success("Asset assigned successfully");
         }
 
+        public async Task<Result<GetAssetByIdResponseDto>> GetAssetByIdAsync(int id)
+        {
+            var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(id);
+
+            if (asset == null)
+                return Result<GetAssetByIdResponseDto>.Failure("Asset not found", 404);
+
+            var isParent = asset.ParentAssetId == null;
+
+            // 🔹 Overview
+            var overview = new AssetOverviewDto
+            {
+                Id = asset.Id,
+                Image = asset.Image,
+                ItemName = asset.ItemName,
+                Status = asset.AssetStatus.Status,
+
+                Brand = asset.Brand,
+                Category = asset.Category.Name,
+                SubCategory = asset.SubCategory.Name,
+                Model = asset.Model,
+                SerialNo = asset.SerialNo,
+                Condition = asset.AssetCondition.Condition,
+
+                Vendor = asset.Vendor,
+                PurchaseDate = asset.PurchaseDate,
+                PurchaseCost = asset.PurchaseCost,
+                InvoiceNumber = asset.InvoiceNumber,
+                WarrantyExpiry = asset.WarrantyExpiry,
+                AmcExpiry = asset.AmcExpiry,
+
+                Notes = asset.Notes
+            };
+
+            // 🔹 Add children ONLY if parent
+            if (isParent)
+            {
+                overview.Children = asset.ChildAssets
+     .Where(c => c.IsActive)
+     .Select(c => new ChildAssetDto
+     {
+         Id = c.Id,
+         ItemName = c.ItemName,
+         CreatedAt = c.CreatedAt
+     }).ToList();
+            }
+
+            // 🔹 Assignment
+            var assignment = new AssetAssignmentDto
+            {
+                AssignedTo = asset.AssignedUser?.FullName,
+                UserId = asset.AssignedTo,
+                Department = asset.AssignedUser?.Department?.Name,
+                AssignDate = asset.AssignDate,
+                OfficeNo = asset.AssignedUser?.Location,
+                TableNo = asset.AssignedUser?.TableNo
+            };
+
+            // 🔹 Network
+            var network = await _unitOfWork.NetworkDetails.GetByAssetIdAsync(asset.Id);
+
+            if (network != null)
+            {
+                assignment.Network = new NetworkDetailsDto
+                {
+                    IPAddress = network.IPAddress,
+                    MacAddress = network.MacAddress,
+                    Hostname = network.Hostname,
+                    SubnetMask = network.SubnetMask,
+                    Gateway = network.Gateway,
+                    DNS = network.DNS
+                };
+            }
+
+            // 🔹 History
+            var historyList = await _unitOfWork.AssetHistories.GetByAssetIdAsync(asset.Id);
+
+            assignment.History = historyList.Select(h => new AssetHistoryDto
+            {
+                Action = h.Action,
+                Description = h.Description,
+                CreatedAt = h.CreatedAt
+            }).ToList();
+
+            var response = new GetAssetByIdResponseDto
+            {
+                IsParent = isParent,
+                Overview = overview,
+                Assignment = assignment
+            };
+
+            return Result<GetAssetByIdResponseDto>.Success(response);
+        }
+
+    
+
+    public async Task<Result<string>> AttachChildAsync(AttachChildDto dto)
+        {
+            var parent = await _unitOfWork.Assets.GetByIdAsync(dto.ParentId);
+            if (parent == null || parent.ParentAssetId != null)
+                return Result<string>.Failure("Invalid parent asset", 400);
+
+            var child = await _unitOfWork.Assets.GetByIdAsync(dto.ChildId);
+            if (child == null)
+                return Result<string>.Failure("Child asset not found", 404);
+
+            if (child.ParentAssetId != null)
+                return Result<string>.Failure("Asset is already attached", 400);
+
+            if (child.StatusId != 1)
+                return Result<string>.Failure("Only available assets can be attached", 400);
+
+            // ✅ Attach
+            child.ParentAssetId = parent.Id;
+
+            // ✅ Optional: inherit assignment
+            if (parent.AssignedTo != null)
+            {
+                child.AssignedTo = parent.AssignedTo;
+                child.AssignDate = parent.AssignDate;
+                child.StatusId = 2; // Assigned
+            }
+
+            // ✅ History
+            await _unitOfWork.AssetHistories.AddAsync(new AssetHistory
+            {
+                AssetId = child.Id,
+                Action = "Attached",
+                Description = $"Attached to parent asset {parent.ItemName}"
+            });
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result<string>.Success("Child asset attached successfully");
+        }
+
+        public async Task<Result<string>> CreateAndAttachChildAsync(CreateChildAssetDto dto)
+        {
+            var parent = await _unitOfWork.Assets.GetByIdAsync(dto.ParentId);
+
+            if (parent == null || parent.ParentAssetId != null)
+                return Result<string>.Failure("Invalid parent asset", 400);
+
+            if (await _unitOfWork.Assets.SerialExistsAsync(dto.SerialNo))
+                return Result<string>.Failure("Serial already exists", 400);
+
+            var child = new Asset
+            {
+                ItemName = dto.ItemName,
+                StatusId = dto.StatusId,
+                CategoryId = dto.CategoryId,
+                SubCategoryId = dto.SubCategoryId,
+                ConditionId = dto.ConditionId,
+                Brand = dto.Brand,
+                Model = dto.Model,
+                SerialNo = dto.SerialNo,
+
+                Vendor = dto.Vendor,
+                PurchaseCost = dto.PurchaseCost,
+                PurchaseDate = dto.PurchaseDate,
+                InvoiceNumber = dto.InvoiceNumber,
+
+                ParentAssetId = parent.Id
+            };
+
+            // ✅ inherit assignment
+            if (parent.AssignedTo != null)
+            {
+                child.AssignedTo = parent.AssignedTo;
+                child.AssignDate = parent.AssignDate;
+                child.StatusId = 2;
+            }
+
+            await _unitOfWork.Assets.AddRangeAsync(new List<Asset> { child });
+
+            // ✅ History
+            await _unitOfWork.AssetHistories.AddAsync(new AssetHistory
+            {
+                AssetId = child.Id,
+                Action = "Created & Attached",
+                Description = $"Created and attached to {parent.ItemName}"
+            });
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result<string>.Success("Child asset created and attached");
+        }
+
+        public async Task<Result<string>> DetachChildAsync(DetachChildDto dto)
+        {
+            var child = await _unitOfWork.Assets.GetByIdAsync(dto.ChildId);
+
+            if (child == null || child.ParentAssetId == null)
+                return Result<string>.Failure("Invalid child asset", 400);
+
+            // ✅ Detach
+            child.ParentAssetId = null;
+
+            // ✅ Reset assignment
+            child.AssignedTo = null;
+            child.AssignDate = null;
+            child.StatusId = 1; // Available
+
+            // ✅ History
+            await _unitOfWork.AssetHistories.AddAsync(new AssetHistory
+            {
+                AssetId = child.Id,
+                Action = "Detached",
+                Description = "Removed from parent asset"
+            });
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result<string>.Success("Child asset detached successfully");
+        }
     }
-
-
 }

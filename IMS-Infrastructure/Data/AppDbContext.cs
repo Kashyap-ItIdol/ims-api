@@ -13,6 +13,7 @@ namespace IMS_Infrastructure.Data
 
         public DbSet<Category> Categories { get; set; }
         public DbSet<SubCategory> SubCategories { get; set; }
+        public DbSet<AssetHistory> AssetHistories { get; set; }
 
         public DbSet<AssetStatus> AssetStatuses { get; set; }
         public DbSet<AssetCondition> AssetConditions { get; set; }
@@ -25,6 +26,7 @@ namespace IMS_Infrastructure.Data
         public DbSet<TicketAssignment> TicketAssignments { get; set; }
         public DbSet<TicketComment> TicketComments { get; set; }
         public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

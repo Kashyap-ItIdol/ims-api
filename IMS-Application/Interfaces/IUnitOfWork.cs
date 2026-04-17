@@ -7,7 +7,9 @@ namespace IMS_Application.Interfaces
         IUserRepository Users { get; }
         IRepository<Department> Departments { get; }
         IAssetRepository Assets { get; }
-     
+        INetworkDetailsRepository NetworkDetails { get; }
+        IAssetHistoryRepository AssetHistories { get; }
+
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }

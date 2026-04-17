@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace IMS_Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class updateAssetTable : Migration
+    public partial class initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -259,6 +259,7 @@ namespace IMS_Infrastructure.Migrations
                     AssignedTo = table.Column<int>(type: "int", nullable: true),
                     AssignDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ExpectedReturnDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Notes = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     IsClient = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<int>(type: "int", nullable: true),
@@ -329,6 +330,29 @@ namespace IMS_Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "AssetHistories",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    AssetId = table.Column<int>(type: "int", nullable: false),
+                    Action = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AssetHistories", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AssetHistories_Assets_AssetId",
+                        column: x => x.AssetId,
+                        principalTable: "Assets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.InsertData(
                 table: "Departments",
                 columns: new[] { "Id", "Name" },
@@ -350,6 +374,11 @@ namespace IMS_Infrastructure.Migrations
                     { 2, "Support Engineer" },
                     { 3, "Employee" }
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AssetHistories_AssetId",
+                table: "AssetHistories",
+                column: "AssetId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Assets_AssignedTo",
@@ -444,7 +473,7 @@ namespace IMS_Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Assets");
+                name: "AssetHistories");
 
             migrationBuilder.DropTable(
                 name: "RefreshTokens");
@@ -459,6 +488,12 @@ namespace IMS_Infrastructure.Migrations
                 name: "TicketStatusHistories");
 
             migrationBuilder.DropTable(
+                name: "Assets");
+
+            migrationBuilder.DropTable(
+                name: "Tickets");
+
+            migrationBuilder.DropTable(
                 name: "AssetConditions");
 
             migrationBuilder.DropTable(
@@ -469,9 +504,6 @@ namespace IMS_Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Users");
-
-            migrationBuilder.DropTable(
-                name: "Tickets");
 
             migrationBuilder.DropTable(
                 name: "Categories");

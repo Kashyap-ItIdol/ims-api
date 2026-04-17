@@ -71,10 +71,39 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+
     [HttpPost("assign")]
     public async Task<IActionResult> AssignAsset(AssignAssetDto dto)
     {
         var result = await _assetService.AssignAssetAsync(dto);
+        return FromResult(result);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetAssetById(int id)
+    {
+        var result = await _assetService.GetAssetByIdAsync(id);
+        return FromResult(result);
+    }
+
+    [HttpPost("attach-child")]
+    public async Task<IActionResult> AttachChild(AttachChildDto dto)
+    {
+        var result = await _assetService.AttachChildAsync(dto);
+        return FromResult(result);
+    }
+
+    [HttpPost("create-child")]
+    public async Task<IActionResult> CreateChild(CreateChildAssetDto dto)
+    {
+        var result = await _assetService.CreateAndAttachChildAsync(dto);
+        return FromResult(result);
+    }
+
+    [HttpPost("detach-child")]
+    public async Task<IActionResult> DetachChild(DetachChildDto dto)
+    {
+        var result = await _assetService.DetachChildAsync(dto);
         return FromResult(result);
     }
 

@@ -15,6 +15,14 @@ namespace IMS_Application.Services.Interfaces
 
         Task<Result<List<UserDto>>> GetSuggestedUsersAsync();
         Task<Result<List<UserDto>>> SearchUsersAsync(string query);
-        Task<Result<string>> AssignAssetAsync(AssignAssetDto dto);
 
-    } }
+        Task<Result<string>> AssignAssetAsync(AssignAssetDto dto);
+        Task<Result<GetAssetByIdResponseDto>> GetAssetByIdAsync(int id);
+
+        Task<Result<string>> AttachChildAsync(AttachChildDto dto);
+
+        Task<Result<string>> CreateAndAttachChildAsync(CreateChildAssetDto dto);
+
+        Task<Result<string>> DetachChildAsync(DetachChildDto dto);
+    }  
+}

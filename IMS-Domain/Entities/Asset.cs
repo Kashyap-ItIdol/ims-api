@@ -20,14 +20,14 @@
         public required DateTime PurchaseDate { get; set; }
         public required string InvoiceNumber { get; set; }
         public DateTime? WarrantyExpiry { get; set; }
-        public DateTime? AmcExpiry { get; set; }    
+        public DateTime? AmcExpiry { get; set; }
         public int? AssignedTo { get; set; }    // user 
         public User? AssignedUser { get; set; }
         public DateTime? AssignDate { get; set; }
         public DateTime? ExpectedReturnDate { get; set; }
         public string? Notes { get; set; }
         public bool IsClient { get; set; }             // ?? also we need client id because how we identify which client asset is this
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow; 
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public int? CreatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public int? UpdatedBy { get; set; }

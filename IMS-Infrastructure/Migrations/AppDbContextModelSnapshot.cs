@@ -153,6 +153,38 @@ namespace IMS_Infrastructure.Migrations
                     b.ToTable("AssetConditions");
                 });
 
+            modelBuilder.Entity("IMS_Domain.Entities.AssetHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("AssetId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssetId");
+
+                    b.ToTable("AssetHistories");
+                });
+
             modelBuilder.Entity("IMS_Domain.Entities.AssetStatus", b =>
                 {
                     b.Property<int>("Id")
@@ -597,6 +629,17 @@ namespace IMS_Infrastructure.Migrations
                     b.Navigation("ParentAsset");
 
                     b.Navigation("SubCategory");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.AssetHistory", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.Asset", "Asset")
+                        .WithMany()
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Asset");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.RefreshToken", b =>

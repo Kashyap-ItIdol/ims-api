@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IMS_Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260416113532_addNotesFieldInAsset")]
-    partial class addNotesFieldInAsset
+    [Migration("20260417091504_initial")]
+    partial class initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -154,6 +154,38 @@ namespace IMS_Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("AssetConditions");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.AssetHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("AssetId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssetId");
+
+                    b.ToTable("AssetHistories");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.AssetStatus", b =>
@@ -600,6 +632,17 @@ namespace IMS_Infrastructure.Migrations
                     b.Navigation("ParentAsset");
 
                     b.Navigation("SubCategory");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.AssetHistory", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.Asset", "Asset")
+                        .WithMany()
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Asset");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.RefreshToken", b =>
