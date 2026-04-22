@@ -107,6 +107,13 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [HttpPost("filter")]
+    public async Task<IActionResult> FilterAssets([FromBody] AssetFilterDto dto)
+    {
+        var result = await _assetService.FilterAssetsAsync(dto);
+        return FromResult(result);
+    }
+
 
 
 }

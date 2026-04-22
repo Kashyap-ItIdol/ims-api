@@ -24,5 +24,6 @@ namespace IMS_Application.Services.Interfaces
         Task<Result<string>> CreateAndAttachChildAsync(CreateChildAssetDto dto);
 
         Task<Result<string>> DetachChildAsync(DetachChildDto dto);
+        Task<Result<List<AssetListDto>>> FilterAssetsAsync(AssetFilterDto dto);
     }  
 }

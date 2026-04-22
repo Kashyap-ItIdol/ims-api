@@ -59,7 +59,7 @@ namespace IMS_Application.Services
 
             var mainDto = dto.Assets.First(x => x.IsPrimary);
 
-            // ✅ FIX 1: Assignment must match Status
+            
             if (dto.AssignedTo.HasValue && mainDto.StatusId != 2)
                 return Result<string>.Failure("Assigned asset must have status = Assigned", 400);
 
@@ -101,7 +101,7 @@ namespace IMS_Application.Services
                     return Result<string>.Failure($"Table {dto.TableNo} is already assigned to another user", 400);
             }
 
-            // ✅ MAIN ASSET
+           
             var mainAsset = new Asset
             {
                 Image = mainDto.Image,
@@ -126,7 +126,7 @@ namespace IMS_Application.Services
 
                 AssignedTo = dto.AssignedTo,
 
-                // ✅ FIX 2: AssignDate only if assigned
+                
                 AssignDate = dto.AssignedTo.HasValue
                     ? (dto.AssignedDate ?? DateTime.UtcNow)
                     : null,
@@ -148,10 +148,7 @@ namespace IMS_Application.Services
                 {
                     Image = item.Image,
                     ItemName = item.ItemName,
-
-                    // ✅ FIX 3: Child always follows parent status
                     StatusId = mainAsset.StatusId,
-
                     CategoryId = item.CategoryId,
                     SubCategoryId = item.SubCategoryId,
                     ConditionId = item.ConditionId,
@@ -171,7 +168,7 @@ namespace IMS_Application.Services
 
                     AssignedTo = dto.AssignedTo,
 
-                    // ✅ FIX 4: AssignDate only if assigned
+                    
                     AssignDate = dto.AssignedTo.HasValue
                         ? (dto.AssignedDate ?? DateTime.UtcNow)
                         : null,
@@ -266,18 +263,18 @@ namespace IMS_Application.Services
             if (asset == null)
                 return Result<string>.Failure("Asset not found", 404);
 
-            // Serial check
+           
             if (await _unitOfWork.Assets.SerialExistsAsync(dto.SerialNo, dto.Id))
                 return Result<string>.Failure("Serial already exists", 400);
 
             bool isParent = asset.ParentAssetId == null && asset.ChildAssets.Any();
             bool isChild = asset.ParentAssetId != null;
 
-            // delete child from parent asset 
+             
             if (dto.IsManualUnlink && isChild)
             {
                 asset.ParentAssetId = null;
-                asset.StatusId = 1; // Available
+                asset.StatusId = 1;
                 asset.AssignedTo = null;
                 asset.AssignDate = null;
 
@@ -287,10 +284,10 @@ namespace IMS_Application.Services
 
             if (dto.IsFromParentContext)
             {
-                // 🔹 CHILD → AVAILABLE (remove from parent)
+
                 if (isChild && dto.StatusId == 1)
                 {
-                   // asset.ParentAssetId = null;
+                    
                     asset.AssignedTo = null;
                     asset.AssignDate = null;
 
@@ -298,7 +295,7 @@ namespace IMS_Application.Services
                     return Result<string>.Success("Child marked as available (still linked to parent)");
                 }
 
-                // 🔹 CHILD ASSIGN VALIDATION
+             
                 if (isChild && dto.StatusId == 2)
                 {
                     var parent = await _unitOfWork.Assets.GetByIdAsync(asset.ParentAssetId!.Value);
@@ -310,10 +307,10 @@ namespace IMS_Application.Services
                         return Result<string>.Failure("Child must be assigned to same user as parent", 400);
                 }
 
-                // 🔹 PARENT LOGIC
+                
                 if (isParent)
                 {
-                    // Reassign parent → break children
+                    
                     if (asset.AssignedTo != dto.AssignedTo && dto.AssignedTo.HasValue)
                     {
                         foreach (var child in asset.ChildAssets)
@@ -322,7 +319,7 @@ namespace IMS_Application.Services
                         }
                     }
 
-                    // Parent → Available
+                   
                     if (dto.StatusId == 1)
                     {
                         asset.AssignedTo = null;
@@ -330,7 +327,7 @@ namespace IMS_Application.Services
                     }
                 }
 
-                // 🔹 NORMAL UPDATE
+               
                 MapBasicFields(asset, dto);
 
                 asset.StatusId = dto.StatusId;
@@ -343,47 +340,34 @@ namespace IMS_Application.Services
             }
             else
             {
-                // 🔴 DIRECT EDIT (from asset list)
-
-                Asset? parent = null;
-
-                if (isChild)
-                {
-                    parent = await _unitOfWork.Assets.GetByIdAsync(asset.ParentAssetId!.Value);
-                }
-
-                // ❌ Case: Trying to assign directly
                 if (dto.StatusId == 2)
-                    return Result<string>.Failure("Direct assign not allowed", 400);
-
-                // 🔶 Case 1: Child has parent
-                if (isChild && parent != null)
                 {
-                    // Parent is assigned
-                    if (parent.AssignedTo != null)
+                    
+                    if (asset.StatusId != 1)
+                        return Result<string>.Failure("Only available assets can be assigned", 400);
+
+                    if (!dto.AssignedTo.HasValue)
+                        return Result<string>.Failure("AssignedTo is required", 400);
+
+                  
+                    if (isChild)
                     {
-                        return Result<string>.Failure(
-                            $"This asset is already assigned to user (via parent: {parent.ItemName})",
-                            400
-                        );
+                        asset.ParentAssetId = null;
                     }
+
+                    asset.AssignedTo = dto.AssignedTo;
+                    asset.AssignDate = dto.AssignedDate ?? DateTime.UtcNow;
+                    asset.StatusId = 2; 
                 }
-
-                // ✅ Normal update
-                MapBasicFields(asset, dto);
-
-                asset.StatusId = dto.StatusId;
-
-                if (dto.StatusId != 2)
+                else
                 {
+                    
+                    asset.StatusId = dto.StatusId;
                     asset.AssignedTo = null;
                     asset.AssignDate = null;
-                    asset.ExpectedReturnDate = null;
-
-                    // 🔥 Detach if child
-                    if (isChild)
-                        asset.ParentAssetId = null;
                 }
+
+                MapBasicFields(asset, dto);
 
                 await _unitOfWork.SaveChangesAsync();
                 return Result<string>.Success("Asset updated successfully");
@@ -422,29 +406,29 @@ namespace IMS_Application.Services
             bool isParent = asset.ParentAssetId == null;
             bool isChild = asset.ParentAssetId != null;
 
-            // ✅ SCENARIO 1: PARENT DELETE
+            // SCENARIO 1: PARENT DELETE
             if (isParent)
             {
                 if (asset.ChildAssets.Any())
                 {
                     foreach (var child in asset.ChildAssets)
                     {
-                        // 🔹 Unlink child (DO NOT change status)
+                        // Unlink child (DO NOT change status)
                         child.ParentAssetId = null;
                     }
                 }
 
-                // 🔹 Soft delete parent
+                //Soft delete parent
                 asset.IsActive = false;
             }
 
-            // ✅ SCENARIO 2: CHILD DELETE
+            // SCENARIO 2: CHILD DELETE
             if (isChild)
             {
-                // 🔹 Unlink from parent first
+                // Unlink from parent first
                 asset.ParentAssetId = null;
 
-                // 🔹 Then soft delete
+                // Then soft delete
                 asset.IsActive = false;
             }
 
@@ -490,7 +474,7 @@ namespace IMS_Application.Services
             if (asset == null)
                 return Result<string>.Failure("Asset not found", 404);
 
-            // ✅ Only available assets can be assigned
+            //  Only available assets can be assigned
             if (asset.StatusId != 1)
                 return Result<string>.Failure("Only available assets can be assigned", 400);
 
@@ -499,7 +483,7 @@ namespace IMS_Application.Services
             if (user == null)
                 return Result<string>.Failure("User not found", 404);
 
-            // ✅ Table validation
+            
             if (!string.IsNullOrEmpty(dto.TableNo))
             {
                 var isTableUsed = await _unitOfWork.Users.TableAlreadyAssignedAsync(dto.TableNo);
@@ -510,19 +494,15 @@ namespace IMS_Application.Services
                 user.TableNo = dto.TableNo;
             }
 
-            // ✅ Update user location
+            
             if (!string.IsNullOrEmpty(dto.Location))
                 user.Location = dto.Location;
 
-            // ✅ Assign asset
             asset.AssignedTo = dto.UserId;
             asset.AssignDate = dto.AssignedDate;
             asset.ExpectedReturnDate = dto.ExpectedReturnDate;
 
-            asset.StatusId = 2; // Assigned
-
-
-
+            asset.StatusId = 2; 
 
             await _unitOfWork.SaveChangesAsync();
 
@@ -538,20 +518,19 @@ namespace IMS_Application.Services
 
             var isParent = asset.ParentAssetId == null;
 
-            // 🔹 Overview
             var overview = new AssetOverviewDto
             {
                 Id = asset.Id,
                 Image = asset.Image,
                 ItemName = asset.ItemName,
-                Status = asset.AssetStatus.Status,
+                Status = asset.AssetStatus?.Status ?? "Unknown",
 
                 Brand = asset.Brand,
-                Category = asset.Category.Name,
-                SubCategory = asset.SubCategory.Name,
+                Category = asset.Category?.Name ?? "N/A",
+                SubCategory = asset.SubCategory?.Name ?? "N/A",
                 Model = asset.Model,
                 SerialNo = asset.SerialNo,
-                Condition = asset.AssetCondition.Condition,
+                Condition = asset.AssetCondition?.Condition ?? "N/A",
 
                 Vendor = asset.Vendor,
                 PurchaseDate = asset.PurchaseDate,
@@ -563,20 +542,20 @@ namespace IMS_Application.Services
                 Notes = asset.Notes
             };
 
-            // 🔹 Add children ONLY if parent
+            //  Add children ONLY if parent
             if (isParent)
             {
                 overview.Children = asset.ChildAssets
-     .Where(c => c.IsActive)
-     .Select(c => new ChildAssetDto
-     {
-         Id = c.Id,
-         ItemName = c.ItemName,
-         CreatedAt = c.CreatedAt
-     }).ToList();
+                    .Where(c => c.IsActive)
+                    .Select(c => new ChildAssetDto
+                    {
+                        Id = c.Id,
+                        ItemName = c.ItemName,
+                        CreatedAt = c.CreatedAt
+                    }).ToList();
             }
 
-            // 🔹 Assignment
+            //  Assignment
             var assignment = new AssetAssignmentDto
             {
                 AssignedTo = asset.AssignedUser?.FullName,
@@ -587,7 +566,7 @@ namespace IMS_Application.Services
                 TableNo = asset.AssignedUser?.TableNo
             };
 
-            // 🔹 Network
+            //  Network
             var network = await _unitOfWork.NetworkDetails.GetByAssetIdAsync(asset.Id);
 
             if (network != null)
@@ -603,7 +582,7 @@ namespace IMS_Application.Services
                 };
             }
 
-            // 🔹 History
+            //  History
             var historyList = await _unitOfWork.AssetHistories.GetByAssetIdAsync(asset.Id);
 
             assignment.History = historyList.Select(h => new AssetHistoryDto
@@ -623,9 +602,8 @@ namespace IMS_Application.Services
             return Result<GetAssetByIdResponseDto>.Success(response);
         }
 
-    
 
-    public async Task<Result<string>> AttachChildAsync(AttachChildDto dto)
+        public async Task<Result<string>> AttachChildAsync(AttachChildDto dto)
         {
             var parent = await _unitOfWork.Assets.GetByIdAsync(dto.ParentId);
             if (parent == null || parent.ParentAssetId != null)
@@ -641,18 +619,16 @@ namespace IMS_Application.Services
             if (child.StatusId != 1)
                 return Result<string>.Failure("Only available assets can be attached", 400);
 
-            // ✅ Attach
+            
             child.ParentAssetId = parent.Id;
 
-            // ✅ Optional: inherit assignment
             if (parent.AssignedTo != null)
             {
                 child.AssignedTo = parent.AssignedTo;
                 child.AssignDate = parent.AssignDate;
-                child.StatusId = 2; // Assigned
+                child.StatusId = 2; 
             }
 
-            // ✅ History
             await _unitOfWork.AssetHistories.AddAsync(new AssetHistory
             {
                 AssetId = child.Id,
@@ -694,7 +670,7 @@ namespace IMS_Application.Services
                 ParentAssetId = parent.Id
             };
 
-            // ✅ inherit assignment
+            
             if (parent.AssignedTo != null)
             {
                 child.AssignedTo = parent.AssignedTo;
@@ -703,8 +679,9 @@ namespace IMS_Application.Services
             }
 
             await _unitOfWork.Assets.AddRangeAsync(new List<Asset> { child });
+            await _unitOfWork.SaveChangesAsync();
 
-            // ✅ History
+           
             await _unitOfWork.AssetHistories.AddAsync(new AssetHistory
             {
                 AssetId = child.Id,
@@ -712,6 +689,7 @@ namespace IMS_Application.Services
                 Description = $"Created and attached to {parent.ItemName}"
             });
 
+            
             await _unitOfWork.SaveChangesAsync();
 
             return Result<string>.Success("Child asset created and attached");
@@ -724,15 +702,15 @@ namespace IMS_Application.Services
             if (child == null || child.ParentAssetId == null)
                 return Result<string>.Failure("Invalid child asset", 400);
 
-            // ✅ Detach
+            //  Detach
             child.ParentAssetId = null;
 
-            // ✅ Reset assignment
+            //  Reset assignment
             child.AssignedTo = null;
             child.AssignDate = null;
             child.StatusId = 1; // Available
 
-            // ✅ History
+            //  History
             await _unitOfWork.AssetHistories.AddAsync(new AssetHistory
             {
                 AssetId = child.Id,
@@ -743,6 +721,24 @@ namespace IMS_Application.Services
             await _unitOfWork.SaveChangesAsync();
 
             return Result<string>.Success("Child asset detached successfully");
+        }
+
+        public async Task<Result<List<AssetListDto>>> FilterAssetsAsync(AssetFilterDto dto)
+        {
+            var assets = await _unitOfWork.Assets.FilterAsync(dto);
+
+            var response = assets.Select(a => new AssetListDto
+            {
+                Id = a.Id,
+                ItemName = a.ItemName,
+                SerialNo = a.SerialNo,
+                Category = a.Category.Name,
+                SubCategory = a.SubCategory.Name,
+                Status = a.AssetStatus.Status,
+                AssignedTo = a.AssignedUser != null ? a.AssignedUser.FullName : null
+            }).ToList();
+
+            return Result<List<AssetListDto>>.Success(response);
         }
     }
 }

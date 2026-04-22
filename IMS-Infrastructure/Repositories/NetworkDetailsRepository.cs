@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-
-using IMS_Application.Interfaces;
+﻿using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace IMS_Infrastructure.Repositories
 {

@@ -10,6 +10,7 @@ namespace IMS_Application.DTOs
         public required string Email { get; set; }
         public required int RoleId { get; set; }
         public int? DepartmentId { get; set; }
+        public string Password { get; set; }
         public string? ProfileImg { get; set; }
     }
 }

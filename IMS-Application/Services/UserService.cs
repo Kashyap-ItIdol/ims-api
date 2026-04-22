@@ -15,17 +15,33 @@ namespace IMS_Application.Services
             _userRepository = userRepository;
         }
 
-        
+
         public async Task CreateUserAsync(CreateUserDto dto, int currentUserId)
         {
+            var email = dto.Email.Trim().ToLower();
+
+            // ✅ Check duplicate email
+            if (await _userRepository.UserExistsAsync(email))
+                throw new Exception("User already exists");
+
+            // ✅ Prevent creating Admin users
+            if (dto.RoleId == RoleConstants.Admin)
+                throw new Exception("Cannot assign Admin role");
+
             var user = new User
             {
                 FullName = dto.FullName,
-                Email = dto.Email,
+                Email = email,
                 RoleId = dto.RoleId,
                 DepartmentId = dto.DepartmentId,
                 ProfileImg = dto.ProfileImg,
-                PasswordHash = "Default@123", // improve later
+
+                // ✅ Correct hashing
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+
+                IsActive = true,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
                 CreatedBy = currentUserId
             };
 
@@ -33,7 +49,7 @@ namespace IMS_Application.Services
             await _userRepository.SaveChangesAsync();
         }
 
-        
+
         public async Task UpdateUserAsync(UpdateUserDto dto, int currentUserId)
         {
             var user = await _userRepository.GetByIdAsync(dto.Id);
@@ -47,6 +63,9 @@ namespace IMS_Application.Services
             {
                 throw new Exception("Only Employee or Support Engineer can be updated");
             }
+
+            if (dto.RoleId == RoleConstants.Admin)
+                throw new Exception("Cannot assign Admin role");
 
             user.FullName = dto.FullName;
             user.Email = dto.Email;

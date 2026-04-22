@@ -1,4 +1,5 @@
-﻿using IMS_Application.Interfaces;
+﻿using IMS_Application.DTOs;
+using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -44,10 +45,15 @@ namespace IMS_Infrastructure.Repositories
 
         public async Task<Asset?> GetByIdWithChildrenAsync(int id)
         {
-            return await _context.Set<Asset>()
-                .Include(x => x.AssignedUser)
-                .Include(x => x.ChildAssets)
-                .FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
+            return await _context.Assets
+       .Include(a => a.AssetStatus)
+       .Include(a => a.Category)
+       .Include(a => a.SubCategory)
+       .Include(a => a.AssetCondition)
+       .Include(a => a.AssignedUser)
+           .ThenInclude(u => u.Department)
+       .Include(a => a.ChildAssets)
+       .FirstOrDefaultAsync(a => a.Id == id);
         }
 
         public async Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId)
@@ -75,7 +81,47 @@ namespace IMS_Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<Asset>> FilterAsync(AssetFilterDto dto)
+        {
+            var query = _context.Assets
+                .Include(a => a.Category)
+                .Include(a => a.SubCategory)
+                .Include(a => a.AssetStatus)
+                .Include(a => a.AssignedUser)
+                .Where(a => a.IsActive);
 
+            // Normal filters
+            if (dto.CategoryIds != null && dto.CategoryIds.Any())
+                query = query.Where(a => dto.CategoryIds.Contains(a.CategoryId));
 
+            if (dto.SubCategoryIds != null && dto.SubCategoryIds.Any())
+                query = query.Where(a => dto.SubCategoryIds.Contains(a.SubCategoryId));
+
+            if (dto.StatusIds != null && dto.StatusIds.Any())
+                query = query.Where(a => dto.StatusIds.Contains(a.StatusId));
+
+            // Context-based search
+            if (!string.IsNullOrWhiteSpace(dto.Search) && !string.IsNullOrWhiteSpace(dto.SearchType))
+            {
+                var search = dto.Search.ToLower();
+
+                switch (dto.SearchType.ToLower())
+                {
+                    case "category":
+                        query = query.Where(a => a.Category.Name.ToLower().Contains(search));
+                        break;
+
+                    case "subcategory":
+                        query = query.Where(a => a.SubCategory.Name.ToLower().Contains(search));
+                        break;
+
+                    case "status":
+                        query = query.Where(a => a.AssetStatus.Status.ToLower().Contains(search));
+                        break;
+                }
+            }
+
+            return await query.ToListAsync();
+        }
     }
 }
