@@ -1,7 +1,8 @@
-﻿namespace IMS_Application.DTOs
+﻿﻿namespace IMS_Application.DTOs
 {
     public class AssetResponseDto
     {
+        public int Id { get; set; }
         public string? Image { get; set; }
         public string ItemName { get; set; } = default!;
         public int StatusId { get; set; }

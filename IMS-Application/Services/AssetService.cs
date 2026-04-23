@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
@@ -22,51 +23,23 @@ namespace IMS_Application.Services
         public async Task<Result<string>> AddAssetsAsync(AddAssetDto dto, bool isClient)
         {
             if (dto.Assets == null || !dto.Assets.Any())
-                return Result<string>.Failure("At least one asset is required", 400);
+                return Result<string>.Failure(ErrorMessages.AssetsListEmpty, 400);
 
             if (dto.Assets.Count(x => x.IsPrimary) != 1)
-                return Result<string>.Failure("Exactly one primary asset is required", 400);
+                return Result<string>.Failure(ErrorMessages.ExactlyOnePrimaryAssetRequired, 400);
 
-            foreach (var asset in dto.Assets)
-            {
-                if (string.IsNullOrWhiteSpace(asset.ItemName))
-                    return Result<string>.Failure("ItemName is required", 400);
-
-                if (asset.CategoryId <= 0)
-                    return Result<string>.Failure("Invalid CategoryId", 400);
-
-                if (asset.SubCategoryId <= 0)
-                    return Result<string>.Failure("Invalid SubCategoryId", 400);
-
-                if (asset.ConditionId <= 0)
-                    return Result<string>.Failure("Invalid ConditionId", 400);
-
-                if (string.IsNullOrWhiteSpace(asset.SerialNo))
-                    return Result<string>.Failure("Serial number is required", 400);
-
-                if (!asset.IsPurchaseDetailsSame)
-                {
-                    if (string.IsNullOrWhiteSpace(asset.Vendor))
-                        return Result<string>.Failure("Vendor is required", 400);
-
-                    if (!asset.PurchaseCost.HasValue || asset.PurchaseCost <= 0)
-                        return Result<string>.Failure("PurchaseCost must be greater than 0", 400);
-
-                    if (!asset.PurchaseDate.HasValue)
-                        return Result<string>.Failure("PurchaseDate is required", 400);
-                }
-            }
+            // DTO validation handled by FluentValidation
 
             var mainDto = dto.Assets.First(x => x.IsPrimary);
 
-            
+
             if (dto.AssignedTo.HasValue && mainDto.StatusId != 2)
-                return Result<string>.Failure("Assigned asset must have status = Assigned", 400);
+                return Result<string>.Failure(ErrorMessages.AssignedAssetMustBeAssigned, 400);
 
             if (dto.AssignedDate.HasValue && dto.ExpectedReturnDate.HasValue)
             {
                 if (dto.ExpectedReturnDate < dto.AssignedDate)
-                    return Result<string>.Failure("ExpectedReturnDate cannot be before AssignedDate", 400);
+                    return Result<string>.Failure(ErrorMessages.ExpectedReturnDateBeforeAssignedDate, 400);
             }
 
             var serials = dto.Assets.Select(x => x.SerialNo).ToList();
@@ -74,7 +47,7 @@ namespace IMS_Application.Services
             foreach (var serial in serials)
             {
                 if (await _unitOfWork.Assets.SerialExistsAsync(serial))
-                    return Result<string>.Failure($"Serial already exists: {serial}", 400);
+                    return Result<string>.Failure(string.Format(ErrorMessages.SerialAlreadyExistsFormatted, serial), 400);
             }
 
             if (dto.AssignedTo.HasValue)
@@ -82,7 +55,7 @@ namespace IMS_Application.Services
                 var userExists = await _unitOfWork.Users.ExistsAsync(dto.AssignedTo.Value);
 
                 if (!userExists)
-                    return Result<string>.Failure($"User not found with id {dto.AssignedTo.Value}", 404);
+                    return Result<string>.Failure(string.Format(ErrorMessages.UserNotFoundById, dto.AssignedTo.Value), 404);
 
                 var user = await _unitOfWork.Users.GetByIdAsync(dto.AssignedTo.Value);
 
@@ -98,44 +71,17 @@ namespace IMS_Application.Services
                 var isTableUsed = await _unitOfWork.Users.TableAlreadyAssignedAsync(dto.TableNo);
 
                 if (isTableUsed)
-                    return Result<string>.Failure($"Table {dto.TableNo} is already assigned to another user", 400);
+                    return Result<string>.Failure(string.Format(ErrorMessages.TableAlreadyAssignedToUser, dto.TableNo), 400);
             }
 
-           
-            var mainAsset = new Asset
-            {
-                Image = mainDto.Image,
-                ItemName = mainDto.ItemName,
-                StatusId = mainDto.StatusId,
-                CategoryId = mainDto.CategoryId,
-                SubCategoryId = mainDto.SubCategoryId,
-                ConditionId = mainDto.ConditionId,
-                Brand = mainDto.Brand,
-                Model = mainDto.Model,
-                SerialNo = mainDto.SerialNo,
 
-                Vendor = mainDto.Vendor!,
-                PurchaseCost = mainDto.PurchaseCost!.Value,
-                PurchaseDate = mainDto.PurchaseDate!.Value,
-                InvoiceNumber = mainDto.InvoiceNumber!,
-
-                WarrantyExpiry = mainDto.WarrantyExpiry,
-                AmcExpiry = mainDto.AmcExpiry,
-
-                IsClient = isClient,
-
-                AssignedTo = dto.AssignedTo,
-
-                
-                AssignDate = dto.AssignedTo.HasValue
-                    ? (dto.AssignedDate ?? DateTime.UtcNow)
-                    : null,
-
-                ExpectedReturnDate = dto.ExpectedReturnDate,
-
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+            var mainAsset = _mapper.Map<Asset>(mainDto);
+            mainAsset.IsClient = isClient;
+            mainAsset.AssignedTo = dto.AssignedTo;
+            mainAsset.AssignDate = dto.AssignedTo.HasValue ? (dto.AssignedDate ?? DateTime.UtcNow) : null;
+            mainAsset.ExpectedReturnDate = dto.ExpectedReturnDate;
+            mainAsset.CreatedAt = DateTime.UtcNow;
+            mainAsset.UpdatedAt = DateTime.UtcNow;
 
             await _unitOfWork.Assets.AddRangeAsync(new List<Asset> { mainAsset });
             await _unitOfWork.SaveChangesAsync();
@@ -144,42 +90,25 @@ namespace IMS_Application.Services
 
             foreach (var item in dto.Assets.Where(x => !x.IsPrimary))
             {
-                var asset = new Asset
+                var asset = _mapper.Map<Asset>(item);
+                asset.StatusId = mainAsset.StatusId;
+                asset.IsClient = isClient;
+                asset.AssignedTo = dto.AssignedTo;
+                asset.AssignDate = dto.AssignedTo.HasValue ? (dto.AssignedDate ?? DateTime.UtcNow) : null;
+                asset.ExpectedReturnDate = dto.ExpectedReturnDate;
+                asset.ParentAssetId = mainAsset.Id;
+                asset.CreatedAt = DateTime.UtcNow;
+                asset.UpdatedAt = DateTime.UtcNow;
+
+                // Conditional purchase details
+                if (item.IsPurchaseDetailsSame)
                 {
-                    Image = item.Image,
-                    ItemName = item.ItemName,
-                    StatusId = mainAsset.StatusId,
-                    CategoryId = item.CategoryId,
-                    SubCategoryId = item.SubCategoryId,
-                    ConditionId = item.ConditionId,
-                    Brand = item.Brand,
-                    Model = item.Model,
-                    SerialNo = item.SerialNo,
-
-                    Vendor = item.IsPurchaseDetailsSame ? mainAsset.Vendor : item.Vendor!,
-                    PurchaseCost = item.IsPurchaseDetailsSame ? mainAsset.PurchaseCost : item.PurchaseCost!.Value,
-                    PurchaseDate = item.IsPurchaseDetailsSame ? mainAsset.PurchaseDate : item.PurchaseDate!.Value,
-                    InvoiceNumber = item.IsPurchaseDetailsSame ? mainAsset.InvoiceNumber : item.InvoiceNumber!,
-
-                    WarrantyExpiry = item.WarrantyExpiry,
-                    AmcExpiry = item.AmcExpiry,
-
-                    IsClient = isClient,
-
-                    AssignedTo = dto.AssignedTo,
-
-                    
-                    AssignDate = dto.AssignedTo.HasValue
-                        ? (dto.AssignedDate ?? DateTime.UtcNow)
-                        : null,
-
-                    ExpectedReturnDate = dto.ExpectedReturnDate,
-
-                    ParentAssetId = mainAsset.Id,
-
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
+                    asset.Vendor = mainAsset.Vendor;
+                    asset.PurchaseCost = mainAsset.PurchaseCost;
+                    asset.PurchaseDate = mainAsset.PurchaseDate;
+                    asset.InvoiceNumber = mainAsset.InvoiceNumber;
+                }
+                // else mapper handles from item
 
                 childAssets.Add(asset);
             }
@@ -190,7 +119,7 @@ namespace IMS_Application.Services
                 await _unitOfWork.SaveChangesAsync();
             }
 
-            return Result<string>.Success("Assets added successfully");
+            return Result<string>.Success(SuccessMessages.AssetsAddedSuccessfully);
         }
 
         public async Task<Result<List<AssetResponseDto>>> GetAllAssetsAsync()
@@ -200,58 +129,14 @@ namespace IMS_Application.Services
 
             var parentAssets = assets.Where(a => a.ParentAssetId == null).ToList();
 
-            var result = parentAssets.Select(parent => new AssetResponseDto
+            var result = _mapper.Map<List<AssetResponseDto>>(parentAssets);
+
+            // Manually set nested children using mapper
+            foreach (var dto in result)
             {
-                Image = parent.Image,
-                ItemName = parent.ItemName,
-                StatusId = parent.StatusId,
-                CategoryId = parent.CategoryId,
-                SubCategoryId = parent.SubCategoryId,
-                ConditionId = parent.ConditionId,
-                Brand = parent.Brand,
-                Model = parent.Model,
-                SerialNo = parent.SerialNo,
-                Vendor = parent.Vendor,
-                PurchaseCost = parent.PurchaseCost,
-                PurchaseDate = parent.PurchaseDate,
-                InvoiceNumber = parent.InvoiceNumber,
-                WarrantyExpiry = parent.WarrantyExpiry,
-                AmcExpiry = parent.AmcExpiry,
-                AssignedTo = parent.AssignedTo,
-                AssignedDate = parent.AssignDate,
-                ExpectedReturnDate = parent.ExpectedReturnDate,
-
-                Location = parent.AssignedUser?.Location,
-                TableNo = parent.AssignedUser?.TableNo,
-
-
-                Children = assets
-                    .Where(x => x.ParentAssetId == parent.Id)
-                    .Select(child => new AssetResponseDto
-                    {
-                        Image = child.Image,
-                        ItemName = child.ItemName,
-                        StatusId = child.StatusId,
-                        CategoryId = child.CategoryId,
-                        SubCategoryId = child.SubCategoryId,
-                        ConditionId = child.ConditionId,
-                        Brand = child.Brand,
-                        Model = child.Model,
-                        SerialNo = child.SerialNo,
-                        Vendor = child.Vendor,
-                        PurchaseCost = child.PurchaseCost,
-                        PurchaseDate = child.PurchaseDate,
-                        InvoiceNumber = child.InvoiceNumber,
-                        WarrantyExpiry = child.WarrantyExpiry,
-                        AmcExpiry = child.AmcExpiry,
-                        AssignedTo = child.AssignedTo,
-                        AssignedDate = child.AssignDate,
-                        ExpectedReturnDate = child.ExpectedReturnDate,
-
-                        Location = child.AssignedUser?.Location,
-                        TableNo = child.AssignedUser?.TableNo
-                    }).ToList()
-            }).ToList();
+                var childAssets = assets.Where(x => x.ParentAssetId == dto!.Id).ToList();
+                dto!.Children = _mapper.Map<List<AssetResponseDto>>(childAssets);
+            }
 
             return Result<List<AssetResponseDto>>.Success(result);
         }
@@ -261,16 +146,16 @@ namespace IMS_Application.Services
             var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(dto.Id);
 
             if (asset == null)
-                return Result<string>.Failure("Asset not found", 404);
+                return Result<string>.Failure(ErrorMessages.AssetNotFound, 404);
 
-           
+
             if (await _unitOfWork.Assets.SerialExistsAsync(dto.SerialNo, dto.Id))
-                return Result<string>.Failure("Serial already exists", 400);
+                return Result<string>.Failure(ErrorMessages.SerialAlreadyExists, 400);
 
             bool isParent = asset.ParentAssetId == null && asset.ChildAssets.Any();
             bool isChild = asset.ParentAssetId != null;
 
-             
+
             if (dto.IsManualUnlink && isChild)
             {
                 asset.ParentAssetId = null;
@@ -279,7 +164,7 @@ namespace IMS_Application.Services
                 asset.AssignDate = null;
 
                 await _unitOfWork.SaveChangesAsync();
-                return Result<string>.Success("Child unlinked successfully");
+                return Result<string>.Success(SuccessMessages.ChildUnlinkedSuccessfully);
             }
 
             if (dto.IsFromParentContext)
@@ -287,7 +172,7 @@ namespace IMS_Application.Services
 
                 if (isChild && dto.StatusId == 1)
                 {
-                    
+
                     asset.AssignedTo = null;
                     asset.AssignDate = null;
 
@@ -295,22 +180,22 @@ namespace IMS_Application.Services
                     return Result<string>.Success("Child marked as available (still linked to parent)");
                 }
 
-             
+
                 if (isChild && dto.StatusId == 2)
                 {
                     var parent = await _unitOfWork.Assets.GetByIdAsync(asset.ParentAssetId!.Value);
 
                     if (parent?.AssignedTo == null)
-                        return Result<string>.Failure("Cannot assign child when parent is not assigned", 400);
+                        return Result<string>.Failure(ErrorMessages.CannotAssignChildParentNotAssigned, 400);
 
                     if (parent.AssignedTo != dto.AssignedTo)
-                        return Result<string>.Failure("Child must be assigned to same user as parent", 400);
+                        return Result<string>.Failure(ErrorMessages.ChildMustMatchParentAssignment, 400);
                 }
 
-                
+
                 if (isParent)
                 {
-                    
+
                     if (asset.AssignedTo != dto.AssignedTo && dto.AssignedTo.HasValue)
                     {
                         foreach (var child in asset.ChildAssets)
@@ -319,7 +204,7 @@ namespace IMS_Application.Services
                         }
                     }
 
-                   
+
                     if (dto.StatusId == 1)
                     {
                         asset.AssignedTo = null;
@@ -327,8 +212,8 @@ namespace IMS_Application.Services
                     }
                 }
 
-               
-                MapBasicFields(asset, dto);
+
+                _mapper.Map(dto, asset);
 
                 asset.StatusId = dto.StatusId;
                 asset.AssignedTo = dto.AssignedTo;
@@ -342,14 +227,14 @@ namespace IMS_Application.Services
             {
                 if (dto.StatusId == 2)
                 {
-                    
+
                     if (asset.StatusId != 1)
-                        return Result<string>.Failure("Only available assets can be assigned", 400);
+                        return Result<string>.Failure(ErrorMessages.OnlyAvailableAssetsCanBeAssigned, 400);
 
                     if (!dto.AssignedTo.HasValue)
-                        return Result<string>.Failure("AssignedTo is required", 400);
+                        return Result<string>.Failure(ErrorMessages.AssignedToRequired, 400);
 
-                  
+
                     if (isChild)
                     {
                         asset.ParentAssetId = null;
@@ -357,51 +242,31 @@ namespace IMS_Application.Services
 
                     asset.AssignedTo = dto.AssignedTo;
                     asset.AssignDate = dto.AssignedDate ?? DateTime.UtcNow;
-                    asset.StatusId = 2; 
+                    asset.StatusId = 2;
                 }
                 else
                 {
-                    
+
                     asset.StatusId = dto.StatusId;
                     asset.AssignedTo = null;
                     asset.AssignDate = null;
                 }
 
-                MapBasicFields(asset, dto);
+                _mapper.Map(dto, asset);
 
                 await _unitOfWork.SaveChangesAsync();
                 return Result<string>.Success("Asset updated successfully");
             }
         }
 
-        private void MapBasicFields(Asset asset, UpdateAssetDto dto)
-        {
-            asset.Image = dto.Image;
-            asset.ItemName = dto.ItemName;
-            asset.CategoryId = dto.CategoryId;
-            asset.SubCategoryId = dto.SubCategoryId;
-            asset.ConditionId = dto.ConditionId;
-            asset.Brand = dto.Brand;
-            asset.Model = dto.Model;
-            asset.SerialNo = dto.SerialNo;
 
-            asset.Vendor = dto.Vendor;
-            asset.PurchaseCost = dto.PurchaseCost;
-            asset.PurchaseDate = dto.PurchaseDate;
-            asset.InvoiceNumber = dto.InvoiceNumber;
-
-            asset.WarrantyExpiry = dto.WarrantyExpiry;
-            asset.AmcExpiry = dto.AmcExpiry;
-
-            asset.UpdatedAt = DateTime.UtcNow;
-        }
 
         public async Task<Result<string>> DeleteAssetAsync(int id)
         {
             var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(id);
 
             if (asset == null)
-                return Result<string>.Failure("Asset not found", 404);
+                return Result<string>.Failure(ErrorMessages.AssetNotFound, 404);
 
             bool isParent = asset.ParentAssetId == null;
             bool isChild = asset.ParentAssetId != null;
@@ -436,19 +301,14 @@ namespace IMS_Application.Services
 
             await _unitOfWork.SaveChangesAsync();
 
-            return Result<string>.Success("Asset deleted successfully");
+            return Result<string>.Success(SuccessMessages.AssetDeletedSuccessfully);
         }
 
         public async Task<Result<List<UserDto>>> GetSuggestedUsersAsync()
         {
             var users = await _unitOfWork.Users.GetUsersWithOpenTicketsAsync();
 
-            var result = users.Select(u => new UserDto
-            {
-                Id = u.Id,
-                FullName = u.FullName,
-                Email = u.Email
-            }).ToList();
+            var result = _mapper.Map<List<UserDto>>(users);
 
             return Result<List<UserDto>>.Success(result);
         }
@@ -457,12 +317,7 @@ namespace IMS_Application.Services
         {
             var users = await _unitOfWork.Users.SearchAsync(query);
 
-            var result = users.Select(u => new UserDto
-            {
-                Id = u.Id,
-                FullName = u.FullName,
-                Email = u.Email
-            }).ToList();
+            var result = _mapper.Map<List<UserDto>>(users);
 
             return Result<List<UserDto>>.Success(result);
         }
@@ -472,7 +327,7 @@ namespace IMS_Application.Services
             var asset = await _unitOfWork.Assets.GetByIdAsync(dto.AssetId);
 
             if (asset == null)
-                return Result<string>.Failure("Asset not found", 404);
+                return Result<string>.Failure(ErrorMessages.AssetNotFound, 404);
 
             //  Only available assets can be assigned
             if (asset.StatusId != 1)
@@ -481,20 +336,20 @@ namespace IMS_Application.Services
             var user = await _unitOfWork.Users.GetByIdAsync(dto.UserId);
 
             if (user == null)
-                return Result<string>.Failure("User not found", 404);
+                return Result<string>.Failure(ErrorMessages.UserNotFound, 404);
 
-            
+
             if (!string.IsNullOrEmpty(dto.TableNo))
             {
                 var isTableUsed = await _unitOfWork.Users.TableAlreadyAssignedAsync(dto.TableNo);
 
                 if (isTableUsed)
-                    return Result<string>.Failure($"Table {dto.TableNo} already assigned", 400);
+                    return Result<string>.Failure(string.Format(ErrorMessages.TableAlreadyAssignedShort, dto.TableNo), 400);
 
                 user.TableNo = dto.TableNo;
             }
 
-            
+
             if (!string.IsNullOrEmpty(dto.Location))
                 user.Location = dto.Location;
 
@@ -502,11 +357,11 @@ namespace IMS_Application.Services
             asset.AssignDate = dto.AssignedDate;
             asset.ExpectedReturnDate = dto.ExpectedReturnDate;
 
-            asset.StatusId = 2; 
+            asset.StatusId = 2;
 
             await _unitOfWork.SaveChangesAsync();
 
-            return Result<string>.Success("Asset assigned successfully");
+            return Result<string>.Success(SuccessMessages.AssetAssignedSuccessfully);
         }
 
         public async Task<Result<GetAssetByIdResponseDto>> GetAssetByIdAsync(int id)
@@ -514,90 +369,28 @@ namespace IMS_Application.Services
             var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(id);
 
             if (asset == null)
-                return Result<GetAssetByIdResponseDto>.Failure("Asset not found", 404);
+                return Result<GetAssetByIdResponseDto>.Failure(ErrorMessages.AssetNotFound, 404);
 
             var isParent = asset.ParentAssetId == null;
 
-            var overview = new AssetOverviewDto
-            {
-                Id = asset.Id,
-                Image = asset.Image,
-                ItemName = asset.ItemName,
-                Status = asset.AssetStatus?.Status ?? "Unknown",
+            var response = _mapper.Map<GetAssetByIdResponseDto>(asset);
 
-                Brand = asset.Brand,
-                Category = asset.Category?.Name ?? "N/A",
-                SubCategory = asset.SubCategory?.Name ?? "N/A",
-                Model = asset.Model,
-                SerialNo = asset.SerialNo,
-                Condition = asset.AssetCondition?.Condition ?? "N/A",
-
-                Vendor = asset.Vendor,
-                PurchaseDate = asset.PurchaseDate,
-                PurchaseCost = asset.PurchaseCost,
-                InvoiceNumber = asset.InvoiceNumber,
-                WarrantyExpiry = asset.WarrantyExpiry,
-                AmcExpiry = asset.AmcExpiry,
-
-                Notes = asset.Notes
-            };
-
-            //  Add children ONLY if parent
-            if (isParent)
-            {
-                overview.Children = asset.ChildAssets
-                    .Where(c => c.IsActive)
-                    .Select(c => new ChildAssetDto
-                    {
-                        Id = c.Id,
-                        ItemName = c.ItemName,
-                        CreatedAt = c.CreatedAt
-                    }).ToList();
-            }
-
-            //  Assignment
-            var assignment = new AssetAssignmentDto
-            {
-                AssignedTo = asset.AssignedUser?.FullName,
-                UserId = asset.AssignedTo,
-                Department = asset.AssignedUser?.Department?.Name,
-                AssignDate = asset.AssignDate,
-                OfficeNo = asset.AssignedUser?.Location,
-                TableNo = asset.AssignedUser?.TableNo
-            };
-
-            //  Network
             var network = await _unitOfWork.NetworkDetails.GetByAssetIdAsync(asset.Id);
 
             if (network != null)
             {
-                assignment.Network = new NetworkDetailsDto
-                {
-                    IPAddress = network.IPAddress,
-                    MacAddress = network.MacAddress,
-                    Hostname = network.Hostname,
-                    SubnetMask = network.SubnetMask,
-                    Gateway = network.Gateway,
-                    DNS = network.DNS
-                };
+                response.Assignment.Network = _mapper.Map<NetworkDetailsDto>(network);
             }
 
-            //  History
             var historyList = await _unitOfWork.AssetHistories.GetByAssetIdAsync(asset.Id);
 
-            assignment.History = historyList.Select(h => new AssetHistoryDto
-            {
-                Action = h.Action,
-                Description = h.Description,
-                CreatedAt = h.CreatedAt
-            }).ToList();
+            response.Assignment.History = _mapper.Map<List<AssetHistoryDto>>(historyList);
 
-            var response = new GetAssetByIdResponseDto
+            if (isParent)
             {
-                IsParent = isParent,
-                Overview = overview,
-                Assignment = assignment
-            };
+                response.Overview.Children = _mapper.Map<List<ChildAssetDto>>(asset.ChildAssets.Where(c => c.IsActive));
+            }
+            ;
 
             return Result<GetAssetByIdResponseDto>.Success(response);
         }
@@ -607,26 +400,26 @@ namespace IMS_Application.Services
         {
             var parent = await _unitOfWork.Assets.GetByIdAsync(dto.ParentId);
             if (parent == null || parent.ParentAssetId != null)
-                return Result<string>.Failure("Invalid parent asset", 400);
+                return Result<string>.Failure(ErrorMessages.InvalidParentAsset, 400);
 
             var child = await _unitOfWork.Assets.GetByIdAsync(dto.ChildId);
             if (child == null)
-                return Result<string>.Failure("Child asset not found", 404);
+                return Result<string>.Failure(ErrorMessages.ChildAssetNotFound, 404);
 
             if (child.ParentAssetId != null)
-                return Result<string>.Failure("Asset is already attached", 400);
+                return Result<string>.Failure(ErrorMessages.AssetAlreadyAttached, 400);
 
             if (child.StatusId != 1)
-                return Result<string>.Failure("Only available assets can be attached", 400);
+                return Result<string>.Failure(ErrorMessages.OnlyAvailableAssetsAttachable, 400);
 
-            
+
             child.ParentAssetId = parent.Id;
 
             if (parent.AssignedTo != null)
             {
                 child.AssignedTo = parent.AssignedTo;
                 child.AssignDate = parent.AssignDate;
-                child.StatusId = 2; 
+                child.StatusId = 2;
             }
 
             await _unitOfWork.AssetHistories.AddAsync(new AssetHistory
@@ -638,7 +431,7 @@ namespace IMS_Application.Services
 
             await _unitOfWork.SaveChangesAsync();
 
-            return Result<string>.Success("Child asset attached successfully");
+            return Result<string>.Success(SuccessMessages.ChildAttachedSuccessfully);
         }
 
         public async Task<Result<string>> CreateAndAttachChildAsync(CreateChildAssetDto dto)
@@ -646,31 +439,15 @@ namespace IMS_Application.Services
             var parent = await _unitOfWork.Assets.GetByIdAsync(dto.ParentId);
 
             if (parent == null || parent.ParentAssetId != null)
-                return Result<string>.Failure("Invalid parent asset", 400);
+                return Result<string>.Failure(ErrorMessages.InvalidParentAsset, 400);
 
             if (await _unitOfWork.Assets.SerialExistsAsync(dto.SerialNo))
-                return Result<string>.Failure("Serial already exists", 400);
+                return Result<string>.Failure(ErrorMessages.SerialAlreadyExists, 400);
 
-            var child = new Asset
-            {
-                ItemName = dto.ItemName,
-                StatusId = dto.StatusId,
-                CategoryId = dto.CategoryId,
-                SubCategoryId = dto.SubCategoryId,
-                ConditionId = dto.ConditionId,
-                Brand = dto.Brand,
-                Model = dto.Model,
-                SerialNo = dto.SerialNo,
+            var child = _mapper.Map<Asset>(dto);
+            child.ParentAssetId = parent.Id;
 
-                Vendor = dto.Vendor,
-                PurchaseCost = dto.PurchaseCost,
-                PurchaseDate = dto.PurchaseDate,
-                InvoiceNumber = dto.InvoiceNumber,
 
-                ParentAssetId = parent.Id
-            };
-
-            
             if (parent.AssignedTo != null)
             {
                 child.AssignedTo = parent.AssignedTo;
@@ -681,7 +458,7 @@ namespace IMS_Application.Services
             await _unitOfWork.Assets.AddRangeAsync(new List<Asset> { child });
             await _unitOfWork.SaveChangesAsync();
 
-           
+
             await _unitOfWork.AssetHistories.AddAsync(new AssetHistory
             {
                 AssetId = child.Id,
@@ -689,10 +466,10 @@ namespace IMS_Application.Services
                 Description = $"Created and attached to {parent.ItemName}"
             });
 
-            
+
             await _unitOfWork.SaveChangesAsync();
 
-            return Result<string>.Success("Child asset created and attached");
+            return Result<string>.Success(SuccessMessages.ChildCreatedAndAttachedSuccessfully);
         }
 
         public async Task<Result<string>> DetachChildAsync(DetachChildDto dto)
@@ -700,7 +477,7 @@ namespace IMS_Application.Services
             var child = await _unitOfWork.Assets.GetByIdAsync(dto.ChildId);
 
             if (child == null || child.ParentAssetId == null)
-                return Result<string>.Failure("Invalid child asset", 400);
+                return Result<string>.Failure(ErrorMessages.InvalidChildAsset, 400);
 
             //  Detach
             child.ParentAssetId = null;
@@ -720,23 +497,14 @@ namespace IMS_Application.Services
 
             await _unitOfWork.SaveChangesAsync();
 
-            return Result<string>.Success("Child asset detached successfully");
+            return Result<string>.Success(SuccessMessages.ChildDetachedSuccessfully);
         }
 
         public async Task<Result<List<AssetListDto>>> FilterAssetsAsync(AssetFilterDto dto)
         {
             var assets = await _unitOfWork.Assets.FilterAsync(dto);
 
-            var response = assets.Select(a => new AssetListDto
-            {
-                Id = a.Id,
-                ItemName = a.ItemName,
-                SerialNo = a.SerialNo,
-                Category = a.Category.Name,
-                SubCategory = a.SubCategory.Name,
-                Status = a.AssetStatus.Status,
-                AssignedTo = a.AssignedUser != null ? a.AssignedUser.FullName : null
-            }).ToList();
+            var response = _mapper.Map<List<AssetListDto>>(assets);
 
             return Result<List<AssetListDto>>.Success(response);
         }

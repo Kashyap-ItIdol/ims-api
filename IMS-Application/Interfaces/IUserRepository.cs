@@ -10,11 +10,11 @@ namespace IMS_Application.Interfaces
 
         // for user module 
 
-        Task<User?> GetByIdAsync(int id);
-        Task<List<User>> GetAllAsync();
-        Task AddAsync(User user);
-        void Update(User user);
-        Task SaveChangesAsync();
+         Task<User?> GetByIdAsync(int id);
+         Task<List<User>> GetAllAsync();
+         Task AddAsync(User user);
+         void Update(User user);
+         Task SaveChangesAsync();
 
         Task<bool> ExistsAsync(int userId);
 
