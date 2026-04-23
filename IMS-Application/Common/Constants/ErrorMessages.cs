@@ -37,5 +37,10 @@
         public const string SubCategoryCategoryNotFound = "Category not found or inactive.";
         public const string DuplicateSubCategoryName = "SubCategory with this name already exists in the category.";
         public const string SubCategoryInvalidUser = "Invalid user.";
+        public const string ForgotPasswordUserNotFound = "User not found with this email address";
+        public const string OtpSendFailed = "Failed to send OTP. Please try again.";
+        public const string InvalidOrExpiredOtp = "Invalid or expired OTP";
+        public const string InvalidResetToken = "Invalid or expired reset token";
+        public const string ResetPasswordUserNotFound = "User not found for password reset";
     }
 }

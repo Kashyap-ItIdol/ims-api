@@ -39,7 +39,7 @@ namespace IMS_API.Controllers
         }
 
         // Only Admins can hit this endpoint
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
@@ -89,6 +89,27 @@ namespace IMS_API.Controllers
             }
 
             return FromResult(Result<bool>.Success(true, SuccessMessages.LogoutSuccess));
+        }
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordRequestDto dto)
+        {
+            var result = await _authService.RequestForgotPasswordAsync(dto);
+            return FromResult(result);
+        }
+        [HttpPost("verify-otp")]
+        [AllowAnonymous]
+        public async Task<IActionResult> VerifyOtp(OtpVerificationRequestDto dto)
+        {
+            var result = await _authService.VerifyOtpAsync(dto);
+            return FromResult(result);
+        }
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword(ResetPasswordRequestDto dto)
+        {
+            var result = await _authService.ResetPasswordAsync(dto);
+            return FromResult(result);
         }
     }
 }

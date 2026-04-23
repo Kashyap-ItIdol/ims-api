@@ -1,4 +1,4 @@
-﻿using IMS_Domain.Entities;
+using IMS_Domain.Entities;
 
 namespace IMS_Application.Services.Interfaces
 {
@@ -6,5 +6,7 @@ namespace IMS_Application.Services.Interfaces
     {
         string GenerateAccessToken(User user);
         string GenerateRefreshToken();
+        string GenerateResetToken(int userId);
+        int? ValidateResetToken(string token);
     }
 }

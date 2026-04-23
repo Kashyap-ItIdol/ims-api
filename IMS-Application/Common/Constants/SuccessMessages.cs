@@ -17,6 +17,9 @@
         public const string AllTickets = "Tickets retrieved successfully";
         public const string CategoryUpdated = "Category updated successfully";
         public const string SubCategoryCreated = "SubCategory created successfully";
+        public const string OtpSentSuccessfully = "OTP sent successfully";
+        public const string OtpVerifiedSuccessfully = "OTP verified and reset token generated successfully";
+        public const string PasswordResetSuccessfully = "Password reset successfully";
 
     }
 }
