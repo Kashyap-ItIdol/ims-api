@@ -31,10 +31,7 @@ namespace IMS_Application.Validators
             RuleFor(x => x.DepartmentId)
                 .GreaterThan(0).WithMessage("Department is required");
 
-            // CreatedBy (optional for self-registration)
-            RuleFor(x => x.CreatedBy)
-                .Must(c => !c.HasValue || c.Value > 0)
-                .WithMessage("CreatedBy must be valid");
+
         }
 
     }

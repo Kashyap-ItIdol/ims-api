@@ -80,17 +80,39 @@ namespace IMS_Application.Services
             try
             {
 
-                if (!Enum.TryParse<TicketType>(dto.TicketType, true, out var ticketType))
+                TicketType ticketType;
+                if (dto.CategoryId.HasValue && dto.SubCategoryId.HasValue)
+                {
+                    ticketType = TicketType.Hardware;
+                }
+                else if (!Enum.TryParse<TicketType>(dto.TicketType, true, out ticketType))
+                {
                     return Result<TicketResponseDto>.Failure(ErrorMessages.InvalidTicketType, 400);
+                }
 
                 if (!Enum.TryParse<TicketPriority>(dto.Priority, true, out var ticketPriority))
                     return Result<TicketResponseDto>.Failure(ErrorMessages.InvalidTicketPriority, 400);
+
+                if (dto.CategoryId.HasValue)
+                {
+                    var category = await _unitOfWork.Categories.GetByIdAsync(dto.CategoryId.Value);
+                    if (category == null)
+                        return Result<TicketResponseDto>.Failure(ErrorMessages.CategoryOrSubCategoryNotFound, 400);
+                }
+
+                if (dto.SubCategoryId.HasValue)
+                {
+                    var subCategory = await _unitOfWork.SubCategories.GetByIdAsync(dto.SubCategoryId.Value);
+                    if (subCategory == null)
+                        return Result<TicketResponseDto>.Failure(ErrorMessages.CategoryOrSubCategoryNotFound, 400);
+                }
 
                 var assignee = await _unitOfWork.Users.GetByIdAsync(dto.assignedTo);
                 if (assignee == null || assignee.Role.Name != LogicStrings.SupportEngineerRole)
                     return Result<TicketResponseDto>.Failure(ErrorMessages.InvalidTicketAssignee, 400);
 
                 var ticket = _mapper.Map<Ticket>(dto);
+                ticket.TicketType = ticketType;
                 ticket.CreatedBy = createdBy;
                 ticket.Status = Status.Open;
                 ticket.CreatedAt = DateTime.UtcNow;

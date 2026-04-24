@@ -83,7 +83,6 @@ namespace IMS_Application.Services
                     IsActive = true,
                     IsVerified = false,
                     IsDeleted = false,
-                    CreatedBy = dto.CreatedBy ?? null,
                     CreatedAt = DateTime.UtcNow,
                     RefreshTokens = new List<RefreshToken>()
                 };

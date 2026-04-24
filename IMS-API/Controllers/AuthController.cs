@@ -5,7 +5,6 @@ using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace IMS_API.Controllers
 {
@@ -38,16 +37,9 @@ namespace IMS_API.Controllers
             return FromResult(result);
         }
 
-        // Only Admins can hit this endpoint
-        //[Authorize(Roles = "Admin")]
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
-            // Optional but highly recommended: 
-            // Extract the Admin's ID directly from their JWT token to prevent spoofing
-            var adminId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            dto.CreatedBy = adminId;
-
             return FromResult(await _authService.RegisterAsync(dto));
         }
 

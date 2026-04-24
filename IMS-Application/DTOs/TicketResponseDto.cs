@@ -16,6 +16,9 @@ namespace IMS_Application.DTOs
         public string status { get; set; } = string.Empty;
         public string createdAt { get; set; } = string.Empty;
         public string updatedAt { get; set; } = string.Empty;
+        public string assetId { get; set; } = string.Empty;
+        public string categoryId { get; set; } = string.Empty;
+        public string subCategoryId { get; set; } = string.Empty;
         public UserInfo createdBy { get; set; } = new();
         public UserInfo? assignedTo { get; set; }
     }

@@ -42,5 +42,6 @@
         public const string InvalidOrExpiredOtp = "Invalid or expired OTP";
         public const string InvalidResetToken = "Invalid or expired reset token";
         public const string ResetPasswordUserNotFound = "User not found for password reset";
+        public const string CategoryOrSubCategoryNotFound = "category or subcategory is not available in the table";
     }
 }
