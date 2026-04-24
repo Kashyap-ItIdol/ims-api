@@ -26,13 +26,6 @@ namespace IMS_Infrastructure.Repositories
         public INetworkDetailsRepository NetworkDetails =>
             _networkDetails ??= new NetworkDetailsRepository(_context);
 
-        private IAssetHistoryRepository? _assetHistories;
-        public IAssetHistoryRepository AssetHistories =>
-            _assetHistories ??= new AssetHistoryRepository(_context);
-
-
-
-
         public UnitOfWork(AppDbContext context)
         {
             _context = context;

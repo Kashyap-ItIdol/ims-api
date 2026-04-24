@@ -1,4 +1,5 @@
-﻿using IMS_Application.DTOs;
+﻿﻿using IMS_API.Controllers.Base;
+using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ namespace IMS_API.Controllers
     [Authorize(Roles = "Admin")]
     [ApiController]
     [Route("api/[controller]")]
-    public class UsersController : ControllerBase
+    public class UsersController : BaseController
     {
         private readonly IUserService _userService;
 
@@ -23,17 +24,17 @@ namespace IMS_API.Controllers
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-            await _userService.CreateUserAsync(dto, userId);
-            return Ok("User created");
+            var result = await _userService.CreateUserAsync(dto, userId);
+            return FromResult(result);
         }
 
         [HttpPut]
         public async Task<IActionResult> Update(UpdateUserDto dto)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-            await _userService.UpdateUserAsync(dto, userId);
-            return Ok("User updated");
+            var result = await _userService.UpdateUserAsync(dto, currentUserId);
+            return FromResult(result);
         }
 
         [HttpGet]
@@ -48,8 +49,8 @@ namespace IMS_API.Controllers
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-            await _userService.DeleteUserAsync(id, userId);
-            return Ok("User deleted");
+            var result = await _userService.DeleteUserAsync(id, userId);
+            return FromResult(result);
         }
     }
 }

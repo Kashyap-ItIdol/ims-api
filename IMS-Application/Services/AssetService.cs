@@ -28,7 +28,7 @@ namespace IMS_Application.Services
             if (dto.Assets.Count(x => x.IsPrimary) != 1)
                 return Result<string>.Failure(ErrorMessages.ExactlyOnePrimaryAssetRequired, 400);
 
-            // DTO validation handled by FluentValidation
+            
 
             var mainDto = dto.Assets.First(x => x.IsPrimary);
 
@@ -100,7 +100,7 @@ namespace IMS_Application.Services
                 asset.CreatedAt = DateTime.UtcNow;
                 asset.UpdatedAt = DateTime.UtcNow;
 
-                // Conditional purchase details
+                
                 if (item.IsPurchaseDetailsSame)
                 {
                     asset.Vendor = mainAsset.Vendor;
@@ -108,7 +108,7 @@ namespace IMS_Application.Services
                     asset.PurchaseDate = mainAsset.PurchaseDate;
                     asset.InvoiceNumber = mainAsset.InvoiceNumber;
                 }
-                // else mapper handles from item
+               
 
                 childAssets.Add(asset);
             }
@@ -131,7 +131,7 @@ namespace IMS_Application.Services
 
             var result = _mapper.Map<List<AssetResponseDto>>(parentAssets);
 
-            // Manually set nested children using mapper
+            
             foreach (var dto in result)
             {
                 var childAssets = assets.Where(x => x.ParentAssetId == dto!.Id).ToList();
@@ -177,7 +177,7 @@ namespace IMS_Application.Services
                     asset.AssignDate = null;
 
                     await _unitOfWork.SaveChangesAsync();
-                    return Result<string>.Success("Child marked as available (still linked to parent)");
+                    return Result<string>.Success(SuccessMessages.ChildMarkedAvailable);
                 }
 
 
@@ -192,7 +192,6 @@ namespace IMS_Application.Services
                         return Result<string>.Failure(ErrorMessages.ChildMustMatchParentAssignment, 400);
                 }
 
-
                 if (isParent)
                 {
 
@@ -204,14 +203,12 @@ namespace IMS_Application.Services
                         }
                     }
 
-
                     if (dto.StatusId == 1)
                     {
                         asset.AssignedTo = null;
                         asset.AssignDate = null;
                     }
                 }
-
 
                 _mapper.Map(dto, asset);
 
@@ -221,7 +218,7 @@ namespace IMS_Application.Services
                 asset.ExpectedReturnDate = dto.ExpectedReturnDate;
 
                 await _unitOfWork.SaveChangesAsync();
-                return Result<string>.Success("Asset updated successfully");
+                return Result<string>.Success(SuccessMessages.AssetUpdatedSuccessfully);
             }
             else
             {
@@ -234,7 +231,6 @@ namespace IMS_Application.Services
                     if (!dto.AssignedTo.HasValue)
                         return Result<string>.Failure(ErrorMessages.AssignedToRequired, 400);
 
-
                     if (isChild)
                     {
                         asset.ParentAssetId = null;
@@ -246,7 +242,6 @@ namespace IMS_Application.Services
                 }
                 else
                 {
-
                     asset.StatusId = dto.StatusId;
                     asset.AssignedTo = null;
                     asset.AssignDate = null;
@@ -255,12 +250,9 @@ namespace IMS_Application.Services
                 _mapper.Map(dto, asset);
 
                 await _unitOfWork.SaveChangesAsync();
-                return Result<string>.Success("Asset updated successfully");
+                return Result<string>.Success(SuccessMessages.AssetUpdatedSuccessfully);
             }
         }
-
-
-
         public async Task<Result<string>> DeleteAssetAsync(int id)
         {
             var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(id);
@@ -271,34 +263,24 @@ namespace IMS_Application.Services
             bool isParent = asset.ParentAssetId == null;
             bool isChild = asset.ParentAssetId != null;
 
-            // SCENARIO 1: PARENT DELETE
+
             if (isParent)
             {
                 if (asset.ChildAssets.Any())
                 {
                     foreach (var child in asset.ChildAssets)
                     {
-                        // Unlink child (DO NOT change status)
                         child.ParentAssetId = null;
                     }
                 }
-
-                //Soft delete parent
                 asset.IsActive = false;
             }
-
-            // SCENARIO 2: CHILD DELETE
+            
             if (isChild)
             {
-                // Unlink from parent first
                 asset.ParentAssetId = null;
-
-                // Then soft delete
                 asset.IsActive = false;
             }
-
-
-
             await _unitOfWork.SaveChangesAsync();
 
             return Result<string>.Success(SuccessMessages.AssetDeletedSuccessfully);
@@ -331,7 +313,7 @@ namespace IMS_Application.Services
 
             //  Only available assets can be assigned
             if (asset.StatusId != 1)
-                return Result<string>.Failure("Only available assets can be assigned", 400);
+                return Result<string>.Failure(ErrorMessages.OnlyAvailableAssetsCanBeAssigned, 400);
 
             var user = await _unitOfWork.Users.GetByIdAsync(dto.UserId);
 
@@ -382,7 +364,7 @@ namespace IMS_Application.Services
                 response.Assignment.Network = _mapper.Map<NetworkDetailsDto>(network);
             }
 
-            var historyList = await _unitOfWork.AssetHistories.GetByAssetIdAsync(asset.Id);
+            var historyList = await _unitOfWork.Assets.GetHistoryByAssetIdAsync(asset.Id);
 
             response.Assignment.History = _mapper.Map<List<AssetHistoryDto>>(historyList);
 
@@ -422,7 +404,7 @@ namespace IMS_Application.Services
                 child.StatusId = 2;
             }
 
-            await _unitOfWork.AssetHistories.AddAsync(new AssetHistory
+            await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
             {
                 AssetId = child.Id,
                 Action = "Attached",
@@ -459,7 +441,7 @@ namespace IMS_Application.Services
             await _unitOfWork.SaveChangesAsync();
 
 
-            await _unitOfWork.AssetHistories.AddAsync(new AssetHistory
+            await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
             {
                 AssetId = child.Id,
                 Action = "Created & Attached",
@@ -479,16 +461,13 @@ namespace IMS_Application.Services
             if (child == null || child.ParentAssetId == null)
                 return Result<string>.Failure(ErrorMessages.InvalidChildAsset, 400);
 
-            //  Detach
             child.ParentAssetId = null;
 
-            //  Reset assignment
             child.AssignedTo = null;
             child.AssignDate = null;
-            child.StatusId = 1; // Available
+            child.StatusId = 1;
 
-            //  History
-            await _unitOfWork.AssetHistories.AddAsync(new AssetHistory
+            await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
             {
                 AssetId = child.Id,
                 Action = "Detached",

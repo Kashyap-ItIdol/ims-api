@@ -1,123 +1,131 @@
-﻿using IMS_Application.DTOs;
-using IMS_Application.Interfaces;
-using IMS_Application.Services.Interfaces;
-using IMS_Domain.Constants;
-using IMS_Domain.Entities;
+﻿    using AutoMapper;
+    using IMS_Application.Common.Constants;
+    using IMS_Application.Common.Models;
+    using IMS_Application.DTOs;
+    using IMS_Application.Interfaces;
+    using IMS_Application.Services.Interfaces;
+    using IMS_Domain.Constants;
+    using IMS_Domain.Entities;
 
-namespace IMS_Application.Services
-{
-    public class UserService : IUserService
+    namespace IMS_Application.Services
     {
-        private readonly IUserRepository _userRepository;
-
-        public UserService(IUserRepository userRepository)
+        public class UserService : IUserService
         {
-            _userRepository = userRepository;
-        }
+            private readonly IUnitOfWork _unitOfWork;
 
+            private readonly IMapper _mapper;
 
-        public async Task CreateUserAsync(CreateUserDto dto, int currentUserId)
-        {
-            var email = dto.Email.Trim().ToLower();
-
-            // ✅ Check duplicate email
-            if (await _userRepository.UserExistsAsync(email))
-                throw new Exception("User already exists");
-
-            // ✅ Prevent creating Admin users
-            if (dto.RoleId == RoleConstants.Admin)
-                throw new Exception("Cannot assign Admin role");
-
-            var user = new User
+            public UserService(IUnitOfWork unitOfWork, IMapper mapper)
             {
-                FullName = dto.FullName,
-                Email = email,
-                RoleId = dto.RoleId,
-                DepartmentId = dto.DepartmentId,
-                ProfileImg = dto.ProfileImg,
-
-                // ✅ Correct hashing
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-
-                IsActive = true,
-                IsDeleted = false,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = currentUserId
-            };
-
-            await _userRepository.AddAsync(user);
-            await _userRepository.SaveChangesAsync();
-        }
-
-
-        public async Task UpdateUserAsync(UpdateUserDto dto, int currentUserId)
-        {
-            var user = await _userRepository.GetByIdAsync(dto.Id);
-
-            if (user == null)
-                throw new Exception("User not found");
-
-            
-            if (user.RoleId != RoleConstants.Employee &&
-                user.RoleId != RoleConstants.SupportEngineer)
-            {
-                throw new Exception("Only Employee or Support Engineer can be updated");
+                _unitOfWork = unitOfWork;
+                _mapper = mapper;
             }
 
-            if (dto.RoleId == RoleConstants.Admin)
-                throw new Exception("Cannot assign Admin role");
-
-            user.FullName = dto.FullName;
-            user.Email = dto.Email;
-            user.RoleId = dto.RoleId;
-            user.DepartmentId = dto.DepartmentId;
-            user.ProfileImg = dto.ProfileImg;
-            user.IsActive = dto.IsActive;
-            user.UpdatedAt = DateTime.UtcNow;
-            user.UpdatedBy = currentUserId;
-
-            _userRepository.Update(user);
-            await _userRepository.SaveChangesAsync();
-        }
-
-        
-        public async Task<List<UserResponseDto>> GetAllUsersAsync()
-        {
-            var users = await _userRepository.GetAllAsync();
-
-            return users.Select((u, index) => new UserResponseDto
+            public async Task<Result<string>> CreateUserAsync(CreateUserDto dto, int currentUserId)
             {
-                Id = u.Id,
-                EmpCode = $"EMP-{(index + 1).ToString("D3")}",
-                FullName = u.FullName,
-                Email = u.Email,
-                Role = u.Role.Name,
-                Department = u.Department != null ? u.Department.Name : null,
-                IsActive = u.IsActive
-            }).ToList();
-        }
+                var email = dto.Email.Trim().ToLower();
 
-        
-        public async Task DeleteUserAsync(int id, int currentUserId)
-        {
-            var user = await _userRepository.GetByIdAsync(id);
+                if (await _unitOfWork.Users.UserExistsAsync(email))
+                    return Result<string>.Failure(ErrorMessages.UserAlreadyExists, 400);
 
-            if (user == null)
-                throw new Exception("User not found");
+                if (dto.RoleId == RoleConstants.Admin)
+                    return Result<string>.Failure(ErrorMessages.CannotAssignAdminRole, 400);
 
-            
-            if (user.RoleId != RoleConstants.Employee &&
-                user.RoleId != RoleConstants.SupportEngineer)
-            {
-                throw new Exception("Only Employee or Support Engineer can be deleted");
+                var user = _mapper.Map<User>(dto);
+
+           
+                user.Email = email;
+                var defaultPassword = Guid.NewGuid().ToString("N")[..8];
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(defaultPassword);
+                user.IsActive = true;
+                user.IsDeleted = false;
+                user.CreatedAt = DateTime.UtcNow;
+                user.CreatedBy = currentUserId;
+
+                await _unitOfWork.Users.AddAsync(user);
+                await _unitOfWork.SaveChangesAsync();
+
+                return Result<string>.Success(SuccessMessages.RegisterSuccess);
             }
 
-            user.IsDeleted = true;
-            user.DeletedAt = DateTime.UtcNow;
-            user.DeletedBy = currentUserId;
 
-            _userRepository.Update(user);
-            await _userRepository.SaveChangesAsync();
+            public async Task<Result<string>> UpdateUserAsync(UpdateUserDto dto, int currentUserId)
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(dto.Id);
+
+                if (user == null)
+                    return Result<string>.Failure(ErrorMessages.UserNotFound, 404);
+
+                if (user.RoleId != RoleConstants.Employee &&
+                    user.RoleId != RoleConstants.SupportEngineer)
+                {
+                    return Result<string>.Failure(ErrorMessages.OnlyEmployeeOrSupportCanUpdate, 400);
+                }
+
+                if (dto.RoleId == RoleConstants.Admin)
+                    return Result<string>.Failure(ErrorMessages.CannotAssignAdminRole, 400);
+
+                var email = dto.Email?.Trim().ToLower();
+                if (!string.IsNullOrEmpty(email) && email != user.Email)
+                {
+                    if (await _unitOfWork.Users.UserExistsAsync(email))
+                        return Result<string>.Failure(ErrorMessages.UserAlreadyExists, 400);
+                }
+
+                _mapper.Map(dto, user);
+
+                if (!string.IsNullOrEmpty(email))
+                    user.Email = email;
+
+                user.UpdatedAt = DateTime.UtcNow;
+                user.UpdatedBy = currentUserId;
+
+                _unitOfWork.Users.Update(user);
+                await _unitOfWork.SaveChangesAsync();
+
+                return Result<string>.Success(SuccessMessages.UserUpdatedSuccessfully);
+            }
+
+            public async Task<Result<List<UserResponseDto>>> GetAllUsersAsync()
+            {
+
+                var users = await _unitOfWork.Users.GetAllWithRolesAsync();
+
+                var result = users.Select((u, index) => new UserResponseDto
+                {
+                    Id = u.Id,
+                    EmpCode = $"EMP-{(index + 1).ToString("D3")}",
+                    FullName = u.FullName,
+                    Email = u.Email,
+                    Role = u.Role.Name,
+                    Department = u.Department != null ? u.Department.Name : null,
+                    IsActive = u.IsActive
+                }).ToList();
+
+                return Result<List<UserResponseDto>>.Success(result);
+            }
+
+            public async Task<Result<string>> DeleteUserAsync(int id, int currentUserId)
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(id);
+
+                if (user == null)
+                    return Result<string>.Failure(ErrorMessages.UserNotFound, 404);
+
+                if (user.RoleId != RoleConstants.Employee &&
+                    user.RoleId != RoleConstants.SupportEngineer)
+                {
+                    return Result<string>.Failure(ErrorMessages.OnlyEmployeeOrSupportCanDelete, 400);
+                }
+
+                user.IsDeleted = true;
+                user.DeletedAt = DateTime.UtcNow;
+                user.DeletedBy = currentUserId;
+
+                _unitOfWork.Users.Update(user);
+                await _unitOfWork.SaveChangesAsync();
+
+                return Result<string>.Success(SuccessMessages.UserDeletedSuccessfully);
+            }
         }
     }
-}

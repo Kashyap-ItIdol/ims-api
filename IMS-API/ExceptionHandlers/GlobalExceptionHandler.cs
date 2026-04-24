@@ -48,14 +48,16 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         // Existing generic handling for other exceptions
         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
+        var responseMessage = _env.IsDevelopment()
+            ? $"Server Error: {exception.GetType().Name}: {exception.Message}"
+            : "An unexpected error occurred on the server.";
+
         var response500 = new
         {
             success = false,
-            message = _env.IsDevelopment()
-                ? $"Server Error: {exception.Message}"
-                : "An unexpected error occurred on the server.",
+            message = responseMessage,
             data = (object?)null,
-            devDetails = _env.IsDevelopment() ? exception.StackTrace : null
+            devDetails = _env.IsDevelopment() ? exception.ToString() : null
         };
 
         await httpContext.Response.WriteAsJsonAsync(response500, cancellationToken);
@@ -63,3 +65,4 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         return true;
     }
 }
+

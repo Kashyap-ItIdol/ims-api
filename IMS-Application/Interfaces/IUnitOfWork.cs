@@ -8,8 +8,6 @@ namespace IMS_Application.Interfaces
         IRepository<Department> Departments { get; }
         IAssetRepository Assets { get; }
         INetworkDetailsRepository NetworkDetails { get; }
-        IAssetHistoryRepository AssetHistories { get; }
-
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }

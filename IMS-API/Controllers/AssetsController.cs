@@ -1,6 +1,7 @@
 ﻿using IMS_API.Controllers.Base;
 using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using IMS_Application.Common.Constants;
 
@@ -16,6 +17,7 @@ public class AssetController : BaseController
         _assetService = assetService;
     }
 
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("inventory")]
     public async Task<IActionResult> AddInventoryAssets(AddAssetDto dto)
     {
@@ -23,6 +25,7 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("client")]
     public async Task<IActionResult> AddClientAssets(AddAssetDto dto)
     {
@@ -30,6 +33,7 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpGet("get-all")]
     public async Task<IActionResult> GetAllAssets()
     {
@@ -41,6 +45,7 @@ public class AssetController : BaseController
         return Ok(result);
     }
 
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateAsset(int id, UpdateAssetDto dto)
     {
@@ -51,6 +56,7 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteAsset(int id)
     {
@@ -72,7 +78,7 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
-
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("assign")]
     public async Task<IActionResult> AssignAsset(AssignAssetDto dto)
     {
@@ -87,6 +93,7 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("attach-child")]
     public async Task<IActionResult> AttachChild(AttachChildDto dto)
     {
@@ -94,6 +101,7 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("create-child")]
     public async Task<IActionResult> CreateChild(CreateChildAssetDto dto)
     {
@@ -101,6 +109,7 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("detach-child")]
     public async Task<IActionResult> DetachChild(DetachChildDto dto)
     {
@@ -116,5 +125,5 @@ public class AssetController : BaseController
     }
 
 
-
 }
+            

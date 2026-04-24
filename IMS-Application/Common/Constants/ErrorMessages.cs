@@ -5,10 +5,10 @@
         public const string InvalidCredentials = "Invalid email address or password";
         public const string InvalidPassword = "Invalid password";
         public const string UnexpectedError = "An unexpected error occurred. Please try again later.";
-        public const string UserAlreadyExists = "User already exists";
+        public const string UserAlreadyExists = "user already created using this email id";
         public const string InvalidRefreshToken = "Invalid refresh token.";
         public const string InvalidOrExpiredToken = "Invalid or expired refresh token. Please log in again.";
-public const string NoRefreshToken = "No refresh token found.";
+        public const string NoRefreshToken = "No refresh token found.";
         public const string AssetNotFound = "Asset not found";
         public const string SerialAlreadyExists = "Serial already exists";
         public const string TableAlreadyAssigned = "Table is already assigned to another user";
@@ -48,5 +48,10 @@ public const string NoRefreshToken = "No refresh token found.";
         public const string InvalidTableNo = "Table number must be alphanumeric (A-Z0-9).";
         public const string InvalidIpAddress = "Invalid IP address format.";
         public const string ValidationFailed = "Validation failed. Please check the errors.";
+
+        public const string CannotAssignAdminRole = "Cannot assign Admin role";
+        public const string OnlyEmployeeOrSupportCanUpdate = "Only Employee or Support Engineer can be updated";
+        public const string OnlyEmployeeOrSupportCanDelete = "Only Employee or Support Engineer can be deleted";
+
     }
 }

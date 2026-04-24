@@ -20,6 +20,9 @@ namespace IMS_Infrastructure.Services
 
         public string GenerateAccessToken(User user)
         {
+            if (user.Role == null)
+                throw new InvalidOperationException($"User {user.Email} has no assigned Role. RoleId={user.RoleId}");
+
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -56,3 +59,4 @@ namespace IMS_Infrastructure.Services
         }
     }
 }
+

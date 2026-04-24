@@ -13,9 +13,12 @@ namespace IMS_Application.Interfaces
         Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId);
         Task<bool> SerialExistsAsync(string serialNo, int excludeId);
 
-        Task AddAsync(AssetHistory history);
-        Task<List<AssetHistory>> GetByAssetIdAsync(int assetId);
+       // Task AddAsync(AssetHistory history);
+       // Task<List<AssetHistory>> GetByAssetIdAsync(int assetId);
         Task<List<Asset>> FilterAsync(AssetFilterDto dto);
+
+        Task AddHistoryAsync(AssetHistory history);
+        Task<List<AssetHistory>> GetHistoryByAssetIdAsync(int assetId); 
 
 
     }

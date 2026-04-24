@@ -1,4 +1,4 @@
-﻿﻿using AutoMapper;
+﻿using AutoMapper;
 using IMS_Application.DTOs;
 using IMS_Domain.Entities;
 
@@ -85,7 +85,28 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.Overview, opt => opt.MapFrom(src => src))
                 .ForMember(dest => dest.Assignment, opt => opt.MapFrom(src => src));
 
+            CreateMap<User, UserResponseDto>()
+                .ForMember(dest => dest.Role,
+                    opt => opt.MapFrom(src => src.Role != null ? src.Role.Name : null))
+                .ForMember(dest => dest.Department,
+                     opt => opt.MapFrom(src => src.Department != null ? src.Department.Name : null));
 
+            CreateMap<CreateUserDto, User>()
+                   .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
+                   .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                   .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                   .ForMember(dest => dest.IsActive, opt => opt.Ignore())
+                   .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
+
+            CreateMap<UpdateUserDto, User>()
+                .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore());
+
+            CreateMap<User, UserInfoDto>();
+
+
+            
         }
     }
 }
