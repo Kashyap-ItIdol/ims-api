@@ -301,9 +301,43 @@ namespace IMS_Application.Services
                 if (user.Role == null)
                     return Result<List<TicketResponseDto>>.Failure(ErrorMessages.RoleNotFoundError, 400);
 
-                var tickets = await _unitOfWork.Tickets.SearchTicketsAsync(q, currentUserId, user.Role.Name);
+                var tickets = await _unitOfWork.Tickets.GetTicketsForUserAsync(currentUserId, user.Role.Name);
 
                 _logger.LogInformation("[TICKET-SERVICE] Repo returned {TicketCount} tickets", tickets.Count);
+
+                if (!string.IsNullOrWhiteSpace(q))
+                {
+                    var query = q.Trim();
+
+                    int.TryParse(query, out var queryInt);
+                    DateTime.TryParse(query, out var queryDate);
+                    Enum.TryParse<TicketType>(query, true, out var queryTicketType);
+                    Enum.TryParse<TicketPriority>(query, true, out var queryPriority);
+
+                    var categories = (await _unitOfWork.Categories.GetAllAsync()).ToDictionary(c => c.Id, c => c.Name);
+                    var subCategories = (await _unitOfWork.SubCategories.GetAllAsync()).ToDictionary(s => s.Id, s => s.Name);
+
+                    tickets = tickets.Where(t =>
+                        (queryInt > 0 && t.Id == queryInt) ||
+                        (!string.IsNullOrEmpty(t.Title) && t.Title.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrEmpty(t.Description) && t.Description.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                        (queryTicketType != default && t.TicketType == queryTicketType) ||
+                        t.TicketType.ToString().Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        (queryPriority != default && t.TicketPriority == queryPriority) ||
+                        t.TicketPriority.ToString().Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        (queryInt > 0 && t.AssetId == queryInt) ||
+                        (t.CategoryId.HasValue && (
+                            (queryInt > 0 && t.CategoryId == queryInt) ||
+                            (categories.TryGetValue(t.CategoryId.Value, out var catName) && catName.Contains(query, StringComparison.OrdinalIgnoreCase))
+                        )) ||
+                        (t.SubCategoryId.HasValue && (
+                            (queryInt > 0 && t.SubCategoryId == queryInt) ||
+                            (subCategories.TryGetValue(t.SubCategoryId.Value, out var subCatName) && subCatName.Contains(query, StringComparison.OrdinalIgnoreCase))
+                        )) ||
+                        (queryInt > 0 && t.TicketAssignments.Any(a => a.assignedTo == queryInt)) ||
+                        (queryDate != default && t.CreatedAt.Date == queryDate.Date)
+                    ).ToList();
+                }
 
                 var allUsersDict = new Dictionary<int, User>();
                 foreach (var ticket in tickets)

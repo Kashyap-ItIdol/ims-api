@@ -96,47 +96,24 @@ namespace IMS_API.Controllers
         }
 
 
-        //[HttpGet("search")]
-        //public async Task<IActionResult> SearchTickets([FromQuery] string? q)
-        //{
-        //    try
-        //    {
-        //        if (string.IsNullOrWhiteSpace(q))
-        //        {
-        //            var errorResponse = ApiResponse<object>.APIResponse(400, "Search query parameter 'q' is required.", null, false);
-        //            return BadRequest(errorResponse);
-        //        }
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchTickets([FromQuery] string? q)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
 
-        //        var userIdClaim = User.FindFirst("userId")?.Value;
-        //        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int currentUserId))
-        //        {
-        //            var errorResponse = ApiResponse<object>.APIResponse(400, "Invalid user context.", null, false);
-        //            return BadRequest(errorResponse);
-        //        }
+            if (string.IsNullOrWhiteSpace(q))
+            {
+                return FromResult(Result<object>.Failure(ErrorMessages.SearchQueryRequired, 400));
+            }
 
-        //        var result = await _ticketService.SearchTicketsGroupedAsync(q, currentUserId);
-
-        //        var successResponse = ApiResponse<object>.APIResponse(200,
-        //            "Tickets searched successfully",
-        //            result,
-        //            true
-        //        );
-
-        //        return Ok(successResponse);
-        //    }
-        //    catch (ArgumentException ex)
-        //    {
-        //        var errorResponse = ApiResponse<object>.APIResponse(400, ex.Message, null, false);
-        //        return BadRequest(errorResponse);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        var errorResponse = ApiResponse<object>.APIResponse(500, "Internal server error.", null, false);
-        //        return BadRequest(errorResponse);
-        //    }
-        //}
-
-
+            var userId = userIdResult.Data!;
+            var result = await _ticketService.SearchTicketsGroupedAsync(q.Trim(), userId);
+            return FromResult(result);
+        }
     }
 }
 

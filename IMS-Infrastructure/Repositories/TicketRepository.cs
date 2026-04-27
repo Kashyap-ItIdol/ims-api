@@ -57,18 +57,7 @@ namespace IMS_Infrastructure.Repositories
 
         public async Task<List<Ticket>> SearchTicketsAsync(string query, int userId, string roleName)
         {
-            var ticketsQuery = _dbSet
-                .AsNoTracking()
-                .Include(t => t.TicketAssignments)
-                .Include(t => t.Comments)
-                .Where(t => t.CreatedBy == userId || t.TicketAssignments.Any(a => a.assignedTo == userId));
-
-            if (!string.IsNullOrEmpty(query))
-            {
-                ticketsQuery = ticketsQuery.Where(t => t.Title.Contains(query, StringComparison.OrdinalIgnoreCase));
-            }
-
-            return await ticketsQuery.OrderByDescending(t => t.CreatedAt).ToListAsync();
+            return await GetTicketsForUserAsync(userId, roleName);
         }
     }
 }
