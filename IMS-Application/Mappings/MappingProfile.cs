@@ -26,7 +26,6 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.ParentAsset, opt => opt.Ignore())
                 .ForMember(dest => dest.ChildAssets, opt => opt.Ignore());
 
-            // Asset mappings
             CreateMap<AssetItemDto, Asset>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.ParentAssetId, opt => opt.Ignore())
@@ -47,7 +46,10 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.ParentAssetId, opt => opt.Ignore())
                 .ForMember(dest => dest.ChildAssets, opt => opt.Ignore())
                 .ForMember(dest => dest.AssignedUser, opt => opt.Ignore())
-                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore());
 
             CreateMap<Asset, AssetResponseDto>()
                 .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.AssignedUser != null ? src.AssignedUser.Location : null))

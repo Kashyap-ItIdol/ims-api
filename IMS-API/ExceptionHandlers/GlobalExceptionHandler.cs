@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using IMS_Application.Common.Constants;
+using IMS_Application.Common.Exceptions;
 
 namespace IMS_API.ExceptionHandlers;
 
@@ -39,6 +40,22 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                 message = IMS_Application.Common.Constants.ErrorMessages.ValidationFailed,
                 data = new { errors },
                 statusCode = 400
+            };
+
+            await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
+            return true;
+        }
+
+        if (exception is BusinessRuleException businessEx)
+        {
+            httpContext.Response.StatusCode = businessEx.StatusCode;
+
+            var response = new
+            {
+                success = false,
+                message = businessEx.Message,
+                data = (object?)null,
+                statusCode = businessEx.StatusCode
             };
 
             await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);

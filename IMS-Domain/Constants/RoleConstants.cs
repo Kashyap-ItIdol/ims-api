@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace IMS_Domain.Constants
+﻿namespace IMS_Domain.Constants
 {
     public static class RoleConstants
     {

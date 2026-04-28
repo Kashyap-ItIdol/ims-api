@@ -27,7 +27,7 @@
         
         public const string AssignedAssetMustBeAssigned = "Assigned asset must have status = Assigned";
         public const string ExpectedReturnDateBeforeAssignedDate = "ExpectedReturnDate cannot be before AssignedDate";
-        public const string SerialAlreadyExistsFormatted = "Serial already exists: {0}";
+        public const string SerialAlreadyExistsFormatted = "Serial number already exists";
         public const string UserNotFoundById = "User not found with id {0}";
         public const string TableAlreadyAssignedToUser = "Table {0} is already assigned to another user";
         public const string CannotAssignChildParentNotAssigned = "Cannot assign child when parent is not assigned";
@@ -55,6 +55,11 @@
         public const string CannotAssignAdminRole = "Cannot assign Admin role";
         public const string OnlyEmployeeOrSupportCanUpdate = "Only Employee or Support Engineer can be updated";
         public const string OnlyEmployeeOrSupportCanDelete = "Only Employee or Support Engineer can be deleted";
+        public const string AllAssetsMustHaveSameStatus = "All assets must have the same status";
+        public const string AssignedToRequiredForAssignedStatus = "AssignedTo is required when asset status is Assigned";
+        public const string AssignmentNotAllowedForNonAssignedStatus = "Assignment data is not allowed when asset status is not Assigned";
+        public const string AssignmentDetailsRequiredWhenAssigned = "Assignment details are required when asset status is 'Assigned'.";
+        public const string AssignmentDetailsNotAllowedWhenNotAssigned = "Assignment details are not allowed when asset status is not 'Assigned'.";
 
     }
 }

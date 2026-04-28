@@ -45,7 +45,8 @@ public class AssetController : BaseController
         if (id != dto.Id)
             return BadRequest("Id mismatch");
 
-        var result = await _assetService.UpdateAssetAsync(dto);
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _assetService.UpdateAssetAsync(dto, userId);
         return FromResult(result);
     }
 
@@ -126,4 +127,6 @@ public class AssetController : BaseController
         var result = await _assetService.AddOrUpdateNetworkAsync(id, dto, userId);
         return FromResult(result);
     }
+
 }
+

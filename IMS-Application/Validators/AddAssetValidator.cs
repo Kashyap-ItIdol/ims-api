@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+﻿﻿using FluentValidation;
 using IMS_Application.Common.Constants;
 using IMS_Application.DTOs;
 
@@ -53,7 +53,48 @@ public class AddAssetValidator : AbstractValidator<AddAssetDto>
             });
         });
 
-        // Assignment validation
+        // Rule 1: Status Consistency Across Assets (with ItemName in message)
+        RuleFor(x => x)
+            .Custom((dto, context) =>
+            {
+                var assets = dto.Assets;
+                if (assets == null || assets.Count < 2) return;
+
+                var firstStatus = assets[0].StatusId;
+                var mismatch = assets.FirstOrDefault(a => a.StatusId != firstStatus);
+                if (mismatch != null)
+                {
+                    context.AddFailure($"Status mismatch: Assets \"{assets[0].ItemName}\" and \"{mismatch.ItemName}\" must have the same status.");
+                }
+            });
+
+        // Rule 2: Assignment Required When Status = 2
+        When(x => x.Assets.FirstOrDefault(a => a.IsPrimary)?.StatusId == 2, () =>
+        {
+            RuleFor(x => x.AssignedTo)
+                .NotNull().WithMessage(ErrorMessages.AssignmentDetailsRequiredWhenAssigned);
+
+            RuleFor(x => x.AssignedDate)
+                .NotNull().WithMessage(ErrorMessages.AssignmentDetailsRequiredWhenAssigned);
+        });
+
+        // Rule 3: Assignment Not Allowed When Status ≠ 2
+        When(x => x.Assets.FirstOrDefault(a => a.IsPrimary)?.StatusId != 2, () =>
+        {
+            RuleFor(x => x.AssignedTo)
+                .Null().WithMessage(ErrorMessages.AssignmentDetailsNotAllowedWhenNotAssigned);
+
+            RuleFor(x => x.AssignedDate)
+                .Null().WithMessage(ErrorMessages.AssignmentDetailsNotAllowedWhenNotAssigned);
+
+            RuleFor(x => x.Location)
+                .Null().WithMessage(ErrorMessages.AssignmentDetailsNotAllowedWhenNotAssigned);
+
+            RuleFor(x => x.TableNo)
+                .Null().WithMessage(ErrorMessages.AssignmentDetailsNotAllowedWhenNotAssigned);
+        });
+
+        // Assignment validation (when assignment is present)
         When(x => x.AssignedTo.HasValue, () =>
         {
             RuleFor(x => x.TableNo)
@@ -62,12 +103,11 @@ public class AddAssetValidator : AbstractValidator<AddAssetDto>
             RuleFor(x => x.Location)
                 .NotEmpty().WithMessage(ErrorMessages.LocationRequired);
 
-            // 🔥 Important business rule
             RuleFor(x => x)
                 .Must(x =>
                 {
-                    var primary = x.Assets.First(a => a.IsPrimary);
-                    return primary.StatusId == 2; // Assigned
+                    var primary = x.Assets.FirstOrDefault(a => a.IsPrimary);
+                    return primary?.StatusId == 2;
                 })
                 .WithMessage(ErrorMessages.AssignedAssetMustBeAssigned);
         });
@@ -81,3 +121,4 @@ public class AddAssetValidator : AbstractValidator<AddAssetDto>
         });
     }
 }
+

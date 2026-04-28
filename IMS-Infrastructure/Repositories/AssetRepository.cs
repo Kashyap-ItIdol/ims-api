@@ -21,7 +21,7 @@ namespace IMS_Infrastructure.Repositories
         {
             return await _dbSet
                 .AsNoTracking()
-                .AnyAsync(x => x.SerialNo == serialNo);
+                .AnyAsync(x => x.SerialNo == serialNo && x.IsActive);
         }
 
         public async Task<List<Asset>> GetAllAsync()
@@ -49,22 +49,22 @@ namespace IMS_Infrastructure.Repositories
                 .Include(a => a.AssetCondition)
                 .Include(a => a.AssignedUser)
                     .ThenInclude(u => u.Department)
-                .Include(a => a.ChildAssets)
-                .FirstOrDefaultAsync(a => a.Id == id);
+                .Include(a => a.ChildAssets.Where(c => c.IsActive))
+                .FirstOrDefaultAsync(a => a.Id == id && a.IsActive);
         }
 
         public async Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId)
         {
             return await _dbSet
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.AssignedTo == userId && x.ParentAssetId == null);
+                .FirstOrDefaultAsync(x => x.AssignedTo == userId && x.ParentAssetId == null && x.IsActive);
         }
 
         public async Task<bool> SerialExistsAsync(string serialNo, int excludeId)
         {
             return await _dbSet
                 .AsNoTracking()
-                .AnyAsync(x => x.SerialNo == serialNo && x.Id != excludeId);
+                .AnyAsync(x => x.SerialNo == serialNo && x.Id != excludeId && x.IsActive);
         }
 
         public async Task AddHistoryAsync(AssetHistory history)
