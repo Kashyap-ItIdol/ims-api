@@ -78,7 +78,12 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.Network, opt => opt.Ignore());
 
             CreateMap<NetworkDetail, NetworkDetailsDto>();
-            CreateMap<AssetHistory, AssetHistoryDto>();
+            CreateMap<NetworkDetailsDto, NetworkDetail>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.AssetId, opt => opt.Ignore());
+
+            CreateMap<AssetHistory, AssetHistoryDto>()
+                .ForMember(dest => dest.AssetName, opt => opt.MapFrom(src => src.Asset.ItemName));
 
             CreateMap<Asset, GetAssetByIdResponseDto>()
                 .ForMember(dest => dest.IsParent, opt => opt.MapFrom(src => src.ParentAssetId == null))
@@ -104,11 +109,6 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore());
 
             CreateMap<User, UserInfoDto>();
-
-
-            
         }
     }
 }
-
-

@@ -67,7 +67,6 @@ namespace IMS_Infrastructure.Repositories
                 .AnyAsync(x => x.SerialNo == serialNo && x.Id != excludeId);
         }
 
-
         public async Task AddHistoryAsync(AssetHistory history)
         {
             await _context.Set<AssetHistory>().AddAsync(history);
@@ -78,6 +77,16 @@ namespace IMS_Infrastructure.Repositories
             return await _context.Set<AssetHistory>()
                 .AsNoTracking()
                 .Where(x => x.AssetId == assetId)
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<List<AssetHistory>> GetHistoryByAssetIdsAsync(List<int> assetIds)
+        {
+            return await _context.Set<AssetHistory>()
+                .AsNoTracking()
+                .Where(x => assetIds.Contains(x.AssetId))
+                .Include(x => x.Asset)
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
@@ -101,7 +110,6 @@ namespace IMS_Infrastructure.Repositories
             if (dto.StatusIds?.Any() == true)
                 query = query.Where(a => dto.StatusIds.Contains(a.StatusId));
 
-           
             if (!string.IsNullOrWhiteSpace(dto.Search) && !string.IsNullOrWhiteSpace(dto.SearchType))
             {
                 var search = dto.Search;

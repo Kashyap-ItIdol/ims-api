@@ -2,66 +2,82 @@
 using IMS_Application.Common.Constants;
 using IMS_Application.DTOs;
 
-namespace IMS_Application.Validators
+public class AddAssetValidator : AbstractValidator<AddAssetDto>
 {
-    public class AddAssetValidator : AbstractValidator<AddAssetDto>
+    public AddAssetValidator()
     {
-        public AddAssetValidator()
+        // Assets required
+        RuleFor(x => x.Assets)
+            .NotEmpty().WithMessage(ErrorMessages.AssetsListEmpty);
+
+        // Only one primary
+        RuleFor(x => x.Assets.Count(a => a.IsPrimary))
+            .Equal(1).WithMessage(ErrorMessages.ExactlyOnePrimaryAssetRequired);
+
+        RuleForEach(x => x.Assets).ChildRules(asset =>
         {
-            RuleFor(x => x.Assets)
-                .NotEmpty().WithMessage(ErrorMessages.AssetsListEmpty);
+            asset.RuleFor(a => a.SerialNo)
+                .NotEmpty().WithMessage(ErrorMessages.SerialNumberRequired);
 
-            RuleFor(x => x.Assets.Count(a => a.IsPrimary))
-                .Equal(1).WithMessage(ErrorMessages.ExactlyOnePrimaryAssetRequired);
+            asset.RuleFor(a => a.ItemName)
+                .NotEmpty().WithMessage(ErrorMessages.ItemNameRequired)
+                .MaximumLength(200).WithMessage(ErrorMessages.InvalidStringLength);
 
-            RuleForEach(x => x.Assets).ChildRules(asset =>
+            asset.RuleFor(a => a.CategoryId)
+                .GreaterThan(0).WithMessage(ErrorMessages.InvalidCategoryId);
+
+            asset.RuleFor(a => a.SubCategoryId)
+                .GreaterThan(0).WithMessage(ErrorMessages.InvalidSubCategoryId);
+
+            asset.RuleFor(a => a.ConditionId)
+                .GreaterThan(0).WithMessage(ErrorMessages.InvalidConditionId);
+
+            asset.RuleFor(a => a.StatusId)
+                .GreaterThan(0).WithMessage("Status is required");
+
+            // Purchase validation
+            asset.When(a => !a.IsPurchaseDetailsSame, () =>
             {
-                asset.RuleFor(a => a.SerialNo)
-                    .NotEmpty().WithMessage(ErrorMessages.SerialNumberRequired)
-                    .WithMessage(ErrorMessages.InvalidSerialFormat);
-
-                asset.RuleFor(a => a.ItemName)
-                    .NotEmpty().WithMessage(ErrorMessages.ItemNameRequired)
-                    .Length(1, 200).WithMessage(ErrorMessages.InvalidStringLength);
-
-                asset.RuleFor(a => a.CategoryId)
-                    .GreaterThan(0).WithMessage(ErrorMessages.InvalidCategoryId);
-
-                asset.RuleFor(a => a.SubCategoryId)
-                    .GreaterThan(0).WithMessage(ErrorMessages.InvalidSubCategoryId);
-
-                asset.RuleFor(a => a.ConditionId)
-                    .GreaterThan(0).WithMessage(ErrorMessages.InvalidConditionId);
-
-                asset.RuleFor(a => a.IsPurchaseDetailsSame)
-                    .NotNull().WithMessage("IsPurchaseDetailsSame is required");
-
                 asset.RuleFor(a => a.Vendor)
-                    .NotEmpty().When(a => !a.IsPurchaseDetailsSame).WithMessage(ErrorMessages.VendorRequired)
-                    .Length(1, 200).When(a => !a.IsPurchaseDetailsSame).WithMessage(ErrorMessages.InvalidStringLength);
+                    .NotEmpty().WithMessage(ErrorMessages.VendorRequired);
 
                 asset.RuleFor(a => a.PurchaseCost)
-                    .GreaterThan(0).LessThanOrEqualTo(1000000m).When(a => !a.IsPurchaseDetailsSame).WithMessage(ErrorMessages.PurchaseCostInvalid)
-                    .WithMessage(ErrorMessages.InvalidPurchaseCost);
+                    .GreaterThan(0).WithMessage(ErrorMessages.InvalidPurchaseCost);
 
                 asset.RuleFor(a => a.PurchaseDate)
-                    .NotNull().LessThanOrEqualTo(DateTime.UtcNow).GreaterThan(DateTime.MinValue.AddYears(100))
-                    .When(a => !a.IsPurchaseDetailsSame).WithMessage(ErrorMessages.PurchaseDateRequired)
+                    .LessThanOrEqualTo(DateTime.UtcNow)
                     .WithMessage(ErrorMessages.InvalidPurchaseDate);
 
-                asset.RuleFor(a => a.Brand)
-                    .Length(1, 200).When(a => !string.IsNullOrEmpty(a.Brand)).WithMessage(ErrorMessages.InvalidStringLength);
+                asset.RuleFor(a => a.InvoiceNumber)
+                    .NotEmpty().WithMessage(ErrorMessages.InvoiceNumberRequired);
             });
+        });
 
-            
+        // Assignment validation
+        When(x => x.AssignedTo.HasValue, () =>
+        {
             RuleFor(x => x.TableNo)
                 .NotEmpty().WithMessage(ErrorMessages.InvalidTableNo);
 
-            When(x => x.AssignedDate.HasValue && x.ExpectedReturnDate.HasValue, () =>
-                RuleFor(x => x.ExpectedReturnDate)
-                    .GreaterThanOrEqualTo(x => x.AssignedDate.Value)
-                    .WithMessage(ErrorMessages.InvalidDateRange)
-            );
-        }
+            RuleFor(x => x.Location)
+                .NotEmpty().WithMessage(ErrorMessages.LocationRequired);
+
+            // 🔥 Important business rule
+            RuleFor(x => x)
+                .Must(x =>
+                {
+                    var primary = x.Assets.First(a => a.IsPrimary);
+                    return primary.StatusId == 2; // Assigned
+                })
+                .WithMessage(ErrorMessages.AssignedAssetMustBeAssigned);
+        });
+
+        // Date validation
+        When(x => x.AssignedDate.HasValue && x.ExpectedReturnDate.HasValue, () =>
+        {
+            RuleFor(x => x.ExpectedReturnDate)
+                .GreaterThanOrEqualTo(x => x.AssignedDate!.Value)
+                .WithMessage(ErrorMessages.InvalidDateRange);
+        });
     }
 }

@@ -6,12 +6,12 @@ namespace IMS_Application.Services.Interfaces
 {
     public interface IAssetService
     {
-        Task<Result<string>> AddAssetsAsync(AddAssetDto dto, bool isClient);
+        Task<Result<string>> AddAssetsAsync(AddAssetDto dto, int createdBy);
         Task<Result<List<AssetResponseDto>>> GetAllAssetsAsync();
 
         Task<Result<string>> UpdateAssetAsync(UpdateAssetDto dto);
 
-        Task<Result<string>> DeleteAssetAsync(int id);
+        Task<Result<string>> DeleteAssetAsync(int id, int deletedBy);
 
         Task<Result<List<UserDto>>> GetSuggestedUsersAsync();
         Task<Result<List<UserDto>>> SearchUsersAsync(string query);
@@ -25,5 +25,7 @@ namespace IMS_Application.Services.Interfaces
 
         Task<Result<string>> DetachChildAsync(DetachChildDto dto);
         Task<Result<List<AssetListDto>>> FilterAssetsAsync(AssetFilterDto dto);
+
+        Task<Result<string>> AddOrUpdateNetworkAsync(int assetId, NetworkDetailsDto dto, int userId);
     }  
 }

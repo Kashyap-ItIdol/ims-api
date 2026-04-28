@@ -1,9 +1,9 @@
-﻿using IMS_API.Controllers.Base;
+﻿using System.Security.Claims;
+using IMS_API.Controllers.Base;
 using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using IMS_Application.Common.Constants;
 
 
 [ApiController]
@@ -18,23 +18,16 @@ public class AssetController : BaseController
     }
 
     [Authorize(Roles = "Admin,Support Engineer")]
-    [HttpPost("inventory")]
+    [HttpPost("Add-Asset")]
     public async Task<IActionResult> AddInventoryAssets(AddAssetDto dto)
     {
-        var result = await _assetService.AddAssetsAsync(dto, false);
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _assetService.AddAssetsAsync(dto, userId);
         return FromResult(result);
     }
 
     [Authorize(Roles = "Admin,Support Engineer")]
-    [HttpPost("client")]
-    public async Task<IActionResult> AddClientAssets(AddAssetDto dto)
-    {
-        var result = await _assetService.AddAssetsAsync(dto, true);
-        return FromResult(result);
-    }
-
-    [Authorize(Roles = "Admin,Support Engineer")]
-    [HttpGet("get-all")]
+    [HttpGet("get-all-Assets")]
     public async Task<IActionResult> GetAllAssets()
     {
         var result = await _assetService.GetAllAssetsAsync();
@@ -42,7 +35,7 @@ public class AssetController : BaseController
         if (!result.IsSuccess)
             return StatusCode(result.StatusCode, result);
 
-        return Ok(result);
+        return FromResult(result);
     }
 
     [Authorize(Roles = "Admin,Support Engineer")]
@@ -60,7 +53,8 @@ public class AssetController : BaseController
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteAsset(int id)
     {
-        var result = await _assetService.DeleteAssetAsync(id);
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _assetService.DeleteAssetAsync(id, userId);
         return FromResult(result);
     }
 
@@ -79,7 +73,7 @@ public class AssetController : BaseController
     }
 
     [Authorize(Roles = "Admin,Support Engineer")]
-    [HttpPost("assign")]
+    [HttpPost("assign-asset")]
     public async Task<IActionResult> AssignAsset(AssignAssetDto dto)
     {
         var result = await _assetService.AssignAssetAsync(dto);
@@ -124,6 +118,12 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
-
+    [Authorize(Roles = "Admin,Support Engineer")]
+    [HttpPost("{id}/network")]
+    public async Task<IActionResult> AddOrUpdateNetwork(int id, NetworkDetailsDto dto)
+    {
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _assetService.AddOrUpdateNetworkAsync(id, dto, userId);
+        return FromResult(result);
+    }
 }
-            

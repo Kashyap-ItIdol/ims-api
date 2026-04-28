@@ -18,10 +18,7 @@ namespace IMS_Application.Interfaces
         Task<List<Asset>> FilterAsync(AssetFilterDto dto);
 
         Task AddHistoryAsync(AssetHistory history);
-        Task<List<AssetHistory>> GetHistoryByAssetIdAsync(int assetId); 
-
-
+        Task<List<AssetHistory>> GetHistoryByAssetIdAsync(int assetId);
+        Task<List<AssetHistory>> GetHistoryByAssetIdsAsync(List<int> assetIds);
     }
-
 }
-

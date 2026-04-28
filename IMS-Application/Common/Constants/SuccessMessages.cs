@@ -16,6 +16,7 @@
         public const string ChildDetachedSuccessfully = "Child asset detached successfully";
         public const string ChildUnlinkedSuccessfully = "Child unlinked successfully";
         public const string ChildMarkedAvailable = "Child marked as available (still linked to parent)";
+        public const string NetworkUpdatedSuccessfully = "Network details saved successfully";
 
         public const string UserDeletedSuccessfully = "User deleted successfully";
         public const string UserUpdatedSuccessfully = "User updated successfully";

@@ -66,6 +66,27 @@ namespace IMS_Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "NetworkDetails",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    AssetId = table.Column<int>(type: "int", nullable: false),
+                    IPAddress = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    MacAddress = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Hostname = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SubnetMask = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Gateway = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DNS = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    createdBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    updatedBy = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_NetworkDetails", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Roles",
                 columns: table => new
                 {
@@ -474,6 +495,9 @@ namespace IMS_Infrastructure.Migrations
         {
             migrationBuilder.DropTable(
                 name: "AssetHistories");
+
+            migrationBuilder.DropTable(
+                name: "NetworkDetails");
 
             migrationBuilder.DropTable(
                 name: "RefreshTokens");
