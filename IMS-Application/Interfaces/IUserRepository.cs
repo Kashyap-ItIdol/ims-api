@@ -1,4 +1,4 @@
-﻿using IMS_Domain.Entities;
+﻿﻿using IMS_Domain.Entities;
 
 namespace IMS_Application.Interfaces
 {
@@ -8,5 +8,10 @@ namespace IMS_Application.Interfaces
         Task<bool> UserExistsAsync(string email);
         Task<User?> GetUserByRefreshTokenAsync(string refreshToken);
         Task<Dictionary<int, User>> GetUsersByIdsAsync(IEnumerable<int> ids);
+        Task<bool> ExistsAsync(int userId);
+        Task<bool> TableAlreadyAssignedAsync(string tableNo);
+        Task<List<User>> GetAllWithRolesAsync();
+        Task<List<User>> GetUsersWithOpenTicketsAsync();
+        Task<List<User>> SearchAsync(string query);
     }
 }

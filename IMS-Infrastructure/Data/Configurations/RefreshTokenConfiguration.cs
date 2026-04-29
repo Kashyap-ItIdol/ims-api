@@ -11,7 +11,7 @@ namespace IMS_Infrastructure.Data.Configurations
             builder.Property(x => x.Token)
                    .IsRequired();
 
-            builder.HasQueryFilter(x => !x.User.IsDeleted);
+            
 
             builder.HasIndex(x => x.Token).IsUnique();
             builder.HasIndex(x => x.UserId);

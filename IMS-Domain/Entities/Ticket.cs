@@ -1,4 +1,4 @@
-namespace IMS_Domain.Entities
+﻿namespace IMS_Domain.Entities
 {
     public class Ticket
     {
@@ -22,9 +22,11 @@ namespace IMS_Domain.Entities
         public DateTime CreatedAt { get; set; }
 
         public DateTime UpdatedAt { get; set; }
-
         public ICollection<TicketComment> Comments { get; set; } = new List<TicketComment>();
+
         public ICollection<TicketAssignment> TicketAssignments { get; set; } = new List<TicketAssignment>();
+
         public ICollection<TicketStatusHistory> TicketStatusHistories { get; set; } = new List<TicketStatusHistory>();
+
     }
 }

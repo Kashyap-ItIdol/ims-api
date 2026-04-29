@@ -5,15 +5,64 @@
         public const string InvalidCredentials = "Invalid email address or password";
         public const string InvalidPassword = "Invalid password";
         public const string UnexpectedError = "An unexpected error occurred. Please try again later.";
-        public const string UserAlreadyExists = "User already exists";
+        public const string UserAlreadyExists = "user already created using this email id";
         public const string InvalidRefreshToken = "Invalid refresh token.";
         public const string InvalidOrExpiredToken = "Invalid or expired refresh token. Please log in again.";
         public const string NoRefreshToken = "No refresh token found.";
+        public const string AssetNotFound = "Asset not found";
+        public const string SerialAlreadyExists = "Serial already exists";
+        public const string TableAlreadyAssigned = "Table is already assigned to another user";
+        public const string UserNotFound = "User not found";
+        public const string OnlyAvailableAssetsCanBeAssigned = "Only available assets can be assigned";
+        public const string AssetsListEmpty = "At least one asset is required";
+        public const string ExactlyOnePrimaryAssetRequired = "Exactly one primary asset is required";
+        public const string ItemNameRequired = "ItemName is required";
+        public const string SerialNumberRequired = "Serial number is required";
+        public const string InvalidCategoryId = "Invalid CategoryId";
+        public const string InvalidSubCategoryId = "Invalid SubCategoryId";
+        public const string InvalidConditionId = "Invalid ConditionId";
+        public const string VendorRequired = "Vendor is required";
+        public const string PurchaseCostInvalid = "PurchaseCost must be greater than 0";
+        public const string PurchaseDateRequired = "PurchaseDate is required";
+
+        public const string AssignedAssetMustBeAssigned = "Assigned asset must have status = Assigned";
+        public const string ExpectedReturnDateBeforeAssignedDate = "ExpectedReturnDate cannot be before AssignedDate";
+        public const string SerialAlreadyExistsFormatted = "Serial number already exists";
+        public const string UserNotFoundById = "User not found with id {0}";
+        public const string TableAlreadyAssignedToUser = "Table {0} is already assigned to another user";
+        public const string CannotAssignChildParentNotAssigned = "Cannot assign child when parent is not assigned";
+        public const string ChildMustMatchParentAssignment = "Child must be assigned to same user as parent";
+        public const string AssignedToRequired = "AssignedTo is required";
+        public const string TableAlreadyAssignedShort = "Table {0} already assigned";
+        public const string InvalidParentAsset = "Invalid parent asset";
+        public const string ChildAssetNotFound = "Child asset not found";
+        public const string AssetAlreadyAttached = "Asset is already attached";
+        public const string OnlyAvailableAssetsAttachable = "Only available assets can be attached";
+        public const string InvalidChildAsset = "Invalid child asset";
+        public const string InvoiceNumberRequired = "Invoice Number is Required";
+        public const string LocationRequired = "Location Required";
+
+        public const string InvalidSerialFormat = "Serial number must be 5-20 alphanumeric characters (A-Z0-9-).";
+        public const string InvalidPurchaseDate = "Purchase date must be a valid date not in the future.";
+        public const string InvalidPurchaseCost = "Purchase cost must be greater than 0 and <= 1,000,000.";
+        public const string InvalidDateRange = "Expected return date must be after assigned date.";
+        public const string InvalidStringLength = "Field length must be between 1-200 characters.";
+        public const string InvalidTableNo = "Table number must be alphanumeric (A-Z0-9).";
+        public const string InvalidIpAddress = "Invalid IP address format.";
+        public const string ValidationFailed = "Validation failed. Please check the errors.";
+
+        public const string OnlyUnassignedAssetsCanBeAttached = "Only unassigned assets can be attached";
+        public const string CannotAssignAdminRole = "Cannot assign Admin role";
+        public const string OnlyEmployeeOrSupportCanUpdate = "Only Employee or Support Engineer can be updated";
+        public const string OnlyEmployeeOrSupportCanDelete = "Only Employee or Support Engineer can be deleted";
+        public const string AllAssetsMustHaveSameStatus = "All assets must have the same status";
+        public const string AssignedToRequiredForAssignedStatus = "AssignedTo is required when asset status is Assigned";
+        public const string AssignmentNotAllowedForNonAssignedStatus = "Assignment data is not allowed when asset status is not Assigned";
+        public const string AssignmentDetailsRequiredWhenAssigned = "Assignment details are required when asset status is 'Assigned'.";
+        public const string AssignmentDetailsNotAllowedWhenNotAssigned = "Assignment details are not allowed when asset status is not 'Assigned'.";
         public const string ServerError = "Internal server error.";
         public const string CommentRequires = "Comment text is required";
-        public const string TicketIdNotExist = "Ticket ID does not exist";
         public const string CategoryalreadyExist = "Category Already Exist";
-        public const string UserNotFound = "User ID not found in claims";
         public const string CategoryNotFound = "Category not found.";
         public const string CategoryNameRequired = "Category name is required.";
         public const string CategoryNameTooShort = "Category name must be at least 2 characters.";
@@ -22,20 +71,21 @@
         public const string InvalidInput = "Invalid input provided.";
         public const string CategoryAlreadyDeleted = "Category is already deleted.";
         public const string TicketNotFound = "Ticket not found.";
-        public const string InvalidTicketAssignee = "Assigned user must be a Support Engineer.";
         public const string UnauthorizedTicketView = "You are not authorized to view this ticket.";
         public const string UserNotFoundError = "User not found.";
         public const string RoleNotFoundError = "User role not found.";
-        public const string CreatorNotFoundError = "Creator not found.";
         public const string InvalidTicketType = "TicketType must be one of: Hardware, Software, Server, Website.";
         public const string InvalidTicketPriority = "Priority must be one of valid TicketPriority values.";
-        public const string InvalidTicketStatus = "Invalid status value. Valid values are: Open, InProgress, Solved, Closed.";
         public const string SubCategoryNameRequired = "SubCategory name is required.";
         public const string SubCategoryNameTooShort = "SubCategory name must be at least 2 characters.";
         public const string SubCategoryNameInvalidChars = "SubCategory name contains invalid characters.";
         public const string SubCategoryCategoryIdInvalid = "Valid CategoryId is required.";
         public const string SubCategoryCategoryNotFound = "Category not found or inactive.";
         public const string DuplicateSubCategoryName = "SubCategory with this name already exists in the category.";
+
+        public const string InvalidTicketAssignee = "Assigned user must be a Support Engineer.";
+        public const string InvalidTicketStatus = "Invalid status value. Valid values are: Open, InProgress, Solved, Closed.";
         public const string SubCategoryInvalidUser = "Invalid user.";
+
     }
 }

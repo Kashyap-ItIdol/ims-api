@@ -8,24 +8,22 @@ namespace IMS_Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<User> builder)
         {
-            // Indexes
-            builder.HasIndex(x => x.Email).IsUnique();
-            builder.HasIndex(x => x.RoleId);
-            builder.HasIndex(x => x.DepartmentId);
-            builder.HasIndex(x => new { x.IsDeleted, x.IsActive });
-            builder.HasIndex(x => x.CreatedAt);
+            builder.ToTable("Users");
 
-            // validations
-            builder.Property(x => x.FullName)
-                   .IsRequired()
-                   .HasMaxLength(150);
+            builder.HasKey(u => u.Id);
 
-            builder.Property(x => x.Email)
-                   .IsRequired()
-                   .HasMaxLength(150);
+            builder.Property(u => u.FullName)
+                .IsRequired()
+                .HasMaxLength(255);
 
-            builder.Property(x => x.PasswordHash)
-                   .IsRequired();
+            builder.Property(u => u.Email)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            builder.HasIndex(u => u.Email).IsUnique();
+
+            builder.Property(u => u.PasswordHash)
+                .IsRequired();
 
             // Relationships
             builder.HasOne(x => x.Department)
@@ -33,13 +31,10 @@ namespace IMS_Infrastructure.Data.Configurations
                    .HasForeignKey(x => x.DepartmentId)
                    .IsRequired(false);
 
-            builder.HasOne(x => x.Role)
-                   .WithMany(r => r.Users)
-                   .HasForeignKey(x => x.RoleId);
-
-            // Soft Delete
-            builder.HasQueryFilter(x => !x.IsDeleted);
-
+            builder.HasOne(u => u.Role)
+                .WithMany(r => r.Users)
+                .HasForeignKey(u => u.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

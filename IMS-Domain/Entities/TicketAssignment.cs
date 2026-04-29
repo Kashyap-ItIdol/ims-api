@@ -1,4 +1,4 @@
-namespace IMS_Domain.Entities
+﻿namespace IMS_Domain.Entities
 {
     public class TicketAssignment
     {

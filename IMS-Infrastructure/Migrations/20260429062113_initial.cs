@@ -14,6 +14,32 @@ namespace IMS_Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "AssetConditions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Condition = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AssetConditions", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AssetStatuses",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AssetStatuses", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Departments",
                 columns: table => new
                 {
@@ -27,12 +53,33 @@ namespace IMS_Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "NetworkDetails",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    AssetId = table.Column<int>(type: "int", nullable: false),
+                    IPAddress = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    MacAddress = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Hostname = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SubnetMask = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Gateway = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DNS = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    createdBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    updatedBy = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_NetworkDetails", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Roles",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                    Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -45,14 +92,16 @@ namespace IMS_Infrastructure.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    FullName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    FullName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     DepartmentId = table.Column<int>(type: "int", nullable: true),
                     RoleId = table.Column<int>(type: "int", nullable: false),
                     PasswordResetToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ResetTokenExpires = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ProfileImg = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Location = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TableNo = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     IsVerified = table.Column<bool>(type: "bit", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
@@ -76,7 +125,7 @@ namespace IMS_Infrastructure.Migrations
                         column: x => x.RoleId,
                         principalTable: "Roles",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -88,6 +137,10 @@ namespace IMS_Infrastructure.Migrations
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
                     CreatedBy = table.Column<int>(type: "int", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedBy = table.Column<int>(type: "int", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedBy = table.Column<int>(type: "int", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
@@ -96,6 +149,18 @@ namespace IMS_Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_Categories_Users_CreatedBy",
                         column: x => x.CreatedBy,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Categories_Users_DeletedBy",
+                        column: x => x.DeletedBy,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Categories_Users_UpdatedBy",
+                        column: x => x.UpdatedBy,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -260,8 +325,7 @@ namespace IMS_Infrastructure.Migrations
                     OldStatusId = table.Column<int>(type: "int", nullable: false),
                     NewStatusId = table.Column<int>(type: "int", nullable: false),
                     ChangedBy = table.Column<int>(type: "int", nullable: false),
-                    ChangedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    TicketId1 = table.Column<int>(type: "int", nullable: true)
+                    ChangedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -273,11 +337,6 @@ namespace IMS_Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_TicketStatusHistories_Tickets_TicketId1",
-                        column: x => x.TicketId1,
-                        principalTable: "Tickets",
-                        principalColumn: "Id");
-                    table.ForeignKey(
                         name: "FK_TicketStatusHistories_Users_ChangedBy",
                         column: x => x.ChangedBy,
                         principalTable: "Users",
@@ -286,85 +345,100 @@ namespace IMS_Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Inventory",
+                name: "Assets",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    InventoryName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Image = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ItemName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    StatusId = table.Column<int>(type: "int", nullable: false),
                     CategoryId = table.Column<int>(type: "int", nullable: false),
-                    SubcategoryId = table.Column<int>(type: "int", nullable: false),
-                    Brand = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Model = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    SerialNumber = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Condition = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Location = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
-                    Table = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    ItemPictureUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
+                    SubCategoryId = table.Column<int>(type: "int", nullable: false),
+                    ConditionId = table.Column<int>(type: "int", nullable: false),
+                    Brand = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Model = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SerialNo = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    ParentAssetId = table.Column<int>(type: "int", nullable: true),
+                    Vendor = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PurchaseCost = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    PurchaseDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    InvoiceNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    WarrantyExpiry = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    AmcExpiry = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    AssignedTo = table.Column<int>(type: "int", nullable: true),
+                    AssignDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ExpectedReturnDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Notes = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsClient = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<int>(type: "int", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedBy = table.Column<int>(type: "int", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedBy = table.Column<int>(type: "int", nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Inventory", x => x.Id);
+                    table.PrimaryKey("PK_Assets", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Inventory_Categories_CategoryId",
+                        name: "FK_Assets_AssetConditions_ConditionId",
+                        column: x => x.ConditionId,
+                        principalTable: "AssetConditions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Assets_AssetStatuses_StatusId",
+                        column: x => x.StatusId,
+                        principalTable: "AssetStatuses",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Assets_Assets_ParentAssetId",
+                        column: x => x.ParentAssetId,
+                        principalTable: "Assets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Assets_Categories_CategoryId",
                         column: x => x.CategoryId,
                         principalTable: "Categories",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Inventory_SubCategories_SubcategoryId",
-                        column: x => x.SubcategoryId,
+                        name: "FK_Assets_SubCategories_SubCategoryId",
+                        column: x => x.SubCategoryId,
                         principalTable: "SubCategories",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "InventoryAssignment",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    InventoryId = table.Column<int>(type: "int", nullable: false),
-                    AssignedTo = table.Column<int>(type: "int", nullable: false),
-                    AssignedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ExpectedReturnDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Location = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
-                    Table = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_InventoryAssignment", x => x.Id);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_InventoryAssignment_Inventory_InventoryId",
-                        column: x => x.InventoryId,
-                        principalTable: "Inventory",
+                        name: "FK_Assets_Users_AssignedTo",
+                        column: x => x.AssignedTo,
+                        principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "PurchaseDetail",
+                name: "AssetHistories",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    InventoryId = table.Column<int>(type: "int", nullable: false),
-                    Vendor = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    PurchaseCost = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    InvoiceNumber = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    PurchaseDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    WarrantyExpiry = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    AmcExpiry = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    AssetId = table.Column<int>(type: "int", nullable: false),
+                    Action = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_PurchaseDetail", x => x.Id);
+                    table.PrimaryKey("PK_AssetHistories", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_PurchaseDetail_Inventory_InventoryId",
-                        column: x => x.InventoryId,
-                        principalTable: "Inventory",
+                        name: "FK_AssetHistories_Assets_AssetId",
+                        column: x => x.AssetId,
+                        principalTable: "Assets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -393,13 +467,59 @@ namespace IMS_Infrastructure.Migrations
 
             migrationBuilder.InsertData(
                 table: "Users",
-                columns: new[] { "Id", "CreatedAt", "CreatedBy", "DeletedAt", "DeletedBy", "DepartmentId", "Email", "FullName", "IsActive", "IsDeleted", "IsVerified", "PasswordHash", "PasswordResetToken", "ProfileImg", "ResetTokenExpires", "RoleId", "UpdatedAt", "UpdatedBy" },
-                values: new object[] { 1, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, 1, "admin@example.com", "System Administrator", true, false, false, "6G94qKPK8LYNjnTllCqm2G3BUM08AzOK7yW30tfjrMc=", null, null, null, 1, null, null });
+                columns: new[] { "Id", "CreatedAt", "CreatedBy", "DeletedAt", "DeletedBy", "DepartmentId", "Email", "FullName", "IsActive", "IsDeleted", "IsVerified", "Location", "PasswordHash", "PasswordResetToken", "ProfileImg", "ResetTokenExpires", "RoleId", "TableNo", "UpdatedAt", "UpdatedBy" },
+                values: new object[] { 1, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, 1, "admin@example.com", "System Administrator", true, false, false, null, "6G94qKPK8LYNjnTllCqm2G3BUM08AzOK7yW30tfjrMc=", null, null, null, 1, null, null, null });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AssetHistories_AssetId",
+                table: "AssetHistories",
+                column: "AssetId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Assets_AssignedTo",
+                table: "Assets",
+                column: "AssignedTo");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Assets_CategoryId",
+                table: "Assets",
+                column: "CategoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Assets_ConditionId",
+                table: "Assets",
+                column: "ConditionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Assets_ParentAssetId",
+                table: "Assets",
+                column: "ParentAssetId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Assets_SerialNo",
+                table: "Assets",
+                column: "SerialNo",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Assets_StatusId",
+                table: "Assets",
+                column: "StatusId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Assets_SubCategoryId",
+                table: "Assets",
+                column: "SubCategoryId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Categories_CreatedBy",
                 table: "Categories",
                 column: "CreatedBy");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Categories_DeletedBy",
+                table: "Categories",
+                column: "DeletedBy");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Categories_Name",
@@ -408,31 +528,9 @@ namespace IMS_Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Inventory_CategoryId",
-                table: "Inventory",
-                column: "CategoryId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Inventory_SerialNumber",
-                table: "Inventory",
-                column: "SerialNumber",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Inventory_SubcategoryId",
-                table: "Inventory",
-                column: "SubcategoryId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_InventoryAssignment_InventoryId",
-                table: "InventoryAssignment",
-                column: "InventoryId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_PurchaseDetail_InventoryId",
-                table: "PurchaseDetail",
-                column: "InventoryId",
-                unique: true);
+                name: "IX_Categories_UpdatedBy",
+                table: "Categories",
+                column: "UpdatedBy");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RefreshTokens_Expires",
@@ -547,16 +645,6 @@ namespace IMS_Infrastructure.Migrations
                 column: "TicketId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TicketStatusHistories_TicketId1",
-                table: "TicketStatusHistories",
-                column: "TicketId1");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_CreatedAt",
-                table: "Users",
-                column: "CreatedAt");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Users_DepartmentId",
                 table: "Users",
                 column: "DepartmentId");
@@ -568,11 +656,6 @@ namespace IMS_Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Users_IsDeleted_IsActive",
-                table: "Users",
-                columns: new[] { "IsDeleted", "IsActive" });
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Users_RoleId",
                 table: "Users",
                 column: "RoleId");
@@ -582,10 +665,10 @@ namespace IMS_Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "InventoryAssignment");
+                name: "AssetHistories");
 
             migrationBuilder.DropTable(
-                name: "PurchaseDetail");
+                name: "NetworkDetails");
 
             migrationBuilder.DropTable(
                 name: "RefreshTokens");
@@ -600,10 +683,16 @@ namespace IMS_Infrastructure.Migrations
                 name: "TicketStatusHistories");
 
             migrationBuilder.DropTable(
-                name: "Inventory");
+                name: "Assets");
 
             migrationBuilder.DropTable(
                 name: "Tickets");
+
+            migrationBuilder.DropTable(
+                name: "AssetConditions");
+
+            migrationBuilder.DropTable(
+                name: "AssetStatuses");
 
             migrationBuilder.DropTable(
                 name: "SubCategories");

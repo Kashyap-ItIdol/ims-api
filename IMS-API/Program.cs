@@ -1,14 +1,18 @@
+using System.Text;
+using System.Text.Json;
 using IMS_API.ExceptionHandlers;
 using IMS_API.Extensions;
 using IMS_Application.Extentions;
+using IMS_Application.Interfaces;
+using IMS_Application.Services;
+using IMS_Application.Services.Interfaces;
 using IMS_Infrastructure.Extentions;
+using IMS_Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
-using System.Text;
-using System.Text.Json;
 
 // 1. Create the Bootstrap Logger to catch startup errors
 Log.Logger = new LoggerConfiguration()
@@ -59,17 +63,25 @@ try
 
     builder.Services.AddControllers();
 
+    builder.Services.AddScoped<IUserService, UserService>();
+    builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+    builder.Services.AddScoped<IAssetRepository, AssetRepository>();
+    builder.Services.AddScoped<IAssetService, AssetService>();
+
     //  Validation Response Formatting (VERY IMPORTANT)
     builder.Services.Configure<ApiBehaviorOptions>(options =>
     {
         options.InvalidModelStateResponseFactory = context =>
         {
             var errors = context.ModelState
-                .Where(x => x.Value?.Errors.Count > 0)
-                .ToDictionary(
-                    kvp => char.ToLowerInvariant(kvp.Key[0]) + kvp.Key.Substring(1),
-                    kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
-                );
+    .Where(x => x.Value?.Errors.Count > 0)
+    .ToDictionary(
+        kvp => string.IsNullOrWhiteSpace(kvp.Key)
+            ? "general"
+            : char.ToLowerInvariant(kvp.Key[0]) + kvp.Key.Substring(1),
+        kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+    );
 
             var response = new
             {

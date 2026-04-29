@@ -8,9 +8,13 @@ namespace IMS_Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<Role> builder)
         {
-            builder.Property(x => x.Name)
-                   .IsRequired()
-                   .HasMaxLength(100);
+            builder.ToTable("Roles"); // Specify the table name
+
+            builder.HasKey(r => r.Id); // Define the primary key
+
+            builder.Property(r => r.Name)
+                .IsRequired()
+                .HasMaxLength(255);
 
             builder.HasData(
                 new Role { Id = 1, Name = "Admin" },
