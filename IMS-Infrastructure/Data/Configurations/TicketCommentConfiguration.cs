@@ -1,9 +1,6 @@
 ﻿using IMS_Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IMS_Infrastructure.Data.Configurations
 {
@@ -11,8 +8,23 @@ namespace IMS_Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<TicketComment> builder)
         {
-            builder.HasKey(c => c.Id);
-            builder.Property(c => c.CommentText).IsRequired();
+            builder.HasIndex(x => x.TicketId);
+            builder.HasIndex(x => x.UserId);
+            builder.HasIndex(x => x.CreatedAt);
+
+            builder.Property(x => x.CommentText)
+                   .IsRequired()
+                   .HasMaxLength(4000);
+
+            builder.HasOne<Ticket>()
+                   .WithMany(t => t.Comments)
+                   .HasForeignKey(x => x.TicketId)
+                   .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne<User>()
+                   .WithMany()
+                   .HasForeignKey(x => x.UserId)
+                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

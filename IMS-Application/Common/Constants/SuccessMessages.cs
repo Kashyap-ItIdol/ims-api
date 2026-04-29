@@ -20,5 +20,16 @@
 
         public const string UserDeletedSuccessfully = "User deleted successfully";
         public const string UserUpdatedSuccessfully = "User updated successfully";
+        public const string CategoryCreated = "Category Created Successfully";
+        public const string AllCategories = "Get all Categories Successfully";
+        public const string CategoryById = "Category details retrieved successfully";
+        public const string CategoryDeleted = "Category deleted successfully";
+        public const string TicketCreated = "Ticket Created Successfully";
+        public const string CommentCreated = "Comment added successfully";
+        public const string StatusUpdated = "Status updated successfully";
+        public const string AllTickets = "Tickets retrieved successfully";
+        public const string CategoryUpdated = "Category updated successfully";
+        public const string SubCategoryCreated = "SubCategory created successfully";
+
     }
 }

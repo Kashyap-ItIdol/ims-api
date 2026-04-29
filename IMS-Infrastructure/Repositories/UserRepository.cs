@@ -1,5 +1,4 @@
 ﻿using IMS_Application.Interfaces;
-using IMS_Domain.Constants;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -85,6 +84,23 @@ namespace IMS_Infrastructure.Repositories
                         t.Status == Status.Open)
                     && u.IsActive && !u.IsDeleted)
                 .ToListAsync();
+        }
+
+        public async Task<User?> GetByIdAsync(int id)
+        {
+            return await _context.Users
+                .Include(x => x.Role)
+                .Include(x => x.Department)
+                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+        }
+
+        public async Task<Dictionary<int, User>> GetUsersByIdsAsync(IEnumerable<int> ids)
+        {
+            return await _context.Users
+                .Where(x => ids.Contains(x.Id) && !x.IsDeleted)
+                .Include(x => x.Role)
+                .Include(x => x.Department)
+                .ToDictionaryAsync(x => x.Id);
         }
     }
 }
