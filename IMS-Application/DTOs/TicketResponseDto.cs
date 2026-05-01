@@ -35,5 +35,9 @@ namespace IMS_Application.DTOs
         public int UserId { get; set; }
         public string CommentText { get; set; } = string.Empty;
         public string CreatedAt { get; set; } = string.Empty;
+        public string? UpdatedAt { get; set; }
+        public int? ParentCommentId { get; set; }
+        public int LikeCount { get; set; }
+        public List<CommentReactionResponseDto> Reactions { get; set; } = new();
     }
 }

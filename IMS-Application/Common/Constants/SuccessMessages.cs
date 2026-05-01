@@ -20,6 +20,13 @@
         public const string OtpSentSuccessfully = "OTP sent successfully";
         public const string OtpVerifiedSuccessfully = "OTP verified and reset token generated successfully";
         public const string PasswordResetSuccessfully = "Password reset successfully";
+        public const string ReplyCreated = "Reply added successfully";
+        public const string CommentUpdated = "Comment updated successfully";
+        public const string CommentDeleted = "Comment deleted successfully";
+        public const string CommentLiked = "Comment liked successfully";
+        public const string CommentUnliked = "Comment unliked successfully";
+        public const string ReactionAdded = "Reaction added successfully";
+        public const string ReactionRemoved = "Reaction removed successfully";
 
     }
 }
