@@ -16,8 +16,15 @@ namespace IMS_Domain.Entities
         public Status Status { get; set; } = Status.Open;
 
         public int CreatedBy { get; set; }
+        public bool IsDeleted { get; set; } = false;
+        public int DeletedBy {  get; set; }
+        public DateTime DeletedAt {  get; set; }
 
         public int? AssetId { get; set; }
+        public int? CategoryId { get; set; }
+        public virtual Category? Category { get; set; }
+        public int? SubCategoryId { get; set; }
+        public virtual SubCategory? SubCategory { get; set; }
 
         public DateTime CreatedAt { get; set; }
 
@@ -26,5 +33,6 @@ namespace IMS_Domain.Entities
         public ICollection<TicketComment> Comments { get; set; } = new List<TicketComment>();
         public ICollection<TicketAssignment> TicketAssignments { get; set; } = new List<TicketAssignment>();
         public ICollection<TicketStatusHistory> TicketStatusHistories { get; set; } = new List<TicketStatusHistory>();
+        public ICollection<TicketAttachment> Attachments { get; set; } = new List<TicketAttachment>();
     }
 }

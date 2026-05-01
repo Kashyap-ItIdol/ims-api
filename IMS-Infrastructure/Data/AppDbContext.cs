@@ -1,4 +1,3 @@
-﻿﻿
 using IMS_Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,11 +20,15 @@ namespace IMS_Infrastructure.Data
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<TicketAssignment> TicketAssignments { get; set; }
         public DbSet<TicketComment> TicketComments { get; set; }
-        public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; } 
+        public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; }
+        public DbSet<TicketAttachment> TicketAttachments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {          
+        {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+            // Global query filter for soft delete
+            modelBuilder.Entity<Ticket>().HasQueryFilter(t => !t.IsDeleted);
         }
     }
 }
