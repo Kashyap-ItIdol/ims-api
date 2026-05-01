@@ -100,7 +100,7 @@ namespace IMS_Infrastructure.Repositories
             return true;
         }
 
-        public async Task<Ticket> UpdateTicketAsync(int ticketId, UpdateTicketDto dto)
+public async Task<Ticket> UpdateTicketAsync(int ticketId, UpdateTicketDto dto)
         {
             var ticket = await _dbSet
                 .Include(t => t.Category)
@@ -117,18 +117,16 @@ namespace IMS_Infrastructure.Repositories
             if (dto.Description != null)
                 ticket.Description = dto.Description;
 
-            if (dto.TicketType != null && dto.TicketType.Any())
+            if (!string.IsNullOrWhiteSpace(dto.TicketType) && 
+                Enum.TryParse<TicketType>(dto.TicketType, true, out var ticketType))
             {
-                var ticketTypeString = dto.TicketType.First();
-                if (Enum.TryParse<TicketType>(ticketTypeString, true, out var ticketType))
-                    ticket.TicketType = ticketType;
+                ticket.TicketType = ticketType;
             }
 
-            if (dto.TicketPriority != null && dto.TicketPriority.Any())
+            if (!string.IsNullOrWhiteSpace(dto.TicketPriority) && 
+                Enum.TryParse<TicketPriority>(dto.TicketPriority, true, out var priority))
             {
-                var priorityString = dto.TicketPriority.First();
-                if (Enum.TryParse<TicketPriority>(priorityString, true, out var priority))
-                    ticket.TicketPriority = priority;
+                ticket.TicketPriority = priority;
             }
 
             if (dto.AssetId.HasValue)

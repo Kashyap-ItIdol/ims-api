@@ -46,13 +46,22 @@ namespace IMS_Application.Mappings
             CreateMap<Category, GetCategoryDto>();
             CreateMap<SubCategory, SubCategoryDto>();
 
-            // TicketService mappings
+// TicketService mappings
             CreateMap<CreateTicketRequestDto, Ticket>()
                 .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Title))
                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
                 .ForMember(dest => dest.AssetId, opt => opt.MapFrom(src => src.AssetId))
                 .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.CategoryId))
                 .ForMember(dest => dest.SubCategoryId, opt => opt.MapFrom(src => src.SubCategoryId));
+
+CreateMap<UpdateTicketDto, Ticket>()
+                .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.TicketTitle))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
+                .ForMember(dest => dest.AssetId, opt => opt.MapFrom(src => src.AssetId))
+                .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.CategoryId))
+                .ForMember(dest => dest.SubCategoryId, opt => opt.MapFrom(src => src.SubCategoryId))
+                .ForMember(dest => dest.TicketType, opt => opt.MapFrom(src => src.TicketType))
+                .ForMember(dest => dest.TicketPriority, opt => opt.MapFrom(src => src.TicketPriority));
 
             CreateMap<Ticket, TicketInfo>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => $"TKT-{src.Id}"))

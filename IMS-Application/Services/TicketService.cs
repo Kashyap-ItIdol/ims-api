@@ -381,34 +381,20 @@ namespace IMS_Application.Services
                 if (ticket == null || ticket.IsDeleted)
                     return Result<TicketResponseDto>.Failure(ErrorMessages.TicketNotFound, 404);
 
-                if (!string.IsNullOrWhiteSpace(dto.TicketTitle))
-                    ticket.Title = dto.TicketTitle.Trim();
+                _mapper.Map(dto, ticket);
 
-                if (dto.Description != null)
-                    ticket.Description = dto.Description;
-
-                if (dto.AssetId.HasValue)
-                    ticket.AssetId = dto.AssetId.Value;
-
-                if (dto.CategoryId.HasValue)
-                    ticket.CategoryId = dto.CategoryId.Value;
-
-                if (dto.SubCategoryId.HasValue)
-                    ticket.SubCategoryId = dto.SubCategoryId.Value;
-
-                if (dto.TicketType != null && dto.TicketType.Any())
+                if (!string.IsNullOrWhiteSpace(dto.TicketType) &&
+                    Enum.TryParse<TicketType>(dto.TicketType, true, out var ticketType))
                 {
-                    var ticketTypeString = dto.TicketType.First();
-                    if (Enum.TryParse<TicketType>(ticketTypeString, true, out var ticketType))
-                        ticket.TicketType = ticketType;
+                    ticket.TicketType = ticketType;
                 }
 
-                if (dto.TicketPriority != null && dto.TicketPriority.Any())
+                if (!string.IsNullOrWhiteSpace(dto.TicketPriority) &&
+                    Enum.TryParse<TicketPriority>(dto.TicketPriority, true, out var priority))
                 {
-                    var priorityString = dto.TicketPriority.First();
-                    if (Enum.TryParse<TicketPriority>(priorityString, true, out var priority))
-                        ticket.TicketPriority = priority;
+                    ticket.TicketPriority = priority;
                 }
+
                 ticket.UpdatedAt = DateTime.UtcNow;
 
                 _unitOfWork.Tickets.Update(ticket);
