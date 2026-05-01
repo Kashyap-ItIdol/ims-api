@@ -31,8 +31,7 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            var userId = userIdResult.Data!;
-            var result = await _ticketService.CreateTicketAsync(dto, userId);
+            var result = await _ticketService.CreateTicketAsync(dto, userIdResult.Data);
             return FromResult(result);
         }
 
@@ -50,8 +49,7 @@ namespace IMS_API.Controllers
                 return FromResult(Result<object>.Failure(ErrorMessages.CommentRequires, 400));
             }
 
-            var userId = userIdResult.Data!;
-            var result = await _ticketService.AddCommentAsync(ticketId, commentText, userId);
+            var result = await _ticketService.AddCommentAsync(ticketId, commentText, userIdResult.Data);
             return FromResult(result);
         }
 
@@ -64,8 +62,7 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            var userId = userIdResult.Data!;
-            var result = await _ticketService.UpdateStatusAsync(ticketId, status, userId);
+            var result = await _ticketService.UpdateStatusAsync(ticketId, status, userIdResult.Data);
             return FromResult(result);
         }
 
@@ -78,9 +75,7 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            var userId = userIdResult.Data!;
-
-            var result = await _ticketService.GetAllTicketsAsync(userId);
+            var result = await _ticketService.GetAllTicketsAsync(userIdResult.Data);
             return FromResult(result);
         }
         [HttpGet("{ticketId}")]
@@ -92,8 +87,7 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            var userId = (int)userIdResult.Data!;
-            var result = await _ticketService.GetTicketByIdAsync(ticketId, userId);
+            var result = await _ticketService.GetTicketByIdAsync(ticketId, userIdResult.Data);
             return FromResult(result);
         }
 
@@ -147,8 +141,7 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            var deletedBy = (int)userIdResult.Data!;
-            var result = await _ticketService.DeleteTicketAsync(id, deletedBy);
+            var result = await _ticketService.DeleteTicketAsync(id, userIdResult.Data);
             return FromResult(result);
         }
 
@@ -161,8 +154,7 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            int updatedBy = userIdResult.Data;
-            var result = await _ticketService.UpdateTicketAsync(id, dto, updatedBy);
+            var result = await _ticketService.UpdateTicketAsync(id, dto, userIdResult.Data);
             return FromResult(result);
         }
 
@@ -176,8 +168,7 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            int currentUserId = userIdResult.Data;
-            var result = await _ticketService.FilterTicketsAsync(filter ?? new TicketFilterDto(), currentUserId);
+            var result = await _ticketService.FilterTicketsAsync(filter ?? new TicketFilterDto(), userIdResult.Data);
             return FromResult(result);
         }
 
