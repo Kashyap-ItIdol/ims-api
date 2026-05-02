@@ -84,9 +84,9 @@ namespace IMS_Infrastructure.Repositories
         public async Task<bool> DeleteTicketAsync(int ticketId, int deletedBy)
         {
             var ticket = await _dbSet
-                .Include(t => t.Comments)           
-                .Include(t => t.Attachments)        
-                .Include(t => t.TicketAssignments) 
+                .Include(t => t.Comments)
+                .Include(t => t.Attachments)
+                .Include(t => t.TicketAssignments)
                 .FirstOrDefaultAsync(t => t.Id == ticketId && !t.IsDeleted);
 
             if (ticket == null)
@@ -100,7 +100,7 @@ namespace IMS_Infrastructure.Repositories
             return true;
         }
 
-public async Task<Ticket> UpdateTicketAsync(int ticketId, UpdateTicketDto dto)
+        public async Task<Ticket> UpdateTicketAsync(int ticketId, UpdateTicketDto dto)
         {
             var ticket = await _dbSet
                 .Include(t => t.Category)
@@ -117,13 +117,13 @@ public async Task<Ticket> UpdateTicketAsync(int ticketId, UpdateTicketDto dto)
             if (dto.Description != null)
                 ticket.Description = dto.Description;
 
-            if (!string.IsNullOrWhiteSpace(dto.TicketType) && 
+            if (!string.IsNullOrWhiteSpace(dto.TicketType) &&
                 Enum.TryParse<TicketType>(dto.TicketType, true, out var ticketType))
             {
                 ticket.TicketType = ticketType;
             }
 
-            if (!string.IsNullOrWhiteSpace(dto.TicketPriority) && 
+            if (!string.IsNullOrWhiteSpace(dto.TicketPriority) &&
                 Enum.TryParse<TicketPriority>(dto.TicketPriority, true, out var priority))
             {
                 ticket.TicketPriority = priority;
@@ -193,6 +193,16 @@ public async Task<Ticket> UpdateTicketAsync(int ticketId, UpdateTicketDto dto)
 
             query = query.OrderByDescending(x => x.UpdatedAt);
             return await query.ToListAsync();
+        }
+        public async Task AddAttachmentAsync(TicketAttachment attachment)
+        {
+            await _context.TicketAttachments.AddAsync(attachment);
+        }
+
+        public async Task<TicketAttachment?> GetAttachmentByIdAsync(int attachmentId)
+        {
+            return await _context.TicketAttachments
+                .FirstOrDefaultAsync(a => a.Id == attachmentId);
         }
 
 
