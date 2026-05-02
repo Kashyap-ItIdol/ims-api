@@ -1,12 +1,14 @@
-﻿using IMS_Application.Interfaces;
+using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
+using AutoMapper;
 
 namespace IMS_Infrastructure.Repositories
 {
     public class UnitOfWork : IUnitOfWork
     {
         private readonly AppDbContext _context;
+        private readonly IMapper _mapper;
 
         // Lazy loading the repository ensures we only create it if it's actually used in the request
         private IUserRepository? _users;
@@ -28,9 +30,13 @@ namespace IMS_Infrastructure.Repositories
         private ITicketRepository? _tickets;
         public ITicketRepository Tickets => _tickets ??= new TicketRepository(_context);
 
-        public UnitOfWork(AppDbContext context)
+        private IRepository<TicketAttachment>? _ticketAttachments;
+        public IRepository<TicketAttachment> TicketAttachments => _ticketAttachments ??= new Repository<TicketAttachment>(_context);
+
+        public UnitOfWork(AppDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

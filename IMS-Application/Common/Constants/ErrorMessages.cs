@@ -14,6 +14,15 @@
         public const string TicketIdNotExist = "Ticket ID does not exist";
         public const string CategoryalreadyExist = "Category Already Exist";
         public const string UserNotFound = "User ID not found in claims";
+
+
+        public const string TicketNotExist = "Ticket not found or already deleted";
+        public const string FileNotFound = "No files Provided or cannot be uploaded";
+        public const string InvalidMatch = "No Matched filter";
+        public const string Unauthorized = "Unauthorized access.";
+        public const string PhysicalFileNotFound = "File link exists but physical file is missing.";
+
+
         public const string CategoryNotFound = "Category not found.";
         public const string CategoryNameRequired = "Category name is required.";
         public const string CategoryNameTooShort = "Category name must be at least 2 characters.";
@@ -37,5 +46,6 @@
         public const string SubCategoryCategoryNotFound = "Category not found or inactive.";
         public const string DuplicateSubCategoryName = "SubCategory with this name already exists in the category.";
         public const string SubCategoryInvalidUser = "Invalid user.";
+        public const string SubCategoryNotFound = "invalid subCategory";
     }
 }

@@ -1,6 +1,6 @@
 
+using IMS_Application.DTOs;
 using IMS_Domain.Entities;
-
 namespace IMS_Application.Interfaces
 {
     public interface ITicketRepository : IRepository<Ticket>
@@ -12,5 +12,10 @@ namespace IMS_Application.Interfaces
         Task AddCommentAsync(TicketComment comment);
         Task AddTicketStatusHistoryAsync(TicketStatusHistory history);
         Task UpdateTicketStatusAsync(Ticket ticket, Status newStatus, int changedBy);
+        Task<bool> DeleteTicketAsync(int ticketId, int deletedBy);
+        Task<Ticket> UpdateTicketAsync(int ticketId, UpdateTicketDto dto);
+        Task<List<Ticket>> FilterTicketsAsync(TicketFilterDto filter);
+        Task AddAttachmentAsync(TicketAttachment attachment);
+        Task<TicketAttachment?> GetAttachmentByIdAsync(int attachmentId);
     }
 }

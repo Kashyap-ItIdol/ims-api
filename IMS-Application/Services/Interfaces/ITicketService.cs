@@ -12,5 +12,11 @@ namespace IMS_Application.Services.Interfaces
         Task<Result<TicketResponseDto>> GetTicketByIdAsync(int ticketId, int currentUserId);
         Task<Result<List<TicketResponseDto>>> SearchTicketsGroupedAsync(string q, int currentUserId);
 
+        Task<Result<bool>> DeleteTicketAsync(int ticketId, int deletedBy);
+        Task<Result<TicketResponseDto>> UpdateTicketAsync(int id, UpdateTicketDto dto, int updatedBy);
+        Task<Result<List<TicketResponseDto>>> FilterTicketsAsync(TicketFilterDto filter, int currentUserId);
+        
+        Task<Result<List<TicketAttachmentResponseDto>>> UploadFilesAsync(TicketAttachmentRequestDto dto, int userId, int ticketId);
+        Task<Result<TicketAttachmentResponseDto>> GetAttachmentAsync(int attachmentId);
     }
 }

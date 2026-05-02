@@ -1,4 +1,5 @@
 using IMS_Application.Interfaces;
+using IMS_Application.Services;
 using IMS_Application.Services.Interfaces;
 
 using IMS_Infrastructure.Data;
@@ -24,6 +25,8 @@ namespace IMS_Infrastructure.Extentions
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<ISubCategoryRepository, SubCategoryRepository>();
             services.AddScoped<ITokenService, TokenService>();
+
+            services.AddScoped<ITicketService, TicketService>();
 
             return services;
         }
