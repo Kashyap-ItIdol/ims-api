@@ -15,6 +15,7 @@ namespace IMS_Infrastructure.Data
         public DbSet<User> Users { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<EmailTemplate> EmailTemplates { get; set; }
 
         public DbSet<SubCategory> SubCategories { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
@@ -25,7 +26,7 @@ namespace IMS_Infrastructure.Data
         public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {          
+        {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         }
     }

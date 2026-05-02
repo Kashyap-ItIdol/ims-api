@@ -157,7 +157,7 @@ namespace IMS_Application.Services
             }
         }
 
-public async Task<Result<TicketCommentResponseDto>> AddCommentAsync(int ticketId, string commentText, int currentUserId)
+        public async Task<Result<TicketCommentResponseDto>> AddCommentAsync(int ticketId, string commentText, int currentUserId)
         {
             if (string.IsNullOrWhiteSpace(commentText))
                 return Result<TicketCommentResponseDto>.Failure(ErrorMessages.CommentRequires, 400);
@@ -187,7 +187,7 @@ public async Task<Result<TicketCommentResponseDto>> AddCommentAsync(int ticketId
             }
         }
 
-public async Task<Result<TicketCommentResponseDto>> AddReplyAsync(int ticketId, int parentCommentId, string commentText, int currentUserId)
+        public async Task<Result<TicketCommentResponseDto>> AddReplyAsync(int ticketId, int parentCommentId, string commentText, int currentUserId)
         {
             if (string.IsNullOrWhiteSpace(commentText))
                 return Result<TicketCommentResponseDto>.Failure(ErrorMessages.CommentRequires, 400);
@@ -225,7 +225,7 @@ public async Task<Result<TicketCommentResponseDto>> AddReplyAsync(int ticketId, 
             }
         }
 
-public async Task<Result<TicketCommentResponseDto>> EditCommentAsync(int commentId, string commentText, int currentUserId)
+        public async Task<Result<TicketCommentResponseDto>> EditCommentAsync(int commentId, string commentText, int currentUserId)
         {
             if (string.IsNullOrWhiteSpace(commentText))
                 return Result<TicketCommentResponseDto>.Failure(ErrorMessages.CommentRequires, 400);
@@ -257,7 +257,7 @@ public async Task<Result<TicketCommentResponseDto>> EditCommentAsync(int comment
             }
         }
 
-public async Task<Result<CommentLikeResponseDto>> DeleteCommentAsync(int commentId, int currentUserId)
+        public async Task<Result<CommentLikeResponseDto>> DeleteCommentAsync(int commentId, int currentUserId)
         {
             try
             {
@@ -281,7 +281,7 @@ public async Task<Result<CommentLikeResponseDto>> DeleteCommentAsync(int comment
 
                 await _unitOfWork.Tickets.DeleteCommentAsync(comment);
                 await _unitOfWork.SaveChangesAsync();
-                
+
                 var dto = new CommentLikeResponseDto
                 {
                     Id = commentId,
@@ -336,7 +336,7 @@ public async Task<Result<CommentLikeResponseDto>> DeleteCommentAsync(int comment
             }
         }
 
-public async Task<Result<CommentLikeResponseDto>> UnlikeCommentAsync(int commentId, int currentUserId)
+        public async Task<Result<CommentLikeResponseDto>> UnlikeCommentAsync(int commentId, int currentUserId)
         {
             try
             {
@@ -354,7 +354,7 @@ public async Task<Result<CommentLikeResponseDto>> UnlikeCommentAsync(int comment
 
                 await _unitOfWork.Tickets.UpdateCommentLikeAsync(like);
                 await _unitOfWork.SaveChangesAsync();
-                
+
                 var dto = new CommentLikeResponseDto
                 {
                     Id = like.Id,
@@ -420,7 +420,7 @@ public async Task<Result<CommentLikeResponseDto>> UnlikeCommentAsync(int comment
             }
         }
 
-public async Task<Result<CommentReactionResponseDto>> RemoveReactionAsync(int commentId, int currentUserId)
+        public async Task<Result<CommentReactionResponseDto>> RemoveReactionAsync(int commentId, int currentUserId)
         {
             try
             {
@@ -438,7 +438,7 @@ public async Task<Result<CommentReactionResponseDto>> RemoveReactionAsync(int co
 
                 await _unitOfWork.Tickets.UpdateCommentReactionAsync(reaction);
                 await _unitOfWork.SaveChangesAsync();
-                
+
                 var dto = new CommentReactionResponseDto
                 {
                     Id = reaction.Id,
@@ -554,10 +554,7 @@ public async Task<Result<CommentReactionResponseDto>> RemoveReactionAsync(int co
                 if (user == null)
                     return Result<TicketResponseDto>.Failure(ErrorMessages.UserNotFoundError, 404);
 
-                if (user.Role == null)
-                    return Result<TicketResponseDto>.Failure(ErrorMessages.RoleNotFoundError, 400);
-
-                bool hasAccess = user.Role.Name switch
+                bool hasAccess = user.Role?.Name switch
                 {
                     LogicStrings.AdminRole => true,
                     LogicStrings.SupportEngineerRole => ticket.TicketAssignments.Any(a => a.status == LogicStrings.Active && a.assignedTo == currentUserId),
@@ -582,7 +579,7 @@ public async Task<Result<CommentReactionResponseDto>> RemoveReactionAsync(int co
                 return Result<TicketResponseDto>.Failure(ErrorMessages.ServerError, 500);
             }
         }
-public async Task<Result<List<TicketResponseDto>>> SearchTicketsGroupedAsync(string q, int currentUserId)
+        public async Task<Result<List<TicketResponseDto>>> SearchTicketsGroupedAsync(string q, int currentUserId)
         {
             if (string.IsNullOrWhiteSpace(q))
                 return Result<List<TicketResponseDto>>.Failure(ErrorMessages.SearchQueryRequired, 400);
