@@ -14,8 +14,8 @@ namespace IMS_Infrastructure.Repositories
         private IRepository<Role>? _roles;
         public IRepository<Role> Roles => _roles ??= new Repository<Role>(_context);
 
-        private IRepository<Department>? _departments;
-        public IRepository<Department> Departments => _departments ??= new DepartmentRepository(_context);
+        //private IRepository<Department>? _departments;
+        //public IRepository<Department> Departments => _departments ??= new DepartmentRepository(_context);
 
         private ICategoryRepository? _categories;
         public ICategoryRepository Categories => _categories ??= new CategoryRepository(_context);
