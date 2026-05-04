@@ -14,8 +14,13 @@ namespace IMS_Infrastructure.Repositories
         private IRepository<Role>? _roles;
         public IRepository<Role> Roles => _roles ??= new Repository<Role>(_context);
 
-        //private IRepository<Department>? _departments;
-        //public IRepository<Department> Departments => _departments ??= new DepartmentRepository(_context);
+        private readonly IDepartmentRepository _departments;
+        
+        public UnitOfWork(AppDbContext context)
+        {
+            _context = context;
+            _departments = (IDepartmentRepository)new DepartmentRepository(_context);
+        }
 
         private ICategoryRepository? _categories;
         public ICategoryRepository Categories => _categories ??= new CategoryRepository(_context);
@@ -26,10 +31,7 @@ namespace IMS_Infrastructure.Repositories
         private ITicketRepository? _tickets;
         public ITicketRepository Tickets => _tickets ??= new TicketRepository(_context);
 
-        public UnitOfWork(AppDbContext context)
-        {
-            _context = context;
-        }
+        public IDepartmentRepository Departments => _departments;
 
         public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
