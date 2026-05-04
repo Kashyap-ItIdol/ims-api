@@ -137,7 +137,6 @@ namespace IMS_Application.Services
                 }
 
                 existingSubCategory.Name = request.Name.Trim();
-                existingSubCategory.Description = request.Description?.Trim();
                 existingSubCategory.CategoryId = request.CategoryId;
                 existingSubCategory.IsActive = request.IsActive;
                 existingSubCategory.UpdatedAt = DateTime.UtcNow;
