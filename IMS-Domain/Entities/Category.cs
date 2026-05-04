@@ -17,8 +17,9 @@ namespace IMS_Domain.Entities
 
         public bool IsActive { get; set; } = true;
 
-        // Navigation
         public virtual ICollection<SubCategory> SubCategories { get; set; } = new List<SubCategory>();
-        public ICollection<Inventory> Inventory { get; set; } = new List<Inventory>();
+
+        public ICollection<Asset> Assets { get; set; }
     }
+
 }

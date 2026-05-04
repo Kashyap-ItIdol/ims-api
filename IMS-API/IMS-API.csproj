@@ -30,4 +30,8 @@
     <ProjectReference Include="..\IMS-Infrastructure\IMS-Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\uploads\" />
+  </ItemGroup>
+
 </Project>

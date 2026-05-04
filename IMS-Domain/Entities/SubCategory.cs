@@ -1,4 +1,5 @@
 namespace IMS_Domain.Entities
+
 {
     public class SubCategory
     {
@@ -19,5 +20,6 @@ namespace IMS_Domain.Entities
 
         public bool IsActive { get; set; } = true;
         public ICollection<Inventory> Inventory { get; set; } = new List<Inventory>();
+        public ICollection<Asset> Assets { get; set; }
     }
 }

@@ -37,5 +37,38 @@
         public const string SubCategoryCategoryNotFound = "Category not found or inactive.";
         public const string DuplicateSubCategoryName = "SubCategory with this name already exists in the category.";
         public const string SubCategoryInvalidUser = "Invalid user.";
+        
+        // Asset Assignment Error Messages
+        public const string AssetAssignmentNotFound = "Asset assignment not found";
+        public const string AssetAssignmentRequired = "Asset assignment data is required";
+        public const string AssetNotFound = "Asset not found";
+        public const string EmployeeNotFound = "Employee not found";
+        public const string AssetAlreadyAssigned = "Asset is already assigned";
+        public const string InvalidAssetAssignmentId = "Invalid asset assignment ID";
+        public const string AssetAssignmentDateInvalid = "Assignment date cannot be more than 7 days in the future";
+        public const string ReturnDateInvalid = "Expected return date must be on or after assigned date";
+        
+        // Client Asset Error Messages
+        public const string ClientAssetNotFound = "Client asset not found";
+        public const string ClientAssetRequired = "Client asset data is required";
+        public const string InvalidClientAssetId = "Invalid client asset ID";
+        public const string ClientAssetNameRequired = "Client asset name is required";
+        public const string ClientAssetAlreadyExists = "Client asset already exists";
+        public const string ClientAssetBrandRequired = "Brand is required";
+        public const string ClientAssetModelRequired = "Model is required";
+        public const string ClientAssetConditionRequired = "Condition is required";
+        public const string ClientAssetClientNameRequired = "Client name is required";
+        public const string ClientAssetClientPOCRequired = "Client POC is required";
+        public const string ClientAssetSalesPOCRequired = "Sales POC is required";
+        
+        // Attachment Error Messages
+        public const string AttachmentNotFound = "Attachment not found";
+        public const string AttachmentRequired = "Attachment file is required";
+        public const string AttachmentUploadFailed = "Failed to upload attachment";
+        public const string AttachmentDeleteFailed = "Failed to delete attachment";
+        public const string AttachmentDownloadFailed = "Failed to download attachment";
+        public const string FileNotFound = "File not found";
+        public const string InvalidFileFormat = "Invalid file format";
+        public const string FileSizeExceeded = "File size exceeds limit";
     }
 }
