@@ -6,7 +6,7 @@ namespace IMS_Application.Interfaces
     {
         IUserRepository Users { get; }
 
-        IRepository<Department> Departments { get; }
+        IDepartmentRepository Departments { get; }
 
         ICategoryRepository Categories { get; }
         ISubCategoryRepository SubCategories { get; }

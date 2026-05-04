@@ -8,7 +8,7 @@ namespace IMS_Application.Services.Interfaces
     {
         Task<Result<ListCategoriesDto>> CreateCategoryAsync(string name, int createdBy);
         Task<Result<List<ListCategoriesDto>>> GetAllCategoriesAsync();
-        Task<Result<ListCategoriesDto>> UpdateCategoryAsync(int id, string name, int updatedBy);
+        Task<Result<ListCategoriesDto>> UpdateCategoryAsync(int id, string? name, int updatedBy);
         Task<Result<ListCategoriesDto>> DeleteCategoryAsync(int categoryId, int updatedBy);
         Task<Result<GetCategoryDto>> GetCategoryByIdAsync(int id);
 
