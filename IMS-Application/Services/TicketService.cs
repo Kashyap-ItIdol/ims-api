@@ -502,16 +502,19 @@ namespace IMS_Application.Services
             }
         }
 
-        public async Task<Result<List<TicketResponseDto>>> GetAllTicketsAsync(int currentUserId)
+        public async Task<Result<PagedResult<TicketResponseDto>>> GetAllTicketsAsync(int currentUserId, int pageNumber, int pageSize)
         {
+            if (pageNumber < 1 || pageSize < 1)
+                return Result<PagedResult<TicketResponseDto>>.Failure(ErrorMessages.InvalidPagination, 400);
+
             try
             {
                 var user = await _unitOfWork.Users.GetByIdAsync(currentUserId);
                 if (user == null)
-                    return Result<List<TicketResponseDto>>.Failure(ErrorMessages.UserNotFoundError, 404);
+                    return Result<PagedResult<TicketResponseDto>>.Failure(ErrorMessages.UserNotFoundError, 404);
 
                 if (user.Role == null)
-                    return Result<List<TicketResponseDto>>.Failure(ErrorMessages.RoleNotFoundError, 400);
+                    return Result<PagedResult<TicketResponseDto>>.Failure(ErrorMessages.RoleNotFoundError, 400);
 
                 var tickets = await _unitOfWork.Tickets.GetTicketsForUserAsync(currentUserId, user.Role.Name);
 
@@ -525,11 +528,26 @@ namespace IMS_Application.Services
                     }
                 }
 
-                var dtos = tickets.OrderBy(t => t.CreatedAt)
+                var orderedTickets = tickets.OrderBy(t => t.CreatedAt).ToList();
+                var totalCount = orderedTickets.Count;
+                var pagedTickets = orderedTickets
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                var dtos = pagedTickets
                               .Select(t => MapToTicketResponseDto(t, allUsersDict))
                               .ToList();
 
-                return Result<List<TicketResponseDto>>.Success(dtos, SuccessMessages.AllTickets);
+                var pagedResult = new PagedResult<TicketResponseDto>
+                {
+                    Items = dtos,
+                    TotalCount = totalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+
+                return Result<PagedResult<TicketResponseDto>>.Success(pagedResult, SuccessMessages.AllTickets);
             }
             catch (OperationCanceledException)
             {
@@ -538,7 +556,7 @@ namespace IMS_Application.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving tickets for user {UserId}", currentUserId);
-                return Result<List<TicketResponseDto>>.Failure(ErrorMessages.ServerError, 500);
+                return Result<PagedResult<TicketResponseDto>>.Failure(ErrorMessages.ServerError, 500);
             }
         }
 

@@ -151,7 +151,7 @@ namespace IMS_API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetTickets()
+        public async Task<IActionResult> GetTickets([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
@@ -159,7 +159,7 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            var result = await _ticketService.GetAllTicketsAsync(userIdResult.Data);
+            var result = await _ticketService.GetAllTicketsAsync(userIdResult.Data, pageNumber, pageSize);
             return FromResult(result);
         }
 

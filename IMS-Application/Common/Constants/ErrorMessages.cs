@@ -1,4 +1,4 @@
-﻿namespace IMS_Application.Common.Constants
+namespace IMS_Application.Common.Constants
 {
     public static class ErrorMessages
     {
@@ -49,5 +49,6 @@
         public const string ReactionNotFound = "Reaction not found.";
         public const string LikeNotFound = "Like not found.";
         public const string CommentAlreadyLiked = "Comment already liked by user.";
+        public const string InvalidPagination = "pageNumber and pageSize must be greater than 0.";
     }
 }
