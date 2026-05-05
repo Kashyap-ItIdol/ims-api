@@ -2,6 +2,7 @@ using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using IMS_Application.Common.Constants;
 
 namespace IMS_Infrastructure.Repositories
 {
@@ -21,6 +22,61 @@ namespace IMS_Infrastructure.Repositories
             await _context.TicketComments.AddAsync(comment);
         }
 
+        public async Task<TicketComment?> GetCommentByIdAsync(int commentId)
+        {
+            return await _context.TicketComments
+                .Include(c => c.Likes)
+                .Include(c => c.Reactions)
+                .Include(c => c.Replies)
+                .FirstOrDefaultAsync(c => c.Id == commentId);
+        }
+
+        public Task UpdateCommentAsync(TicketComment comment)
+        {
+            _context.TicketComments.Update(comment);
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteCommentAsync(TicketComment comment)
+        {
+            _context.TicketComments.Update(comment);
+            return Task.CompletedTask;
+        }
+
+        public async Task AddCommentLikeAsync(TicketCommentLike like)
+        {
+            await _context.TicketCommentLikes.AddAsync(like);
+        }
+
+        public async Task<TicketCommentLike?> GetCommentLikeAsync(int commentId, int userId)
+        {
+            return await _context.TicketCommentLikes
+                .FirstOrDefaultAsync(l => l.CommentId == commentId && l.UserId == userId);
+        }
+
+        public Task UpdateCommentLikeAsync(TicketCommentLike like)
+        {
+            _context.TicketCommentLikes.Update(like);
+            return Task.CompletedTask;
+        }
+
+        public async Task<TicketCommentReaction?> GetCommentReactionAsync(int commentId, int userId)
+        {
+            return await _context.TicketCommentReactions
+                .FirstOrDefaultAsync(r => r.CommentId == commentId && r.UserId == userId);
+        }
+
+        public async Task AddCommentReactionAsync(TicketCommentReaction reaction)
+        {
+            await _context.TicketCommentReactions.AddAsync(reaction);
+        }
+
+        public Task UpdateCommentReactionAsync(TicketCommentReaction reaction)
+        {
+            _context.TicketCommentReactions.Update(reaction);
+            return Task.CompletedTask;
+        }
+
         public async Task AddTicketStatusHistoryAsync(TicketStatusHistory history)
         {
             await _context.TicketStatusHistories.AddAsync(history);
@@ -38,6 +94,15 @@ namespace IMS_Infrastructure.Repositories
             return await _dbSet
                 .AsNoTracking()
                 .Include(t => t.Comments.OrderByDescending(c => c.CreatedAt))
+                    .ThenInclude(c => c.Likes)
+                .Include(t => t.Comments.OrderByDescending(c => c.CreatedAt))
+                    .ThenInclude(c => c.Reactions)
+                .Include(t => t.Comments.OrderByDescending(c => c.CreatedAt))
+                    .ThenInclude(c => c.Replies)
+                    .ThenInclude(r => r.Likes)
+                .Include(t => t.Comments.OrderByDescending(c => c.CreatedAt))
+                    .ThenInclude(c => c.Replies)
+                    .ThenInclude(r => r.Reactions)
                 .Include(t => t.TicketAssignments.OrderByDescending(a => a.assigned_at))
                 .Include(t => t.TicketStatusHistories.OrderByDescending(h => h.ChangedAt))
                 .FirstOrDefaultAsync(t => t.Id == ticketId);
@@ -48,27 +113,25 @@ namespace IMS_Infrastructure.Repositories
             var query = _dbSet
                 .Include(t => t.TicketAssignments)
                 .Include(t => t.Comments)
-                .Where(t => t.CreatedBy == userId || t.TicketAssignments.Any(a => a.assignedTo == userId))
-                .OrderByDescending(t => t.CreatedAt)
+                    .ThenInclude(c => c.Likes)
+                .Include(t => t.Comments)
+                    .ThenInclude(c => c.Reactions)
+                .Include(t => t.Comments)
+                    .ThenInclude(c => c.Replies)
+                    .ThenInclude(r => r.Likes)
+                .Include(t => t.Comments)
+                    .ThenInclude(c => c.Replies)
+                    .ThenInclude(r => r.Reactions)
                 .AsNoTracking();
 
-            return await query.ToListAsync();
-        }
-
-        public async Task<List<Ticket>> SearchTicketsAsync(string query, int userId, string roleName)
-        {
-            var ticketsQuery = _dbSet
-                .AsNoTracking()
-                .Include(t => t.TicketAssignments)
-                .Include(t => t.Comments)
-                .Where(t => t.CreatedBy == userId || t.TicketAssignments.Any(a => a.assignedTo == userId));
-
-            if (!string.IsNullOrEmpty(query))
+            query = roleName switch
             {
-                ticketsQuery = ticketsQuery.Where(t => t.Title.Contains(query, StringComparison.OrdinalIgnoreCase));
-            }
+                LogicStrings.AdminRole => query,
+                LogicStrings.SupportEngineerRole => query.Where(t => t.TicketAssignments.Any(a => a.assignedTo == userId && a.status == LogicStrings.Active)),
+                _ => query.Where(t => t.CreatedBy == userId)
+            };
 
-            return await ticketsQuery.OrderByDescending(t => t.CreatedAt).ToListAsync();
+            return await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
         }
     }
 }

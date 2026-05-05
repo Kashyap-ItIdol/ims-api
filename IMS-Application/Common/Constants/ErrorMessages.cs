@@ -1,4 +1,4 @@
-﻿namespace IMS_Application.Common.Constants
+namespace IMS_Application.Common.Constants
 {
     public static class ErrorMessages
     {
@@ -11,7 +11,6 @@
         public const string NoRefreshToken = "No refresh token found.";
         public const string ServerError = "Internal server error.";
         public const string CommentRequires = "Comment text is required";
-        public const string TicketIdNotExist = "Ticket ID does not exist";
         public const string CategoryalreadyExist = "Category Already Exist";
         public const string UserNotFound = "User ID not found in claims";
         public const string CategoryNotFound = "Category not found.";
@@ -26,7 +25,6 @@
         public const string UnauthorizedTicketView = "You are not authorized to view this ticket.";
         public const string UserNotFoundError = "User not found.";
         public const string RoleNotFoundError = "User role not found.";
-        public const string CreatorNotFoundError = "Creator not found.";
         public const string InvalidTicketType = "TicketType must be one of: Hardware, Software, Server, Website.";
         public const string InvalidTicketPriority = "Priority must be one of valid TicketPriority values.";
         public const string InvalidTicketStatus = "Invalid status value. Valid values are: Open, InProgress, Solved, Closed.";
@@ -37,5 +35,20 @@
         public const string SubCategoryCategoryNotFound = "Category not found or inactive.";
         public const string DuplicateSubCategoryName = "SubCategory with this name already exists in the category.";
         public const string SubCategoryInvalidUser = "Invalid user.";
+        public const string ForgotPasswordUserNotFound = "User not found with this email address";
+        public const string OtpSendFailed = "Failed to send OTP. Please try again.";
+        public const string InvalidOrExpiredOtp = "Invalid or expired OTP";
+        public const string InvalidResetToken = "Invalid or expired reset token";
+        public const string ResetPasswordUserNotFound = "User not found for password reset";
+        public const string CategoryOrSubCategoryNotFound = "category or subcategory is not available in the table";
+        public const string SearchQueryRequired = "Search query is required.";
+        public const string CommentNotFound = "Comment not found.";
+        public const string UnauthorizedCommentEdit = "You are not authorized to edit this comment.";
+        public const string UnauthorizedCommentDelete = "You are not authorized to delete this comment.";
+        public const string InvalidReactionType = "Invalid reaction type.";
+        public const string ReactionNotFound = "Reaction not found.";
+        public const string LikeNotFound = "Like not found.";
+        public const string CommentAlreadyLiked = "Comment already liked by user.";
+        public const string InvalidPagination = "pageNumber and pageSize must be greater than 0.";
     }
 }

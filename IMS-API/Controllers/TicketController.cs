@@ -29,8 +29,7 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            var userId = userIdResult.Data!;
-            var result = await _ticketService.CreateTicketAsync(dto, userId);
+            var result = await _ticketService.CreateTicketAsync(dto, userIdResult.Data);
             return FromResult(result);
         }
 
@@ -43,13 +42,98 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            if (string.IsNullOrWhiteSpace(commentText))
+            var result = await _ticketService.AddCommentAsync(ticketId, commentText, userIdResult.Data);
+            return FromResult(result);
+        }
+
+        [HttpPost("{ticketId}/comments/{parentCommentId}/replies")]
+        public async Task<IActionResult> AddReply(int ticketId, int parentCommentId, [FromQuery] string commentText)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
             {
-                return FromResult(Result<object>.Failure(ErrorMessages.CommentRequires, 400));
+                return FromResult(userIdResult);
             }
 
-            var userId = userIdResult.Data!;
-            var result = await _ticketService.AddCommentAsync(ticketId, commentText, userId);
+            var result = await _ticketService.AddReplyAsync(ticketId, parentCommentId, commentText, userIdResult.Data);
+            return FromResult(result);
+        }
+
+        [HttpPatch("comments/{commentId}")]
+        public async Task<IActionResult> EditComment(int commentId, [FromQuery] string commentText)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
+
+            var result = await _ticketService.EditCommentAsync(commentId, commentText, userIdResult.Data);
+            return FromResult(result);
+        }
+
+        [HttpDelete("comments/{commentId}")]
+        public async Task<IActionResult> DeleteComment(int commentId)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
+
+            var result = await _ticketService.DeleteCommentAsync(commentId, userIdResult.Data);
+            return FromResult(result);
+        }
+
+        [HttpPost("comments/{commentId}/like")]
+        public async Task<IActionResult> LikeComment(int commentId)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
+
+            var result = await _ticketService.LikeCommentAsync(commentId, userIdResult.Data);
+            return FromResult(result);
+        }
+
+        [HttpDelete("comments/{commentId}/like")]
+        public async Task<IActionResult> UnlikeComment(int commentId)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
+
+            var result = await _ticketService.UnlikeCommentAsync(commentId, userIdResult.Data);
+            return FromResult(result);
+        }
+
+        [HttpPost("comments/{commentId}/reactions")]
+        public async Task<IActionResult> AddReaction(int commentId, [FromQuery] string reactionType)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
+
+            var result = await _ticketService.AddReactionAsync(commentId, reactionType, userIdResult.Data);
+            return FromResult(result);
+        }
+
+        [HttpDelete("comments/{commentId}/reactions")]
+        public async Task<IActionResult> RemoveReaction(int commentId)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
+
+            var result = await _ticketService.RemoveReactionAsync(commentId, userIdResult.Data);
             return FromResult(result);
         }
 
@@ -62,13 +146,12 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            var userId = userIdResult.Data!;
-            var result = await _ticketService.UpdateStatusAsync(ticketId, status, userId);
+            var result = await _ticketService.UpdateStatusAsync(ticketId, status, userIdResult.Data);
             return FromResult(result);
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetTickets()
+        public async Task<IActionResult> GetTickets([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
@@ -76,11 +159,10 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            var userId = userIdResult.Data!;
-
-            var result = await _ticketService.GetAllTicketsAsync(userId);
+            var result = await _ticketService.GetAllTicketsAsync(userIdResult.Data, pageNumber, pageSize);
             return FromResult(result);
         }
+
         [HttpGet("{ticketId}")]
         public async Task<IActionResult> GetTicket(int ticketId)
         {
@@ -90,53 +172,22 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            var userId = (int)userIdResult.Data!;
-            var result = await _ticketService.GetTicketByIdAsync(ticketId, userId);
+            var result = await _ticketService.GetTicketByIdAsync(ticketId, userIdResult.Data);
             return FromResult(result);
         }
 
 
-        //[HttpGet("search")]
-        //public async Task<IActionResult> SearchTickets([FromQuery] string? q)
-        //{
-        //    try
-        //    {
-        //        if (string.IsNullOrWhiteSpace(q))
-        //        {
-        //            var errorResponse = ApiResponse<object>.APIResponse(400, "Search query parameter 'q' is required.", null, false);
-        //            return BadRequest(errorResponse);
-        //        }
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchTickets([FromQuery] string? q)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
 
-        //        var userIdClaim = User.FindFirst("userId")?.Value;
-        //        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int currentUserId))
-        //        {
-        //            var errorResponse = ApiResponse<object>.APIResponse(400, "Invalid user context.", null, false);
-        //            return BadRequest(errorResponse);
-        //        }
-
-        //        var result = await _ticketService.SearchTicketsGroupedAsync(q, currentUserId);
-
-        //        var successResponse = ApiResponse<object>.APIResponse(200,
-        //            "Tickets searched successfully",
-        //            result,
-        //            true
-        //        );
-
-        //        return Ok(successResponse);
-        //    }
-        //    catch (ArgumentException ex)
-        //    {
-        //        var errorResponse = ApiResponse<object>.APIResponse(400, ex.Message, null, false);
-        //        return BadRequest(errorResponse);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        var errorResponse = ApiResponse<object>.APIResponse(500, "Internal server error.", null, false);
-        //        return BadRequest(errorResponse);
-        //    }
-        //}
-
-
+            var result = await _ticketService.SearchTicketsGroupedAsync(q, userIdResult.Data);
+            return FromResult(result);
+        }
     }
 }
-

@@ -16,10 +16,6 @@
         public int RoleId { get; set; }
         public Role Role { get; set; } = null!;
 
-        public string? PasswordResetToken { get; set; }
-
-        public DateTime? ResetTokenExpires { get; set; }
-
         public string? ProfileImg { get; set; }
 
         public bool IsActive { get; set; } = true;
