@@ -50,5 +50,7 @@ namespace IMS_Application.Common.Constants
         public const string LikeNotFound = "Like not found.";
         public const string CommentAlreadyLiked = "Comment already liked by user.";
         public const string InvalidPagination = "pageNumber and pageSize must be greater than 0.";
+        public const string InvalidDateFilter = "Invalid date filter. Valid values: today, yesterday, lastWeek, lastMonth, all.";
+        public const string InvalidDateRange = "Both startDate and endDate must be provided for custom range, and startDate must not exceed endDate.";
     }
 }

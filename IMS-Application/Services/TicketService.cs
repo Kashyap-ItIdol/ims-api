@@ -528,7 +528,7 @@ namespace IMS_Application.Services
                     }
                 }
 
-                var orderedTickets = tickets.OrderBy(t => t.CreatedAt).ToList();
+                var orderedTickets = tickets.OrderByDescending(t => t.CreatedAt).ToList();
                 var totalCount = orderedTickets.Count;
                 var pagedTickets = orderedTickets
                     .Skip((pageNumber - 1) * pageSize)
@@ -597,6 +597,119 @@ namespace IMS_Application.Services
                 return Result<TicketResponseDto>.Failure(ErrorMessages.ServerError, 500);
             }
         }
+
+        public async Task<Result<PagedResult<TicketResponseDto>>> GetCalendarFilteredTicketsAsync(int currentUserId, int pageNumber, int pageSize, string? dateFilter, DateOnly? startDate, DateOnly? endDate)
+        {
+
+            if (pageNumber < 1 || pageSize < 1)
+
+                return Result<PagedResult<TicketResponseDto>>.Failure(ErrorMessages.InvalidPagination, 400);
+
+            try
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(currentUserId);
+                if (user == null)
+                    return Result<PagedResult<TicketResponseDto>>.Failure(ErrorMessages.UserNotFoundError, 404);
+
+                if (user.Role == null)
+                    return Result<PagedResult<TicketResponseDto>>.Failure(ErrorMessages.RoleNotFoundError, 400);
+
+                var tickets = await _unitOfWork.Tickets.GetTicketsForUserAsync(currentUserId, user.Role.Name);
+
+                if (startDate.HasValue || endDate.HasValue)
+                {
+                    if (!startDate.HasValue || !endDate.HasValue)
+                        return Result<PagedResult<TicketResponseDto>>.Failure(ErrorMessages.InvalidDateRange, 400);
+
+                    var startUtc = startDate.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+                    var endUtcExclusive = endDate.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc).AddDays(1);
+
+
+                    if (startUtc > endUtcExclusive)
+                        return Result<PagedResult<TicketResponseDto>>.Failure(ErrorMessages.InvalidDateRange, 400);
+
+                    tickets = tickets.Where(t => t.CreatedAt >= startUtc && t.CreatedAt < endUtcExclusive).ToList();
+                }
+                else if (!string.IsNullOrEmpty(dateFilter))
+                {
+                    var validFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "today", "yesterday", "lastWeek", "lastMonth", "currentMonth", "all" };
+                    if (!validFilters.Contains(dateFilter))
+                        return Result<PagedResult<TicketResponseDto>>.Failure(ErrorMessages.InvalidDateFilter, 400);
+
+                    var today = DateTime.Today.ToUniversalTime();
+                    DateTime filterStart = DateTime.MinValue;
+                    DateTime filterEnd = DateTime.MaxValue;
+                    switch (dateFilter.ToLowerInvariant())
+                    {
+                        case "today":
+                            filterStart = today;
+                            filterEnd = today.AddDays(1);
+                            break;
+                        case "yesterday":
+                            filterStart = today.AddDays(-1);
+                            filterEnd = today;
+                            break;
+                        case "lastweek":
+                            filterStart = today.AddDays(-7);
+                            filterEnd = today;
+                            break;
+                        case "lastmonth":
+                            filterStart = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(-1);
+                            filterEnd = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                            break;
+                        case "currentmonth":
+                            filterStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                            filterEnd = filterStart.AddMonths(1);
+                            break;
+                        case "all":
+                            // no filter
+                            break;
+                    }
+                    tickets = tickets.Where(t => t.CreatedAt >= filterStart && t.CreatedAt < filterEnd).ToList();
+                }
+
+                var allUsersDict = new Dictionary<int, User>();
+                foreach (var ticket in tickets)
+                {
+                    var users = await GetUsersForTicketAsync(ticket, currentUserId);
+                    foreach (var kvp in users)
+                    {
+                        allUsersDict[kvp.Key] = kvp.Value;
+                    }
+                }
+
+                var orderedTickets = tickets.OrderByDescending(t => t.CreatedAt).ToList();
+                var totalCount = orderedTickets.Count;
+                var pagedTickets = orderedTickets
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                var dtos = pagedTickets
+                    .Select(t => MapToTicketResponseDto(t, allUsersDict))
+                    .ToList();
+
+                var pagedResult = new PagedResult<TicketResponseDto>
+                {
+                    Items = dtos,
+                    TotalCount = totalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+
+                return Result<PagedResult<TicketResponseDto>>.Success(pagedResult, SuccessMessages.AllTickets);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving calendar filtered tickets for user {UserId}", currentUserId);
+                return Result<PagedResult<TicketResponseDto>>.Failure(ErrorMessages.ServerError, 500);
+            }
+        }
+
         public async Task<Result<List<TicketResponseDto>>> SearchTicketsGroupedAsync(string q, int currentUserId)
         {
             if (string.IsNullOrWhiteSpace(q))
@@ -659,7 +772,7 @@ namespace IMS_Application.Services
                     }
                 }
 
-                var dtos = tickets.OrderBy(t => t.CreatedAt)
+                var dtos = tickets.OrderByDescending(t => t.CreatedAt)
                     .Select(t => MapToTicketResponseDto(t, allUsersDict))
                     .ToList();
 

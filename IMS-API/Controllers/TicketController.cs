@@ -189,5 +189,22 @@ namespace IMS_API.Controllers
             var result = await _ticketService.SearchTicketsGroupedAsync(q, userIdResult.Data);
             return FromResult(result);
         }
+
+        [HttpGet("thismonth")]
+        public async Task<IActionResult> GetCalendarFilteredTickets([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? dateFilter = null, [FromQuery] DateOnly? startDate = null, [FromQuery] DateOnly? endDate = null)
+
+        {
+
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
+
+            
+            var result = await _ticketService.GetCalendarFilteredTicketsAsync(userIdResult.Data, pageNumber, pageSize, dateFilter, startDate, endDate);
+            return FromResult(result);
+        }
+
     }
 }
