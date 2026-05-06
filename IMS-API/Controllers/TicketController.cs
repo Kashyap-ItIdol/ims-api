@@ -1,6 +1,4 @@
 using IMS_API.Controllers.Base;
-using IMS_Application.Common.Constants;
-using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -201,7 +199,7 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            
+
             var result = await _ticketService.GetCalendarFilteredTicketsAsync(userIdResult.Data, pageNumber, pageSize, dateFilter, startDate, endDate);
             return FromResult(result);
         }
