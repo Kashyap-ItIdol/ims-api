@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using IMS_API.Controllers.Base;
+﻿using IMS_API.Controllers.Base;
 using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -17,12 +16,14 @@ public class AssetController : BaseController
         _assetService = assetService;
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("Add-Asset")]
     public async Task<IActionResult> AddInventoryAssets(AddAssetDto dto)
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-        var result = await _assetService.AddAssetsAsync(dto, userId);
+        var userResult = GetCurrentUserId();
+        if (!userResult.IsSuccess)
+            return FromResult(userResult);
+
+        var result = await _assetService.AddAssetsAsync(dto, userResult.Data);
         return FromResult(result);
     }
 
@@ -38,24 +39,28 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateAsset(int id, UpdateAssetDto dto)
     {
         if (id != dto.Id)
             return BadRequest("Id mismatch");
 
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-        var result = await _assetService.UpdateAssetAsync(dto, userId);
+        var userResult = GetCurrentUserId();
+        if (!userResult.IsSuccess)
+            return FromResult(userResult);
+
+        var result = await _assetService.UpdateAssetAsync(dto, userResult.Data);
         return FromResult(result);
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteAsset(int id)
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-        var result = await _assetService.DeleteAssetAsync(id, userId);
+        var userResult = GetCurrentUserId();
+        if (!userResult.IsSuccess)
+            return FromResult(userResult);
+
+        var result = await _assetService.DeleteAssetAsync(id, userResult.Data);
         return FromResult(result);
     }
 
@@ -119,12 +124,14 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("{id}/network")]
     public async Task<IActionResult> AddOrUpdateNetwork(int id, NetworkDetailsDto dto)
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-        var result = await _assetService.AddOrUpdateNetworkAsync(id, dto, userId);
+        var userResult = GetCurrentUserId();
+        if (!userResult.IsSuccess)
+            return FromResult(userResult);
+
+        var result = await _assetService.AddOrUpdateNetworkAsync(id, dto, userResult.Data);
         return FromResult(result);
     }
 

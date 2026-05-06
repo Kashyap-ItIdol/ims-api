@@ -1,9 +1,8 @@
-﻿﻿using IMS_API.Controllers.Base;
+﻿using IMS_API.Controllers.Base;
 using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace IMS_API.Controllers
 {
@@ -18,22 +17,25 @@ namespace IMS_API.Controllers
         {
             _userService = userService;
         }
-
         [HttpPost]
         public async Task<IActionResult> Create(CreateUserDto dto)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var userResult = GetCurrentUserId();
+            if (!userResult.IsSuccess)
+                return FromResult(userResult);
 
-            var result = await _userService.CreateUserAsync(dto, userId);
+            var result = await _userService.CreateUserAsync(dto, userResult.Data);
             return FromResult(result);
         }
 
         [HttpPut]
         public async Task<IActionResult> Update(UpdateUserDto dto)
         {
-            var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var userResult = GetCurrentUserId();
+            if (!userResult.IsSuccess)
+                return FromResult(userResult);
 
-            var result = await _userService.UpdateUserAsync(dto, currentUserId);
+            var result = await _userService.UpdateUserAsync(dto, userResult.Data);
             return FromResult(result);
         }
 
@@ -47,9 +49,11 @@ namespace IMS_API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var userResult = GetCurrentUserId();
+            if (!userResult.IsSuccess)
+                return FromResult(userResult);
 
-            var result = await _userService.DeleteUserAsync(id, userId);
+            var result = await _userService.DeleteUserAsync(id, userResult.Data);
             return FromResult(result);
         }
     }
