@@ -170,13 +170,7 @@ namespace IMS_Application.Services
 
                 return Result<string>.Success(SuccessMessages.AssetsAddedSuccessfully);
             }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex,
-                    "AddAssetsAsync operation was cancelled");
 
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
@@ -204,13 +198,7 @@ namespace IMS_Application.Services
 
                 return Result<List<AssetResponseDto>>.Success(result);
             }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex,
-                    "GetAllAssetsAsync operation was cancelled");
 
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
@@ -368,14 +356,7 @@ namespace IMS_Application.Services
                     return Result<string>.Success(SuccessMessages.AssetUpdatedSuccessfully);
                 }
             }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex,
-                    "UpdateAssetAsync operation was cancelled for AssetId {AssetId}",
-                    dto.Id);
 
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
@@ -443,14 +424,7 @@ namespace IMS_Application.Services
 
                 return Result<string>.Success(SuccessMessages.AssetDeletedSuccessfully);
             }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex,
-                    "DeleteAssetAsync operation was cancelled for AssetId {AssetId}",
-                    id);
 
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
@@ -472,13 +446,7 @@ namespace IMS_Application.Services
 
                 return Result<List<UserDto>>.Success(result);
             }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex,
-                    "GetSuggestedUsersAsync operation was cancelled");
 
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
@@ -499,14 +467,7 @@ namespace IMS_Application.Services
 
                 return Result<List<UserDto>>.Success(result);
             }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex,
-                    "SearchUsersAsync operation was cancelled for Query {Query}",
-                    query);
 
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
@@ -565,15 +526,7 @@ namespace IMS_Application.Services
 
                 return Result<string>.Success(SuccessMessages.AssetAssignedSuccessfully);
             }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex,
-                    "AssignAssetAsync operation was cancelled for AssetId {AssetId} and UserId {UserId}",
-                    dto.AssetId,
-                    dto.UserId);
 
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
@@ -627,14 +580,7 @@ namespace IMS_Application.Services
 
                 return Result<GetAssetByIdResponseDto>.Success(response);
             }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex,
-                    "GetAssetByIdAsync operation was cancelled for AssetId {AssetId}",
-                    id);
 
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
@@ -690,15 +636,7 @@ namespace IMS_Application.Services
 
                 return Result<string>.Success(SuccessMessages.ChildAttachedSuccessfully);
             }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex,
-                    "AttachChildAsync operation was cancelled for ChildId {ChildId} and ParentId {ParentId}",
-                    dto.ChildId,
-                    dto.ParentId);
 
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
@@ -748,14 +686,7 @@ namespace IMS_Application.Services
 
                 return Result<string>.Success(SuccessMessages.ChildCreatedAndAttachedSuccessfully);
             }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex,
-                    "CreateAndAttachChildAsync operation was cancelled for ParentId {ParentId}",
-                    dto.ParentId);
 
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
@@ -793,14 +724,7 @@ namespace IMS_Application.Services
 
                 return Result<string>.Success(SuccessMessages.ChildDetachedSuccessfully);
             }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex,
-                    "DetachChildAsync operation was cancelled for ChildId {ChildId}",
-                    dto.ChildId);
 
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
@@ -822,13 +746,7 @@ namespace IMS_Application.Services
 
                 return Result<List<AssetListDto>>.Success(response);
             }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex,
-                    "FilterAssetsAsync operation was cancelled");
 
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
@@ -885,14 +803,7 @@ namespace IMS_Application.Services
 
                 return Result<string>.Success(SuccessMessages.NetworkUpdatedSuccessfully);
             }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex,
-                    "AddOrUpdateNetworkAsync operation was cancelled for AssetId {AssetId}",
-                    assetId);
 
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
