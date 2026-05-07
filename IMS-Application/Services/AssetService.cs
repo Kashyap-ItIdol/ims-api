@@ -40,25 +40,64 @@ namespace IMS_Application.Services
                     var user = await _unitOfWork.Users.GetByIdAsync(dto.AssignedTo.Value);
 
                     if (user == null)
-                        return Result<string>.Failure(string.Format(ErrorMessages.UserNotFoundById, dto.AssignedTo.Value), 404);
+                        return Result<string>.Failure(
+                            string.Format(ErrorMessages.UserNotFoundById, dto.AssignedTo.Value),
+                            404);
 
-                    if (!string.IsNullOrEmpty(dto.TableNo))
+                    if (!string.IsNullOrWhiteSpace(user.TableNo))
                     {
-                        var isUsed = await _unitOfWork.Users.TableAlreadyAssignedAsync(dto.TableNo);
+                        if (!string.Equals(user.TableNo, dto.TableNo, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return Result<string>.Failure(
+                                string.Format(ErrorMessages.UserTableAlreadyAssigned, user.TableNo),
+                                400);
+                        }
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrWhiteSpace(dto.TableNo))
+                        {
+                            var isUsed = await _unitOfWork.Users.TableAlreadyAssignedAsync(dto.TableNo);
 
-                        if (isUsed)
-                            return Result<string>.Failure(string.Format(ErrorMessages.TableAlreadyAssignedToUser, dto.TableNo), 400);
+                            if (isUsed)
+                            {
+                                return Result<string>.Failure(
+                                    string.Format(ErrorMessages.TableAlreadyAssignedToUser, dto.TableNo),
+                                    400);
+                            }
 
-                        user.TableNo = dto.TableNo;
+                            user.TableNo = dto.TableNo;
+                        }
                     }
 
-                    if (!string.IsNullOrEmpty(dto.Location))
-                        user.Location = dto.Location;
+                    if (!string.IsNullOrWhiteSpace(user.Location))
+                    {
+                        if (!string.Equals(user.Location, dto.Location, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return Result<string>.Failure(
+                                string.Format(ErrorMessages.UserLocationAlreadyAssigned, user.Location),
+                                400);
+                        }
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrWhiteSpace(dto.Location))
+                        {
+                            user.Location = dto.Location;
+                        }
+                    }
+
+                    dto.Location = user.Location;
+                    dto.TableNo = user.TableNo;
                 }
 
                 var mainAsset = _mapper.Map<Asset>(mainDto);
+
                 mainAsset.AssignedTo = dto.AssignedTo;
-                mainAsset.AssignDate = dto.AssignedTo.HasValue ? (dto.AssignedDate ?? DateTime.UtcNow) : null;
+                mainAsset.AssignDate = dto.AssignedTo.HasValue
+                    ? (dto.AssignedDate ?? DateTime.UtcNow)
+                    : null;
+
                 mainAsset.ExpectedReturnDate = dto.ExpectedReturnDate;
                 mainAsset.CreatedAt = DateTime.UtcNow;
                 mainAsset.UpdatedAt = DateTime.UtcNow;
@@ -66,13 +105,16 @@ namespace IMS_Application.Services
                 mainAsset.UpdatedBy = createdBy;
 
                 await _unitOfWork.Assets.AddRangeAsync(new List<Asset> { mainAsset });
+
                 await _unitOfWork.SaveChangesAsync();
 
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
                     AssetId = mainAsset.Id,
                     Action = "Created",
-                    Description = $"Asset {mainAsset.ItemName} created{(dto.AssignedTo.HasValue ? $" and assigned to user {dto.AssignedTo}" : "")}"
+                    Description =
+                        $"Asset {mainAsset.ItemName} created" +
+                        $"{(dto.AssignedTo.HasValue ? $" and assigned to user {dto.AssignedTo}" : "")}"
                 });
 
                 var childAssets = new List<Asset>();
@@ -80,6 +122,7 @@ namespace IMS_Application.Services
                 foreach (var item in dto.Assets.Where(x => !x.IsPrimary))
                 {
                     var asset = _mapper.Map<Asset>(item);
+
                     asset.StatusId = mainAsset.StatusId;
                     asset.AssignedTo = dto.AssignedTo;
                     asset.AssignDate = mainAsset.AssignDate;
@@ -104,6 +147,7 @@ namespace IMS_Application.Services
                 if (childAssets.Any())
                 {
                     await _unitOfWork.Assets.AddRangeAsync(childAssets);
+
                     await _unitOfWork.SaveChangesAsync();
 
                     foreach (var child in childAssets)
@@ -112,7 +156,8 @@ namespace IMS_Application.Services
                         {
                             AssetId = child.Id,
                             Action = "Created",
-                            Description = $"Child asset {child.ItemName} created and attached to parent {mainAsset.ItemName}"
+                            Description =
+                                $"Child asset {child.ItemName} created and attached to parent {mainAsset.ItemName}"
                         });
                     }
 
@@ -125,14 +170,21 @@ namespace IMS_Application.Services
 
                 return Result<string>.Success(SuccessMessages.AssetsAddedSuccessfully);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
+                _logger.LogWarning(ex,
+                    "AddAssetsAsync operation was cancelled");
+
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during adding assets");
-                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
+                _logger.LogError(ex,
+                    "Unexpected error during adding assets");
+
+                return Result<string>.Failure(
+                    ErrorMessages.UnexpectedError,
+                    500);
             }
         }
 
@@ -152,14 +204,21 @@ namespace IMS_Application.Services
 
                 return Result<List<AssetResponseDto>>.Success(result);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
+                _logger.LogWarning(ex,
+                    "GetAllAssetsAsync operation was cancelled");
+
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during retrieving all assets");
-                return Result<List<AssetResponseDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+                _logger.LogError(ex,
+                    "Unexpected error during retrieving all assets");
+
+                return Result<List<AssetResponseDto>>.Failure(
+                    ErrorMessages.UnexpectedError,
+                    500);
             }
         }
 
@@ -309,14 +368,23 @@ namespace IMS_Application.Services
                     return Result<string>.Success(SuccessMessages.AssetUpdatedSuccessfully);
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
+                _logger.LogWarning(ex,
+                    "UpdateAssetAsync operation was cancelled for AssetId {AssetId}",
+                    dto.Id);
+
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during updating asset {AssetId}", dto.Id);
-                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
+                _logger.LogError(ex,
+                    "Unexpected error during updating asset {AssetId}",
+                    dto.Id);
+
+                return Result<string>.Failure(
+                    ErrorMessages.UnexpectedError,
+                    500);
             }
         }
 
@@ -375,14 +443,23 @@ namespace IMS_Application.Services
 
                 return Result<string>.Success(SuccessMessages.AssetDeletedSuccessfully);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
+                _logger.LogWarning(ex,
+                    "DeleteAssetAsync operation was cancelled for AssetId {AssetId}",
+                    id);
+
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during deleting asset {AssetId}", id);
-                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
+                _logger.LogError(ex,
+                    "Unexpected error during deleting asset {AssetId}",
+                    id);
+
+                return Result<string>.Failure(
+                    ErrorMessages.UnexpectedError,
+                    500);
             }
         }
 
@@ -395,14 +472,21 @@ namespace IMS_Application.Services
 
                 return Result<List<UserDto>>.Success(result);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
+                _logger.LogWarning(ex,
+                    "GetSuggestedUsersAsync operation was cancelled");
+
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during retrieving suggested users");
-                return Result<List<UserDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+                _logger.LogError(ex,
+                    "Unexpected error during retrieving suggested users");
+
+                return Result<List<UserDto>>.Failure(
+                    ErrorMessages.UnexpectedError,
+                    500);
             }
         }
 
@@ -415,14 +499,23 @@ namespace IMS_Application.Services
 
                 return Result<List<UserDto>>.Success(result);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
+                _logger.LogWarning(ex,
+                    "SearchUsersAsync operation was cancelled for Query {Query}",
+                    query);
+
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during searching users with query {Query}", query);
-                return Result<List<UserDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+                _logger.LogError(ex,
+                    "Unexpected error during searching users with query {Query}",
+                    query);
+
+                return Result<List<UserDto>>.Failure(
+                    ErrorMessages.UnexpectedError,
+                    500);
             }
         }
 
@@ -472,14 +565,25 @@ namespace IMS_Application.Services
 
                 return Result<string>.Success(SuccessMessages.AssetAssignedSuccessfully);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
+                _logger.LogWarning(ex,
+                    "AssignAssetAsync operation was cancelled for AssetId {AssetId} and UserId {UserId}",
+                    dto.AssetId,
+                    dto.UserId);
+
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during assigning asset {AssetId} to user {UserId}", dto.AssetId, dto.UserId);
-                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
+                _logger.LogError(ex,
+                    "Unexpected error during assigning asset {AssetId} to user {UserId}",
+                    dto.AssetId,
+                    dto.UserId);
+
+                return Result<string>.Failure(
+                    ErrorMessages.UnexpectedError,
+                    500);
             }
         }
 
@@ -523,14 +627,23 @@ namespace IMS_Application.Services
 
                 return Result<GetAssetByIdResponseDto>.Success(response);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
+                _logger.LogWarning(ex,
+                    "GetAssetByIdAsync operation was cancelled for AssetId {AssetId}",
+                    id);
+
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during retrieving asset by id {AssetId}", id);
-                return Result<GetAssetByIdResponseDto>.Failure(ErrorMessages.UnexpectedError, 500);
+                _logger.LogError(ex,
+                    "Unexpected error during retrieving asset by id {AssetId}",
+                    id);
+
+                return Result<GetAssetByIdResponseDto>.Failure(
+                    ErrorMessages.UnexpectedError,
+                    500);
             }
         }
 
@@ -577,14 +690,25 @@ namespace IMS_Application.Services
 
                 return Result<string>.Success(SuccessMessages.ChildAttachedSuccessfully);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
+                _logger.LogWarning(ex,
+                    "AttachChildAsync operation was cancelled for ChildId {ChildId} and ParentId {ParentId}",
+                    dto.ChildId,
+                    dto.ParentId);
+
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during attaching child {ChildId} to parent {ParentId}", dto.ChildId, dto.ParentId);
-                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
+                _logger.LogError(ex,
+                    "Unexpected error during attaching child {ChildId} to parent {ParentId}",
+                    dto.ChildId,
+                    dto.ParentId);
+
+                return Result<string>.Failure(
+                    ErrorMessages.UnexpectedError,
+                    500);
             }
         }
 
@@ -624,14 +748,23 @@ namespace IMS_Application.Services
 
                 return Result<string>.Success(SuccessMessages.ChildCreatedAndAttachedSuccessfully);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
+                _logger.LogWarning(ex,
+                    "CreateAndAttachChildAsync operation was cancelled for ParentId {ParentId}",
+                    dto.ParentId);
+
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during creating and attaching child to parent {ParentId}", dto.ParentId);
-                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
+                _logger.LogError(ex,
+                    "Unexpected error during creating and attaching child to parent {ParentId}",
+                    dto.ParentId);
+
+                return Result<string>.Failure(
+                    ErrorMessages.UnexpectedError,
+                    500);
             }
         }
 
@@ -660,14 +793,23 @@ namespace IMS_Application.Services
 
                 return Result<string>.Success(SuccessMessages.ChildDetachedSuccessfully);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
+                _logger.LogWarning(ex,
+                    "DetachChildAsync operation was cancelled for ChildId {ChildId}",
+                    dto.ChildId);
+
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during detaching child {ChildId}", dto.ChildId);
-                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
+                _logger.LogError(ex,
+                    "Unexpected error during detaching child {ChildId}",
+                    dto.ChildId);
+
+                return Result<string>.Failure(
+                    ErrorMessages.UnexpectedError,
+                    500);
             }
         }
 
@@ -680,14 +822,21 @@ namespace IMS_Application.Services
 
                 return Result<List<AssetListDto>>.Success(response);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
+                _logger.LogWarning(ex,
+                    "FilterAssetsAsync operation was cancelled");
+
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during filtering assets");
-                return Result<List<AssetListDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+                _logger.LogError(ex,
+                    "Unexpected error during filtering assets");
+
+                return Result<List<AssetListDto>>.Failure(
+                    ErrorMessages.UnexpectedError,
+                    500);
             }
         }
 
@@ -736,14 +885,23 @@ namespace IMS_Application.Services
 
                 return Result<string>.Success(SuccessMessages.NetworkUpdatedSuccessfully);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
+                _logger.LogWarning(ex,
+                    "AddOrUpdateNetworkAsync operation was cancelled for AssetId {AssetId}",
+                    assetId);
+
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during adding/updating network for asset {AssetId}", assetId);
-                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
+                _logger.LogError(ex,
+                    "Unexpected error during adding/updating network for asset {AssetId}",
+                    assetId);
+
+                return Result<string>.Failure(
+                    ErrorMessages.UnexpectedError,
+                    500);
             }
         }
     }

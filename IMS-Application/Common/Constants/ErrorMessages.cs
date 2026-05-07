@@ -103,6 +103,10 @@ namespace IMS_Application.Common.Constants
         public const string CommentAlreadyLiked = "Comment already liked by user.";
         public const string InvalidPagination = "pageNumber and pageSize must be greater than 0.";
         public const string InvalidDateFilter = "Invalid date filter. Valid values: today, yesterday, lastWeek, lastMonth, all.";
-        
+
+        public const string UserLocationAlreadyAssigned = "User already belongs to location '{0}'. Location cannot be changed.";
+
+        public const string UserTableAlreadyAssigned = "User already has table number '{0}'. Table number cannot be changed.";
+
     }
 }

@@ -81,7 +81,6 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("assign-asset")]
     public async Task<IActionResult> AssignAsset(AssignAssetDto dto)
     {
@@ -97,7 +96,6 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("attach-child")]
     public async Task<IActionResult> AttachChild(AttachChildDto dto)
     {
@@ -105,7 +103,6 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("create-child")]
     public async Task<IActionResult> CreateChild(CreateChildAssetDto dto)
     {
@@ -113,7 +110,6 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("detach-child")]
     public async Task<IActionResult> DetachChild(DetachChildDto dto)
     {
@@ -121,7 +117,6 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("filter")]
     public async Task<IActionResult> FilterAssets([FromBody] AssetFilterDto dto)
     {
@@ -129,7 +124,6 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("{id}/network")]
     public async Task<IActionResult> AddOrUpdateNetwork(int id, NetworkDetailsDto dto)
     {
