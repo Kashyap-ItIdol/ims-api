@@ -21,12 +21,12 @@ namespace IMS_Application.DTOs
         public string assetId { get; set; } = string.Empty;
         public string categoryId { get; set; } = string.Empty;
         public string subCategoryId { get; set; } = string.Empty;
+
         public UserInfo createdBy { get; set; } = new();
         public UserInfo? assignedTo { get; set; }
-        public int? categoryId { get; set; }
         public string? categoryName { get; set; }
-        public int? subCategoryId { get; set; }
         public string? subCategoryName { get; set; }
+
     }
 
     public class UserInfo

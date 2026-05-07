@@ -24,7 +24,6 @@ namespace IMS_Infrastructure.Data
         public DbSet<TicketCommentLike> TicketCommentLikes { get; set; }
         public DbSet<TicketCommentReaction> TicketCommentReactions { get; set; }
         public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; }
-        public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; }
         public DbSet<TicketAttachment> TicketAttachments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

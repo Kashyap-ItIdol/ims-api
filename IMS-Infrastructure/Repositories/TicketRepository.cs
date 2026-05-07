@@ -90,7 +90,7 @@ namespace IMS_Infrastructure.Repositories
             _dbSet.Update(ticket);
         }
 
-        public async Task<Ticket> GetTicketByIdAsync(int ticketId)
+        public async Task<Ticket?> GetTicketByIdAsync(int ticketId)
         {
             return await _dbSet
                 .AsNoTracking()
@@ -107,8 +107,6 @@ namespace IMS_Infrastructure.Repositories
                 .Include(t => t.TicketAssignments.OrderByDescending(a => a.assigned_at))
                 .Include(t => t.TicketStatusHistories.OrderByDescending(h => h.ChangedAt))
                 .Include(t => t.Attachments.OrderByDescending(a => a.UploadedAt))
-                .Include(t => t.Category)
-                .Include(t => t.SubCategory)
                 .FirstOrDefaultAsync(t => t.Id == ticketId);
         }
 
@@ -127,38 +125,22 @@ namespace IMS_Infrastructure.Repositories
                     .ThenInclude(c => c.Replies)
                     .ThenInclude(r => r.Reactions)
                 .Include(t => t.Attachments)
-                .Include(t => t.Category)
-                .Include(t => t.SubCategory)
-                .Where(t => t.CreatedBy == userId || t.TicketAssignments.Any(a => a.assignedTo == userId))
-                .OrderByDescending(t => t.CreatedAt)
                 .AsNoTracking();
 
             query = roleName switch
+            {
+                LogicStrings.AdminRole => query,
+
+                LogicStrings.SupportEngineerRole => query.Where(t =>
+                    t.TicketAssignments.Any(a => a.assignedTo == userId && a.status == LogicStrings.Active)),
+
+                _ => query.Where(t => t.CreatedBy == userId)
+            };
+
+            query = query.OrderByDescending(t => t.CreatedAt);
             return await query.ToListAsync();
         }
 
-        public async Task<List<Ticket>> SearchTicketsAsync(string query, int userId, string roleName)
-        {
-            var ticketsQuery = _dbSet
-                .AsNoTracking()
-                .Include(t => t.TicketAssignments)
-                .Include(t => t.Comments)
-                .Include(t => t.Attachments)
-                .Include(t => t.Category)
-                .Include(t => t.SubCategory)
-                .Where(t => t.CreatedBy == userId || t.TicketAssignments.Any(a => a.assignedTo == userId));
-
-            if (!string.IsNullOrEmpty(query))
-            {
-                LogicStrings.AdminRole => query,
-                LogicStrings.SupportEngineerRole => query.Where(t => t.TicketAssignments.Any(a => a.assignedTo == userId && a.status == LogicStrings.Active)),
-                _ => query.Where(t => t.CreatedBy == userId)
-            };
-                ticketsQuery = ticketsQuery.Where(t => t.Title.Contains(query, StringComparison.OrdinalIgnoreCase));
-            }
-            ticketsQuery = ticketsQuery.OrderByDescending(t => t.CreatedAt);
-            return await ticketsQuery.ToListAsync();
-        }
 
         public async Task<bool> DeleteTicketAsync(int ticketId, int deletedBy)
         {
@@ -182,8 +164,6 @@ namespace IMS_Infrastructure.Repositories
         public async Task<Ticket> UpdateTicketAsync(int ticketId, UpdateTicketDto dto)
         {
             var ticket = await _dbSet
-                .Include(t => t.Category)
-                .Include(t => t.SubCategory)
                 .Include(t => t.Attachments)
                 .FirstOrDefaultAsync(t => t.Id == ticketId && !t.IsDeleted);
 
@@ -226,8 +206,6 @@ namespace IMS_Infrastructure.Repositories
         public async Task<List<Ticket>> FilterTicketsAsync(TicketFilterDto filter)
         {
             var query = _dbSet
-                .Include(t => t.Category)
-                .Include(t => t.SubCategory)
                 .Include(t => t.Attachments)
                 .AsNoTracking().Where(x => !x.IsDeleted);
 

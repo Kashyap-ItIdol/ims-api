@@ -740,9 +740,8 @@ namespace IMS_Application.Services
             }
         }
 
-        }
-
         public async Task<Result<bool>> DeleteTicketAsync(int ticketId, int deletedBy)
+
         {
             try
             {
