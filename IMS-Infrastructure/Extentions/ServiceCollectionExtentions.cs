@@ -1,7 +1,7 @@
+using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
 using IMS_Application.Services;
 using IMS_Application.Services.Interfaces;
-
 using IMS_Infrastructure.Data;
 using IMS_Infrastructure.Repositories;
 using IMS_Infrastructure.Services;
@@ -18,16 +18,15 @@ namespace IMS_Infrastructure.Extentions
             services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(config.GetConnectionString("DefaultConnection")));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
-
             services.AddScoped<IUserRepository, UserRepository>();
-
             services.AddScoped<ITicketRepository, TicketRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<ISubCategoryRepository, SubCategoryRepository>();
             services.AddScoped<ITokenService, TokenService>();
-
-            services.AddScoped<ITicketService, TicketService>();
-
+            services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
+            services.AddOptions<MailSettings>().Bind(config.GetSection("MailSettings"));
+            services.AddScoped<IEmailService, EmailService>();
+            services.AddMemoryCache();
             return services;
         }
     }

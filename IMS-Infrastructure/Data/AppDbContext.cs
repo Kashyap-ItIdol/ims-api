@@ -15,11 +15,15 @@ namespace IMS_Infrastructure.Data
         public DbSet<User> Users { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<EmailTemplate> EmailTemplates { get; set; }
 
         public DbSet<SubCategory> SubCategories { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<TicketAssignment> TicketAssignments { get; set; }
         public DbSet<TicketComment> TicketComments { get; set; }
+        public DbSet<TicketCommentLike> TicketCommentLikes { get; set; }
+        public DbSet<TicketCommentReaction> TicketCommentReactions { get; set; }
+        public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; }
         public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; }
         public DbSet<TicketAttachment> TicketAttachments { get; set; }
 
