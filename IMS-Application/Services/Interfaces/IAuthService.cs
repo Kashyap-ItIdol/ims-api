@@ -9,5 +9,8 @@ namespace IMS_Application.Services.Interfaces
         Task<Result<UserInfoDto>> RegisterAsync(RegisterDto dto);
         Task<Result<AuthResponseDto>> RefreshTokenAsync(string refreshToken);
         Task<Result<bool>> LogoutAsync(string refreshToken);
+        Task<Result<bool>> RequestForgotPasswordAsync(ForgotPasswordRequestDto dto);
+        Task<Result<string>> VerifyOtpAsync(OtpVerificationRequestDto dto);
+        Task<Result<bool>> ResetPasswordAsync(ResetPasswordRequestDto dto);
     }
 }

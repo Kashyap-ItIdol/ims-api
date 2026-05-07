@@ -1,4 +1,4 @@
-﻿namespace IMS_Application.Common.Constants
+namespace IMS_Application.Common.Constants
 {
     public static class ErrorMessages
     {
@@ -87,5 +87,22 @@
         public const string InvalidTicketStatus = "Invalid status value. Valid values are: Open, InProgress, Solved, Closed.";
         public const string SubCategoryInvalidUser = "Invalid user.";
 
+        public const string ForgotPasswordUserNotFound = "User not found with this email address";
+        public const string OtpSendFailed = "Failed to send OTP. Please try again.";
+        public const string InvalidOrExpiredOtp = "Invalid or expired OTP";
+        public const string InvalidResetToken = "Invalid or expired reset token";
+        public const string ResetPasswordUserNotFound = "User not found for password reset";
+        public const string CategoryOrSubCategoryNotFound = "category or subcategory is not available in the table";
+        public const string SearchQueryRequired = "Search query is required.";
+        public const string CommentNotFound = "Comment not found.";
+        public const string UnauthorizedCommentEdit = "You are not authorized to edit this comment.";
+        public const string UnauthorizedCommentDelete = "You are not authorized to delete this comment.";
+        public const string InvalidReactionType = "Invalid reaction type.";
+        public const string ReactionNotFound = "Reaction not found.";
+        public const string LikeNotFound = "Like not found.";
+        public const string CommentAlreadyLiked = "Comment already liked by user.";
+        public const string InvalidPagination = "pageNumber and pageSize must be greater than 0.";
+        public const string InvalidDateFilter = "Invalid date filter. Valid values: today, yesterday, lastWeek, lastMonth, all.";
+        
     }
 }
