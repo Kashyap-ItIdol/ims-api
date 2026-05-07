@@ -18,6 +18,8 @@ namespace IMS_Domain.Entities
         public int CreatedBy { get; set; }
 
         public int? AssetId { get; set; }
+        public int? CategoryId { get; set; }
+        public int? SubCategoryId { get; set; }
 
         public DateTime CreatedAt { get; set; }
 

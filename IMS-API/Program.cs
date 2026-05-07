@@ -1,6 +1,8 @@
 using IMS_API.ExceptionHandlers;
 using IMS_API.Extensions;
 using IMS_Application.Extentions;
+using IMS_Application.Interfaces;
+using IMS_Infrastructure.Data.Configurations;
 using IMS_Infrastructure.Extentions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -152,6 +154,13 @@ try
         });
 
     var app = builder.Build();
+
+    // Seed email templates on application startup
+    using (var scope = app.Services.CreateScope())
+    {
+        var emailTemplateRepository = scope.ServiceProvider.GetRequiredService<IEmailTemplateRepository>();
+        await EmailTemplateSeeder.SeedAsync(emailTemplateRepository);
+    }
 
     // 3. Add Serilog Request Logging (Logs incoming HTTP requests concisely)
     app.UseSerilogRequestLogging();

@@ -35,6 +35,20 @@ namespace IMS_Infrastructure.Data.Configurations
                    .WithOne()
                    .HasForeignKey(a => a.TicketId)
                    .OnDelete(DeleteBehavior.Cascade);
+
+            // Category configuration
+            builder.HasIndex(x => x.CategoryId);
+            builder.HasOne<Category>()
+                   .WithMany()
+                   .HasForeignKey(x => x.CategoryId)
+                   .OnDelete(DeleteBehavior.Restrict);
+
+            // SubCategory configuration
+            builder.HasIndex(x => x.SubCategoryId);
+            builder.HasOne<SubCategory>()
+                   .WithMany()
+                   .HasForeignKey(x => x.SubCategoryId)
+                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
