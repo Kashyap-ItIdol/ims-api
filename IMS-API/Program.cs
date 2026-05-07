@@ -29,6 +29,8 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddValidation();
 
+builder.Services.AddMapping();
+
 builder.Services.AddExceptionHandling();
 
 builder.Services.AddJwtAuthentication(builder.Configuration);

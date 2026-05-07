@@ -1,6 +1,5 @@
-﻿using System.Text;
-using System.Text.Json;
-using IMS_API.ExceptionHandlers;
+﻿using IMS_API.ExceptionHandlers;
+using IMS_Application.Extentions;
 using IMS_Application.Interfaces;
 using IMS_Application.Services;
 using IMS_Application.Services.Interfaces;
@@ -9,6 +8,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
+using System.Text.Json;
 
 namespace IMS_API
 {
@@ -165,6 +166,17 @@ namespace IMS_API
         {
             services.AddProblemDetails();
             services.AddExceptionHandler<GlobalExceptionHandler>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddMapping(
+            this IServiceCollection services)
+        {
+            services.AddAutoMapper(
+                _ => { },
+                typeof(ApplicationAssemblyMarker)
+            );
 
             return services;
         }
