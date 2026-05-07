@@ -8,9 +8,9 @@ namespace IMS_Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<Role> builder)
         {
-            builder.ToTable("Roles"); // Specify the table name
+            builder.ToTable("Roles"); 
 
-            builder.HasKey(r => r.Id); // Define the primary key
+            builder.HasKey(r => r.Id); 
 
             builder.Property(r => r.Name)
                 .IsRequired()

@@ -27,7 +27,6 @@ namespace IMS_API.Controllers.Base
                 data = result.Data
             });
         }
-
         protected Result<int> GetCurrentUserId()
         {
             var claimValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -37,7 +36,6 @@ namespace IMS_API.Controllers.Base
             }
             return Result<int>.Success(userId);
         }
-
         protected void SetRefreshTokenCookie(string token, int? expireDays = null)
         {
             var cookieOptions = new CookieOptions
@@ -54,7 +52,6 @@ namespace IMS_API.Controllers.Base
 
             Response.Cookies.Append("refreshToken", token, cookieOptions);
         }
-
         protected void DeleteRefreshTokenCookie()
         {
             var cookieOptions = new CookieOptions

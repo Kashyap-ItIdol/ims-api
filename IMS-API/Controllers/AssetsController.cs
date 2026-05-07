@@ -4,7 +4,6 @@ using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-
 [ApiController]
 [Route("api/[controller]")]
 public class AssetController : BaseController
@@ -15,7 +14,7 @@ public class AssetController : BaseController
     {
         _assetService = assetService;
     }
-
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("Add-Asset")]
     public async Task<IActionResult> AddInventoryAssets(AddAssetDto dto)
     {
@@ -39,6 +38,7 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateAsset(int id, UpdateAssetDto dto)
     {
@@ -53,6 +53,7 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteAsset(int id)
     {
@@ -64,6 +65,7 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpGet("suggest-users")]
     public async Task<IActionResult> GetSuggestedUsers()
     {
@@ -71,6 +73,7 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpGet("search-users")]
     public async Task<IActionResult> SearchUsers(string query)
     {
@@ -85,6 +88,7 @@ public class AssetController : BaseController
         var result = await _assetService.AssignAssetAsync(dto);
         return FromResult(result);
     }
+
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetAssetById(int id)
@@ -117,6 +121,7 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("filter")]
     public async Task<IActionResult> FilterAssets([FromBody] AssetFilterDto dto)
     {
@@ -124,6 +129,7 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("{id}/network")]
     public async Task<IActionResult> AddOrUpdateNetwork(int id, NetworkDetailsDto dto)
     {

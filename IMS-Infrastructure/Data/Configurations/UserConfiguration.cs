@@ -25,7 +25,6 @@ namespace IMS_Infrastructure.Data.Configurations
             builder.Property(u => u.PasswordHash)
                 .IsRequired();
 
-            // Relationships
             builder.HasOne(x => x.Department)
                    .WithMany(d => d.Users)
                    .HasForeignKey(x => x.DepartmentId)

@@ -43,7 +43,7 @@ namespace IMS_API.Controllers
         public async Task<IActionResult> GetAll()
         {
             var data = await _userService.GetAllUsersAsync();
-            return Ok(data);
+            return FromResult(data);
         }
 
         [HttpDelete("{id}")]

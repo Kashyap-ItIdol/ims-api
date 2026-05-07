@@ -21,7 +21,6 @@ namespace IMS_Infrastructure.Configurations
             builder.HasIndex(x => x.SerialNo)
                 .IsUnique();
 
-
             builder.HasOne(x => x.Category)
                 .WithMany(c => c.Assets)
                 .HasForeignKey(x => x.CategoryId)

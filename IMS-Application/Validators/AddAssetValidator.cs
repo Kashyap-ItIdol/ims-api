@@ -6,11 +6,9 @@ public class AddAssetValidator : AbstractValidator<AddAssetDto>
 {
     public AddAssetValidator()
     {
-        // Assets required
         RuleFor(x => x.Assets)
             .NotEmpty().WithMessage(ErrorMessages.AssetsListEmpty);
 
-        // Only one primary
         RuleFor(x => x.Assets.Count(a => a.IsPrimary))
             .Equal(1).WithMessage(ErrorMessages.ExactlyOnePrimaryAssetRequired);
 
@@ -35,7 +33,6 @@ public class AddAssetValidator : AbstractValidator<AddAssetDto>
             asset.RuleFor(a => a.StatusId)
                 .GreaterThan(0).WithMessage("Status is required");
 
-            // Purchase validation
             asset.When(a => !a.IsPurchaseDetailsSame, () =>
             {
                 asset.RuleFor(a => a.Vendor)
@@ -53,7 +50,6 @@ public class AddAssetValidator : AbstractValidator<AddAssetDto>
             });
         });
 
-        // Rule 1: Status Consistency Across Assets (with ItemName in message)
         RuleFor(x => x)
             .Custom((dto, context) =>
             {
@@ -68,7 +64,6 @@ public class AddAssetValidator : AbstractValidator<AddAssetDto>
                 }
             });
 
-        // Rule 2: Assignment Required When Status = 2
         When(x => x.Assets.FirstOrDefault(a => a.IsPrimary)?.StatusId == 2, () =>
         {
             RuleFor(x => x.AssignedTo)
@@ -78,7 +73,6 @@ public class AddAssetValidator : AbstractValidator<AddAssetDto>
                 .NotNull().WithMessage(ErrorMessages.AssignmentDetailsRequiredWhenAssigned);
         });
 
-        // Rule 3: Assignment Not Allowed When Status ≠ 2
         When(x => x.Assets.FirstOrDefault(a => a.IsPrimary)?.StatusId != 2, () =>
         {
             RuleFor(x => x.AssignedTo)
@@ -94,7 +88,6 @@ public class AddAssetValidator : AbstractValidator<AddAssetDto>
                 .Null().WithMessage(ErrorMessages.AssignmentDetailsNotAllowedWhenNotAssigned);
         });
 
-        // Assignment validation (when assignment is present)
         When(x => x.AssignedTo.HasValue, () =>
         {
             RuleFor(x => x.TableNo)
@@ -112,7 +105,6 @@ public class AddAssetValidator : AbstractValidator<AddAssetDto>
                 .WithMessage(ErrorMessages.AssignedAssetMustBeAssigned);
         });
 
-        // Date validation
         When(x => x.AssignedDate.HasValue && x.ExpectedReturnDate.HasValue, () =>
         {
             RuleFor(x => x.ExpectedReturnDate)
