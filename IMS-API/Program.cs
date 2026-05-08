@@ -1,6 +1,7 @@
 using IMS_API.ExceptionHandlers;
-using IMS_API.Extensions;
 using IMS_Application.Extentions;
+using IMS_Application.Interfaces;
+using IMS_Infrastructure.Data.Configurations;
 using IMS_Infrastructure.Extentions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,6 @@ using Serilog;
 using System.Text;
 using System.Text.Json;
 
-// 1. Create the Bootstrap Logger to catch startup errors
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateBootstrapLogger();
@@ -21,13 +21,11 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    // 2. Configure Serilog for the application (Reads from appsettings.json)
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext());
 
-    // Add services to the container.
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
@@ -59,7 +57,6 @@ try
 
     builder.Services.AddControllers();
 
-    //  Validation Response Formatting (VERY IMPORTANT)
     builder.Services.Configure<ApiBehaviorOptions>(options =>
     {
         options.InvalidModelStateResponseFactory = context =>
@@ -116,10 +113,10 @@ try
 
             options.Events = new JwtBearerEvents
             {
-                // Handles 401 Unauthorized (No token or expired token)
+
                 OnChallenge = async context =>
                 {
-                    context.HandleResponse(); // Suppress the default empty response
+                    context.HandleResponse();
                     context.Response.StatusCode = 401;
                     context.Response.ContentType = "application/json";
 
@@ -133,7 +130,6 @@ try
                     await context.Response.WriteAsync(result);
                 },
 
-                // Handles 403 Forbidden (Valid token, but wrong Role)
                 OnForbidden = async context =>
                 {
                     context.Response.StatusCode = 403;
@@ -153,10 +149,14 @@ try
 
     var app = builder.Build();
 
-    // 3. Add Serilog Request Logging (Logs incoming HTTP requests concisely)
+    using (var scope = app.Services.CreateScope())
+    {
+        var emailTemplateRepository = scope.ServiceProvider.GetRequiredService<IEmailTemplateRepository>();
+        await EmailTemplateSeeder.SeedAsync(emailTemplateRepository);
+    }
+
     app.UseSerilogRequestLogging();
 
-    // Configure the HTTP request pipeline.
     app.UseExceptionHandler();
 
     app.UseSwagger();
@@ -175,11 +175,9 @@ try
 }
 catch (Exception ex)
 {
-    // 4. Catch setup/DI errors (e.g., database connection issues on startup)
     Log.Fatal(ex, "IMS API terminated unexpectedly during startup");
 }
 finally
 {
-    // 5. Ensure all logs are flushed to sinks before shutting down
     Log.CloseAndFlush();
 }

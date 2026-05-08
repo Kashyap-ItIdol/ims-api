@@ -1,4 +1,8 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
+using IMS_Application.Common.Constants;
+using IMS_Application.Common.Exceptions;
 
 namespace IMS_API.ExceptionHandlers;
 
@@ -18,25 +22,64 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             Exception exception,
             CancellationToken cancellationToken)
     {
-        // Log the full exception for the backend team
         _logger.LogError(exception, "Unhandled exception occurred: {Message}", exception.Message);
 
+        if (exception is FluentValidation.ValidationException valEx)
+        {
+            httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+
+            var errors = valEx.Errors.Select(e => new 
+            { 
+                Field = e.PropertyName,
+                Message = e.ErrorMessage 
+            }).ToList();
+
+            var response = new
+            {
+                success = false,
+                message = IMS_Application.Common.Constants.ErrorMessages.ValidationFailed,
+                data = new { errors },
+                statusCode = 400
+            };
+
+            await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
+            return true;
+        }
+
+        if (exception is BusinessRuleException businessEx)
+        {
+            httpContext.Response.StatusCode = businessEx.StatusCode;
+
+            var response = new
+            {
+                success = false,
+                message = businessEx.Message,
+                data = (object?)null,
+                statusCode = businessEx.StatusCode
+            };
+
+            await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
+            return true;
+        }
+
+        // Existing generic handling for other exceptions
         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
-        // Maintain the strict JSON contract for the React frontend
-        var response = new
+        var responseMessage = _env.IsDevelopment()
+            ? $"Server Error: {exception.GetType().Name}: {exception.Message}"
+            : "An unexpected error occurred on the server.";
+
+        var response500 = new
         {
             success = false,
-            message = _env.IsDevelopment()
-                ? $"Server Error: {exception.Message}"
-                : "An unexpected error occurred on the server.",
+            message = responseMessage,
             data = (object?)null,
-            // We can optionally pass the stack trace in a separate dev-only property
-            devDetails = _env.IsDevelopment() ? exception.StackTrace : null
+            devDetails = _env.IsDevelopment() ? exception.ToString() : null
         };
 
-        await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
+        await httpContext.Response.WriteAsJsonAsync(response500, cancellationToken);
 
         return true;
     }
 }
+

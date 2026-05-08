@@ -11,6 +11,7 @@ namespace IMS_Infrastructure.Repositories
         private IUserRepository? _users;
         public IUserRepository Users => _users ??= new UserRepository(_context);
 
+       
         private IRepository<Role>? _roles;
         public IRepository<Role> Roles => _roles ??= new Repository<Role>(_context);
 
@@ -32,6 +33,17 @@ namespace IMS_Infrastructure.Repositories
         public ITicketRepository Tickets => _tickets ??= new TicketRepository(_context);
 
         public IDepartmentRepository Departments => _departments;
+        private IAssetRepository? _assets;
+        public IAssetRepository Assets => _assets ??= new AssetRepository(_context);
+
+        private INetworkDetailsRepository? _networkDetails;
+        public INetworkDetailsRepository NetworkDetails =>
+            _networkDetails ??= new NetworkDetailsRepository(_context);
+
+        public UnitOfWork(AppDbContext context)
+        {
+            _context = context;
+        }
 
         public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {

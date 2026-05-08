@@ -2,6 +2,7 @@ using IMS_Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+namespace IMS_Infrastructure.Configurations
 namespace IMS_Infrastructure.Data.Configurations
 {
     public class AssetConfiguration : IEntityTypeConfiguration<Asset>
@@ -14,9 +15,10 @@ namespace IMS_Infrastructure.Data.Configurations
             // Primary key
             builder.HasKey(x => x.Id);
 
+            builder.Property(x => x.ItemName)
             // Properties
             builder.Property(x => x.AssetName)
-                   .IsRequired()
+                .IsRequired()
                    .HasMaxLength(200);
 
             builder.Property(x => x.Status)
@@ -25,12 +27,14 @@ namespace IMS_Infrastructure.Data.Configurations
 
             builder.Property(x => x.Brand)
                    .IsRequired()
-                   .HasMaxLength(100);
+                .HasMaxLength(100);
 
+            builder.Property(x => x.SerialNo)
             builder.Property(x => x.Model)
-                   .IsRequired()
-                   .HasMaxLength(100);
+                .IsRequired()
+                .HasMaxLength(100);
 
+            builder.HasIndex(x => x.SerialNo)
             builder.Property(x => x.SerialNumber)
                    .IsRequired()
                    .HasMaxLength(100);
@@ -52,37 +56,54 @@ namespace IMS_Infrastructure.Data.Configurations
 
             // Indexes
             builder.HasIndex(x => x.SerialNumber)
-                   .IsUnique();
+                .IsUnique();
 
+            builder.HasOne(x => x.Category)
             builder.HasIndex(x => new { x.CategoryId, x.SubCategoryId });
 
             // Relationships
             builder.HasOne(a => a.Category)
-                   .WithMany(c => c.Assets)
+                .WithMany(c => c.Assets)
+                .HasForeignKey(x => x.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
                    .HasForeignKey(a => a.CategoryId)
                    .OnDelete(DeleteBehavior.Cascade);
 
+            builder.HasOne(x => x.SubCategory)
             builder.HasOne(a => a.SubCategory)
-                   .WithMany(sc => sc.Assets)
+                .WithMany(sc => sc.Assets)
+                .HasForeignKey(x => x.SubCategoryId)
                    .HasForeignKey(a => a.SubCategoryId)
-                   .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne(x => x.AssetStatus)
+                .WithMany(s => s.Assets)
+                .HasForeignKey(x => x.StatusId)
             // Audit relationships
             builder.HasOne<User>()
                    .WithMany()
                    .HasForeignKey(x => x.CreatedBy)
-                   .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne(x => x.AssetCondition)
+                .WithMany(c => c.Assets)
+                .HasForeignKey(x => x.ConditionId)
             builder.HasOne<User>()
                    .WithMany()
                    .HasForeignKey(x => x.UpdatedBy)
-                   .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne(a => a.AssignedUser)
             builder.HasOne<User>()
-                   .WithMany()
+                .WithMany()
+                .HasForeignKey(a => a.AssignedTo)
                    .HasForeignKey(x => x.DeletedBy)
-                   .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne(a => a.ParentAsset)
+                .WithMany(a => a.ChildAssets)
+                .HasForeignKey(a => a.ParentAssetId)
+                .OnDelete(DeleteBehavior.Restrict);
             // Soft delete filter
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

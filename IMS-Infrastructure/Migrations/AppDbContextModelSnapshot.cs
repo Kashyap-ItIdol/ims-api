@@ -22,6 +22,192 @@ namespace IMS_Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("IMS_Domain.Entities.Asset", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AmcExpiry")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("AssignDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("AssignedTo")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Brand")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ConditionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ExpectedReturnDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Image")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InvoiceNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsClient")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ItemName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ParentAssetId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PurchaseCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("PurchaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SerialNo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("StatusId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SubCategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Vendor")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("WarrantyExpiry")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedTo");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("ConditionId");
+
+                    b.HasIndex("ParentAssetId");
+
+                    b.HasIndex("SerialNo")
+                        .IsUnique();
+
+                    b.HasIndex("StatusId");
+
+                    b.HasIndex("SubCategoryId");
+
+                    b.ToTable("Assets");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.AssetCondition", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Condition")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AssetConditions");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.AssetHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("AssetId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssetId");
+
+                    b.ToTable("AssetHistories");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.AssetStatus", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AssetStatuses");
+                });
+
             modelBuilder.Entity("IMS_Domain.Entities.Category", b =>
                 {
                     b.Property<int>("Id")
@@ -38,6 +224,12 @@ namespace IMS_Infrastructure.Migrations
                     b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -46,12 +238,22 @@ namespace IMS_Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedBy");
 
+                    b.HasIndex("DeletedBy");
+
                     b.HasIndex("Name")
                         .IsUnique();
+
+                    b.HasIndex("UpdatedBy");
 
                     b.ToTable("Categories", (string)null);
                 });
@@ -101,7 +303,7 @@ namespace IMS_Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("IMS_Domain.Entities.Inventory", b =>
+            modelBuilder.Entity("IMS_Domain.Entities.EmailTemplate", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -109,69 +311,33 @@ namespace IMS_Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Brand")
+                    b.Property<string>("BodyHtml")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("int");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
 
-                    b.Property<string>("Condition")
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("InventoryName")
+                    b.Property<string>("Subject")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ItemPictureUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("Model")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("SerialNumber")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("SubcategoryId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Table")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("SerialNumber")
-                        .IsUnique();
-
-                    b.HasIndex("SubcategoryId");
-
-                    b.ToTable("Inventory");
+                    b.ToTable("EmailTemplates");
                 });
 
-            modelBuilder.Entity("IMS_Domain.Entities.InventoryAssignment", b =>
+            modelBuilder.Entity("IMS_Domain.Entities.NetworkDetail", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -179,75 +345,44 @@ namespace IMS_Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("AssignedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("AssignedTo")
+                    b.Property<int>("AssetId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime?>("ExpectedReturnDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("InventoryId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Location")
+                    b.Property<string>("DNS")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Table")
+                    b.Property<string>("Gateway")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Hostname")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IPAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MacAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SubnetMask")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("createdBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("updatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("InventoryId");
-
-                    b.ToTable("InventoryAssignment");
-                });
-
-            modelBuilder.Entity("IMS_Domain.Entities.PurchaseDetail", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("AmcExpiry")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("InventoryId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("InvoiceNumber")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<decimal>("PurchaseCost")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime>("PurchaseDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Vendor")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("WarrantyExpiry")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InventoryId")
-                        .IsUnique();
-
-                    b.ToTable("PurchaseDetail");
+                    b.ToTable("NetworkDetails");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.RefreshToken", b =>
@@ -293,12 +428,12 @@ namespace IMS_Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Roles");
+                    b.ToTable("Roles", (string)null);
 
                     b.HasData(
                         new
@@ -376,6 +511,9 @@ namespace IMS_Infrastructure.Migrations
                     b.Property<int?>("AssetId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("CategoryId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -388,6 +526,9 @@ namespace IMS_Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SubCategoryId")
                         .HasColumnType("int");
 
                     b.Property<int>("TicketPriority")
@@ -408,11 +549,15 @@ namespace IMS_Infrastructure.Migrations
 
                     b.HasIndex("AssetId");
 
+                    b.HasIndex("CategoryId");
+
                     b.HasIndex("CreatedAt");
 
                     b.HasIndex("CreatedBy");
 
                     b.HasIndex("Status");
+
+                    b.HasIndex("SubCategoryId");
 
                     b.HasIndex("UpdatedAt");
 
@@ -473,8 +618,23 @@ namespace IMS_Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ParentCommentId")
+                        .HasColumnType("int");
+
                     b.Property<int>("TicketId")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
@@ -483,11 +643,100 @@ namespace IMS_Infrastructure.Migrations
 
                     b.HasIndex("CreatedAt");
 
+                    b.HasIndex("IsDeleted");
+
+                    b.HasIndex("ParentCommentId");
+
                     b.HasIndex("TicketId");
 
                     b.HasIndex("UserId");
 
                     b.ToTable("TicketComments");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.TicketCommentLike", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CommentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommentId");
+
+                    b.HasIndex("IsDeleted");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("CommentId", "UserId", "IsDeleted")
+                        .IsUnique();
+
+                    b.ToTable("TicketCommentLikes");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.TicketCommentReaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CommentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ReactionType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommentId");
+
+                    b.HasIndex("IsDeleted");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("CommentId", "UserId", "IsDeleted")
+                        .IsUnique();
+
+                    b.ToTable("TicketCommentReactions");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.TicketStatusHistory", b =>
@@ -513,9 +762,6 @@ namespace IMS_Infrastructure.Migrations
                     b.Property<int>("TicketId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("TicketId1")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ChangedAt");
@@ -523,8 +769,6 @@ namespace IMS_Infrastructure.Migrations
                     b.HasIndex("ChangedBy");
 
                     b.HasIndex("TicketId");
-
-                    b.HasIndex("TicketId1");
 
                     b.ToTable("TicketStatusHistories");
                 });
@@ -554,13 +798,13 @@ namespace IMS_Infrastructure.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("FullName")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -571,21 +815,21 @@ namespace IMS_Infrastructure.Migrations
                     b.Property<bool>("IsVerified")
                         .HasColumnType("bit");
 
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
+                    b.Property<string>("Location")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PasswordResetToken")
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ProfileImg")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("ResetTokenExpires")
-                        .HasColumnType("datetime2");
-
                     b.Property<int>("RoleId")
                         .HasColumnType("int");
+
+                    b.Property<string>("TableNo")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -595,8 +839,6 @@ namespace IMS_Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAt");
-
                     b.HasIndex("DepartmentId");
 
                     b.HasIndex("Email")
@@ -604,9 +846,7 @@ namespace IMS_Infrastructure.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.HasIndex("IsDeleted", "IsActive");
-
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
 
                     b.HasData(
                         new
@@ -624,53 +864,82 @@ namespace IMS_Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("IMS_Domain.Entities.Asset", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.User", "AssignedUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedTo")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("IMS_Domain.Entities.Category", "Category")
+                        .WithMany("Assets")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("IMS_Domain.Entities.AssetCondition", "AssetCondition")
+                        .WithMany("Assets")
+                        .HasForeignKey("ConditionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("IMS_Domain.Entities.Asset", "ParentAsset")
+                        .WithMany("ChildAssets")
+                        .HasForeignKey("ParentAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("IMS_Domain.Entities.AssetStatus", "AssetStatus")
+                        .WithMany("Assets")
+                        .HasForeignKey("StatusId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("IMS_Domain.Entities.SubCategory", "SubCategory")
+                        .WithMany("Assets")
+                        .HasForeignKey("SubCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AssetCondition");
+
+                    b.Navigation("AssetStatus");
+
+                    b.Navigation("AssignedUser");
+
+                    b.Navigation("Category");
+
+                    b.Navigation("ParentAsset");
+
+                    b.Navigation("SubCategory");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.AssetHistory", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.Asset", "Asset")
+                        .WithMany()
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Asset");
+                });
+
             modelBuilder.Entity("IMS_Domain.Entities.Category", b =>
                 {
                     b.HasOne("IMS_Domain.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("CreatedBy")
                         .OnDelete(DeleteBehavior.Restrict);
-                });
 
-            modelBuilder.Entity("IMS_Domain.Entities.Inventory", b =>
-                {
-                    b.HasOne("IMS_Domain.Entities.Category", "Category")
-                        .WithMany("Inventory")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                    b.HasOne("IMS_Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("DeletedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("IMS_Domain.Entities.SubCategory", "Subcategory")
-                        .WithMany("Inventory")
-                        .HasForeignKey("SubcategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Category");
-
-                    b.Navigation("Subcategory");
-                });
-
-            modelBuilder.Entity("IMS_Domain.Entities.InventoryAssignment", b =>
-                {
-                    b.HasOne("IMS_Domain.Entities.Inventory", "Inventory")
-                        .WithMany("InventoryAssignments")
-                        .HasForeignKey("InventoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Inventory");
-                });
-
-            modelBuilder.Entity("IMS_Domain.Entities.PurchaseDetail", b =>
-                {
-                    b.HasOne("IMS_Domain.Entities.Inventory", "Inventory")
-                        .WithOne("PurchaseDetail")
-                        .HasForeignKey("IMS_Domain.Entities.PurchaseDetail", "InventoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Inventory");
+                    b.HasOne("IMS_Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.RefreshToken", b =>
@@ -707,11 +976,21 @@ namespace IMS_Infrastructure.Migrations
 
             modelBuilder.Entity("IMS_Domain.Entities.Ticket", b =>
                 {
+                    b.HasOne("IMS_Domain.Entities.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("IMS_Domain.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("CreatedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("IMS_Domain.Entities.SubCategory", null)
+                        .WithMany()
+                        .HasForeignKey("SubCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.TicketAssignment", b =>
@@ -737,6 +1016,11 @@ namespace IMS_Infrastructure.Migrations
 
             modelBuilder.Entity("IMS_Domain.Entities.TicketComment", b =>
                 {
+                    b.HasOne("IMS_Domain.Entities.TicketComment", "ParentComment")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentCommentId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("IMS_Domain.Entities.Ticket", null)
                         .WithMany("Comments")
                         .HasForeignKey("TicketId")
@@ -748,6 +1032,42 @@ namespace IMS_Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("ParentComment");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.TicketCommentLike", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.TicketComment", "Comment")
+                        .WithMany("Likes")
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IMS_Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Comment");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.TicketCommentReaction", b =>
+                {
+                    b.HasOne("IMS_Domain.Entities.TicketComment", "Comment")
+                        .WithMany("Reactions")
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IMS_Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Comment");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.TicketStatusHistory", b =>
@@ -759,14 +1079,10 @@ namespace IMS_Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("IMS_Domain.Entities.Ticket", null)
-                        .WithMany()
+                        .WithMany("TicketStatusHistories")
                         .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("IMS_Domain.Entities.Ticket", null)
-                        .WithMany("TicketStatusHistories")
-                        .HasForeignKey("TicketId1");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.User", b =>
@@ -778,7 +1094,7 @@ namespace IMS_Infrastructure.Migrations
                     b.HasOne("IMS_Domain.Entities.Role", "Role")
                         .WithMany("Users")
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Department");
@@ -786,9 +1102,24 @@ namespace IMS_Infrastructure.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("IMS_Domain.Entities.Asset", b =>
+                {
+                    b.Navigation("ChildAssets");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.AssetCondition", b =>
+                {
+                    b.Navigation("Assets");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.AssetStatus", b =>
+                {
+                    b.Navigation("Assets");
+                });
+
             modelBuilder.Entity("IMS_Domain.Entities.Category", b =>
                 {
-                    b.Navigation("Inventory");
+                    b.Navigation("Assets");
 
                     b.Navigation("SubCategories");
                 });
@@ -798,14 +1129,6 @@ namespace IMS_Infrastructure.Migrations
                     b.Navigation("Users");
                 });
 
-            modelBuilder.Entity("IMS_Domain.Entities.Inventory", b =>
-                {
-                    b.Navigation("InventoryAssignments");
-
-                    b.Navigation("PurchaseDetail")
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("IMS_Domain.Entities.Role", b =>
                 {
                     b.Navigation("Users");
@@ -813,7 +1136,7 @@ namespace IMS_Infrastructure.Migrations
 
             modelBuilder.Entity("IMS_Domain.Entities.SubCategory", b =>
                 {
-                    b.Navigation("Inventory");
+                    b.Navigation("Assets");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.Ticket", b =>
@@ -823,6 +1146,15 @@ namespace IMS_Infrastructure.Migrations
                     b.Navigation("TicketAssignments");
 
                     b.Navigation("TicketStatusHistories");
+                });
+
+            modelBuilder.Entity("IMS_Domain.Entities.TicketComment", b =>
+                {
+                    b.Navigation("Likes");
+
+                    b.Navigation("Reactions");
+
+                    b.Navigation("Replies");
                 });
 
             modelBuilder.Entity("IMS_Domain.Entities.User", b =>

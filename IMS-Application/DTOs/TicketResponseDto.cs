@@ -16,6 +16,9 @@ namespace IMS_Application.DTOs
         public string status { get; set; } = string.Empty;
         public string createdAt { get; set; } = string.Empty;
         public string updatedAt { get; set; } = string.Empty;
+        public string assetId { get; set; } = string.Empty;
+        public string categoryId { get; set; } = string.Empty;
+        public string subCategoryId { get; set; } = string.Empty;
         public UserInfo createdBy { get; set; } = new();
         public UserInfo? assignedTo { get; set; }
     }
@@ -32,5 +35,9 @@ namespace IMS_Application.DTOs
         public int UserId { get; set; }
         public string CommentText { get; set; } = string.Empty;
         public string CreatedAt { get; set; } = string.Empty;
+        public string? UpdatedAt { get; set; }
+        public int? ParentCommentId { get; set; }
+        public int LikeCount { get; set; }
+        public List<CommentReactionResponseDto> Reactions { get; set; } = new();
     }
 }

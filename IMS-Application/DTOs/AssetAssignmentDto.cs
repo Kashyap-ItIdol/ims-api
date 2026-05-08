@@ -2,8 +2,10 @@
 
 namespace IMS_Application.DTOs;
 
-public class AssetAssignmentDto
+namespace IMS_Application.DTOs
 {
+    public class AssetAssignmentDto
+    {
     [Required(ErrorMessage = "Asset ID is required")]
     public int AssetId { get; set; }
 
@@ -17,11 +19,17 @@ public class AssetAssignmentDto
     public DateTime? ExpectedReturnDate { get; set; }
 
     [StringLength(20, ErrorMessage = "Office number cannot exceed 20 characters")]
-    public string? OfficeNo { get; set; }
+        public string? AssignedTo { get; set; }
+        public int? UserId { get; set; }
+        public string? Department { get; set; }
+        public DateTime? AssignDate { get; set; }
+        public string? OfficeNo { get; set; }
 
     [StringLength(20, ErrorMessage = "Table number cannot exceed 20 characters")]
-    public string? TableNo { get; set; }
-}
+        public string? TableNo { get; set; }
+        public NetworkDetailsDto? Network { get; set; }
+        public List<AssetHistoryDto> History { get; set; } = new();
+    }
 
 public class AssetAssignmentResponseDto
 {

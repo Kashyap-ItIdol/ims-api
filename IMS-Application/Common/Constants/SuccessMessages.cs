@@ -7,6 +7,19 @@
         public const string RegisterSuccess = "Register successfully";
         public const string TokenRefreshSuccess = "Token refreshed successfully";
         public const string RetrievedSuccessfully = "Retrieved successfully";
+        public const string AssetsAddedSuccessfully = "Assets added successfully";
+        public const string AssetUpdatedSuccessfully = "Asset updated successfully";
+        public const string AssetDeletedSuccessfully = "Asset deleted successfully";
+        public const string AssetAssignedSuccessfully = "Asset assigned successfully";
+        public const string ChildAttachedSuccessfully = "Child asset attached successfully";
+        public const string ChildCreatedAndAttachedSuccessfully = "Child asset created and attached";
+        public const string ChildDetachedSuccessfully = "Child asset detached successfully";
+        public const string ChildUnlinkedSuccessfully = "Child unlinked successfully";
+        public const string ChildMarkedAvailable = "Child marked as available (still linked to parent)";
+        public const string NetworkUpdatedSuccessfully = "Network details saved successfully";
+
+        public const string UserDeletedSuccessfully = "User deleted successfully";
+        public const string UserUpdatedSuccessfully = "User updated successfully";
         public const string CategoryCreated = "Category Created Successfully";
         public const string AllCategories = "Get all Categories Successfully";
         public const string CategoryById = "Category details retrieved successfully";
@@ -49,6 +62,17 @@
         public const string AttachmentsRetrieved = "Attachments retrieved successfully";
         public const string FileDownloaded = "File downloaded successfully";
         public const string FileViewed = "File viewed successfully";
+
+        public const string OtpSentSuccessfully = "OTP sent successfully";
+        public const string OtpVerifiedSuccessfully = "OTP verified and reset token generated successfully";
+        public const string PasswordResetSuccessfully = "Password reset successfully";
+        public const string ReplyCreated = "Reply added successfully";
+        public const string CommentUpdated = "Comment updated successfully";
+        public const string CommentDeleted = "Comment deleted successfully";
+        public const string CommentLiked = "Comment liked successfully";
+        public const string CommentUnliked = "Comment unliked successfully";
+        public const string ReactionAdded = "Reaction added successfully";
+        public const string ReactionRemoved = "Reaction removed successfully";
 
     }
 }

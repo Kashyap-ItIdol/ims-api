@@ -14,6 +14,9 @@ namespace IMS_Application.Extentions
             services.AddScoped<ITicketService, TicketService>();
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<ISubCategoryService, SubCategoryService>();
+            services.AddScoped<IAssetService, AssetService>();
+            services.AddScoped<IUserService, UserService>();
+
 
             return services;
         }
