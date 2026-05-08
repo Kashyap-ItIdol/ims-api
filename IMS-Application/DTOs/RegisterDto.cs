@@ -1,4 +1,4 @@
-﻿namespace IMS_Application.DTOs
+﻿﻿namespace IMS_Application.DTOs
 {
     public class RegisterDto
     {

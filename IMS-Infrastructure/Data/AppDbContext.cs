@@ -9,15 +9,18 @@ namespace IMS_Infrastructure.Data
         {
 
         }
-
+        public DbSet<Asset> Assets { get; set; }
+        public DbSet<Category> Categories { get; set; }
+        public DbSet<SubCategory> SubCategories { get; set; }
+        public DbSet<AssetHistory> AssetHistories { get; set; }
+        public DbSet<NetworkDetail> NetworkDetails { get; set; }
+        public DbSet<AssetStatus> AssetStatuses { get; set; }
+        public DbSet<AssetCondition> AssetConditions { get; set; }
+        public DbSet<User> Users { get; set; }
+        public DbSet<EmailTemplate> EmailTemplates { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<Department> Departments { get; set; }
-        public DbSet<User> Users { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
-        public DbSet<Category> Categories { get; set; }
-        public DbSet<EmailTemplate> EmailTemplates { get; set; }
-
-        public DbSet<SubCategory> SubCategories { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<TicketAssignment> TicketAssignments { get; set; }
         public DbSet<TicketComment> TicketComments { get; set; }
@@ -29,5 +32,6 @@ namespace IMS_Infrastructure.Data
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         }
+
     }
 }
