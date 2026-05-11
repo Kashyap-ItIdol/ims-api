@@ -788,5 +788,42 @@ namespace IMS_Application.Services
                 return Result<List<TicketResponseDto>>.Failure(ErrorMessages.ServerError, 500);
             }
         }
+        public async Task<Result<PagedResult<UserResponseDto>>> GetSupportEngineersAsync(int pageNumber, int pageSize)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+                return Result<PagedResult<UserResponseDto>>.Failure(ErrorMessages.InvalidPagination, 400);
+
+            try
+            {
+                var users = await _unitOfWork.Users.GetAllWithRolesAsync();
+                var supportEngineers = users
+                    .Where(u => u.Role != null && u.Role.Name == LogicStrings.SupportEngineerRole)
+                    .OrderBy(u => u.Id)
+                    .ToList();
+
+                var totalCount = supportEngineers.Count;
+                var paged = supportEngineers
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                var dtos = _mapper.Map<List<UserResponseDto>>(paged);
+
+                var pagedResult = new PagedResult<UserResponseDto>
+                {
+                    Items = dtos,
+                    TotalCount = totalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+
+                return Result<PagedResult<UserResponseDto>>.Success(pagedResult, SuccessMessages.RetrievedSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving support engineers");
+                return Result<PagedResult<UserResponseDto>>.Failure(ErrorMessages.ServerError, 500);
+            }
+        }
     }
 }

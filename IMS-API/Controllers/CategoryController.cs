@@ -7,7 +7,7 @@ namespace IMS_API.Controllers
 {
     [Route("api/settings/general/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin,SupportEngineer")]
+    [Authorize(Roles = "Admin,Support Engineer")]
     public class CategoryController : BaseController
     {
         private readonly ICategoryService _categoryService;

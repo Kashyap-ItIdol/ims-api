@@ -174,7 +174,6 @@ namespace IMS_API.Controllers
             return FromResult(result);
         }
 
-
         [HttpGet("search")]
         public async Task<IActionResult> SearchTickets([FromQuery] string? q)
         {
@@ -201,6 +200,17 @@ namespace IMS_API.Controllers
 
 
             var result = await _ticketService.GetCalendarFilteredTicketsAsync(userIdResult.Data, pageNumber, pageSize, dateFilter, startDate, endDate);
+            return FromResult(result);
+        }
+        [HttpGet("support-engineers")]
+        public async Task<IActionResult> GetSupportEngineers([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
+            var result = await _ticketService.GetSupportEngineersAsync(pageNumber, pageSize);
             return FromResult(result);
         }
 
