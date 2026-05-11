@@ -14,7 +14,7 @@ namespace IMS_Infrastructure.Repositories
         private IUserRepository? _users;
         public IUserRepository Users => _users ??= new UserRepository(_context);
 
-        // Implement the new generic properties
+       
         private IRepository<Role>? _roles;
         public IRepository<Role> Roles => _roles ??= new Repository<Role>(_context);
 
@@ -29,6 +29,13 @@ namespace IMS_Infrastructure.Repositories
 
         private ITicketRepository? _tickets;
         public ITicketRepository Tickets => _tickets ??= new TicketRepository(_context);
+
+        private IAssetRepository? _assets;
+        public IAssetRepository Assets => _assets ??= new AssetRepository(_context);
+
+        private INetworkDetailsRepository? _networkDetails;
+        public INetworkDetailsRepository NetworkDetails =>
+            _networkDetails ??= new NetworkDetailsRepository(_context);
 
         private IRepository<TicketAttachment>? _ticketAttachments;
         public IRepository<TicketAttachment> TicketAttachments => _ticketAttachments ??= new Repository<TicketAttachment>(_context);

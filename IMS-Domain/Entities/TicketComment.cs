@@ -1,8 +1,7 @@
-namespace IMS_Domain.Entities
+﻿namespace IMS_Domain.Entities
 {
     public class TicketComment
     {
-
         public int Id { get; set; }
         public int TicketId { get; set; }
         public int UserId { get; set; }

@@ -31,7 +31,6 @@ namespace IMS_API.Controllers
             return FromResult(result);
         }
 
-
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {

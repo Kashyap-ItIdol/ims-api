@@ -17,6 +17,8 @@
         public Role Role { get; set; } = null!;
 
         public string? ProfileImg { get; set; }
+        public string? Location { get; set; }
+        public string? TableNo { get; set; }
 
         public bool IsActive { get; set; } = true;
 
@@ -27,16 +29,10 @@
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public int? CreatedBy { get; set; }
-
         public DateTime? UpdatedAt { get; set; }
-
         public int? UpdatedBy { get; set; }
-
         public DateTime? DeletedAt { get; set; }
-
         public int? DeletedBy { get; set; }
-
-        // Navigation
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

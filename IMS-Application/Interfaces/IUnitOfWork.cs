@@ -5,7 +5,6 @@ namespace IMS_Application.Interfaces
     public interface IUnitOfWork : IDisposable
     {
         IUserRepository Users { get; }
-
         IRepository<Department> Departments { get; }
 
         IRepository<TicketAttachment> TicketAttachments { get; }
@@ -13,7 +12,8 @@ namespace IMS_Application.Interfaces
         ICategoryRepository Categories { get; }
         ISubCategoryRepository SubCategories { get; }
         ITicketRepository Tickets { get; }
-
+        IAssetRepository Assets { get; }
+        INetworkDetailsRepository NetworkDetails { get; }
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }
