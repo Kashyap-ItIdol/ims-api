@@ -25,10 +25,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userResult);
             }
-            int createdBy = userResult.Data;
-
-            var result = await _subCategoryService.CreateSubCategoryAsync(name, categoryId, createdBy);
-            return FromResult(result);
+            return FromResult(await _subCategoryService.CreateSubCategoryAsync(name, categoryId, userResult.Data));
         }
     }
 }

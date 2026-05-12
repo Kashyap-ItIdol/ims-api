@@ -170,6 +170,13 @@ namespace IMS_Application.Mappings
             CreateMap<Ticket, UpdateTicketStatusResponseDto>()
                 .ForMember(dest => dest.updatedStatus, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.updatedAt, opt => opt.MapFrom(src => src.UpdatedAt));
+
+            CreateMap<RecentActivity, RecentActivityItemDto>()
+                            .ForMember(dest => dest.User,
+                                opt => opt.MapFrom(src =>
+                                    src.UserId > 0
+                                        ? (src.User != null ? src.User.FullName : src.UserId.ToString())
+                                        : "Unknown"));
         }
     }
 }

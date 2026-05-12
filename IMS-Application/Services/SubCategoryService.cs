@@ -13,12 +13,14 @@ namespace IMS_Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<SubCategoryService> _logger;
+        private readonly ISettingRepository _settingRepository;
 
-        public SubCategoryService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<SubCategoryService> logger)
+        public SubCategoryService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<SubCategoryService> logger, ISettingRepository settingRepository)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _settingRepository = settingRepository;
         }
 
         public async Task<Result<int>> CreateSubCategoryAsync(string name, int categoryId, int createdBy)
@@ -50,17 +52,12 @@ namespace IMS_Application.Services
                     return Result<int>.Failure(ErrorMessages.SubCategoryInvalidUser, 401);
                 }
 
-                // Check if category exists
                 var category = await _unitOfWork.Categories.GetByIdAsync(categoryId);
                 if (category == null || !category.IsActive)
                 {
                     return Result<int>.Failure(ErrorMessages.SubCategoryCategoryNotFound, 404);
                 }
-
-                var cleanName = trimmedName;
-
-                // Check duplicate
-                var existing = await _unitOfWork.SubCategories.GetByCategoryIdAndNameAsync(categoryId, cleanName);
+                var existing = await _unitOfWork.SubCategories.GetByCategoryIdAndNameAsync(categoryId, trimmedName);
                 if (existing != null)
                 {
                     return Result<int>.Failure(ErrorMessages.DuplicateSubCategoryName, 400);
@@ -68,7 +65,7 @@ namespace IMS_Application.Services
 
                 var subCategory = new SubCategory
                 {
-                    Name = cleanName,
+                    Name = trimmedName,
                     CategoryId = categoryId,
                     CreatedBy = createdBy,
                     IsActive = true,
@@ -76,6 +73,18 @@ namespace IMS_Application.Services
                 };
 
                 await _unitOfWork.SubCategories.AddAsync(subCategory);
+                await _unitOfWork.SaveChangesAsync();
+
+                await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                {
+                    ItemId = subCategory.Id,
+                    ItemName = LogicStrings.SubCategoryItemName,
+                    Action = LogicStrings.ActionCreated,
+                    UserId = createdBy,
+                    Details = $"SubCategory created: {subCategory.Name}",
+                    DateTime = subCategory.CreatedAt,
+                    IsDeleted = false
+                });
                 await _unitOfWork.SaveChangesAsync();
 
                 return Result<int>.Success(subCategory.Id, SuccessMessages.SubCategoryCreated);

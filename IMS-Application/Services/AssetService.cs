@@ -14,16 +14,19 @@ namespace IMS_Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<AssetService> _logger;
+        private readonly ISettingRepository _settingRepository;
 
-        public AssetService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<AssetService> logger)
+        public AssetService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<AssetService> logger, ISettingRepository settingRepository)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _settingRepository = settingRepository;
         }
 
         public async Task<Result<string>> AddAssetsAsync(AddAssetDto dto, int createdBy)
         {
+            var activitiesToInsert = new List<RecentActivity>();
             try
             {
                 var mainDto = dto.Assets.First(x => x.IsPrimary);
@@ -105,16 +108,26 @@ namespace IMS_Application.Services
                 mainAsset.UpdatedBy = createdBy;
 
                 await _unitOfWork.Assets.AddRangeAsync(new List<Asset> { mainAsset });
-
                 await _unitOfWork.SaveChangesAsync();
 
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
                     AssetId = mainAsset.Id,
-                    Action = "Created",
+                    Action = LogicStrings.ActionCreated,
                     Description =
                         $"Asset {mainAsset.ItemName} created" +
                         $"{(dto.AssignedTo.HasValue ? $" and assigned to user {dto.AssignedTo}" : "")}"
+                });
+
+                activitiesToInsert.Add(new RecentActivity
+                {
+                    ItemId = mainAsset.Id,
+                    ItemName = LogicStrings.AssetItemName,
+                    Action = LogicStrings.ActionCreated,
+                    UserId = createdBy,
+                    Details = $"Asset {mainAsset.ItemName} created",
+                    DateTime = mainAsset.CreatedAt,
+                    IsDeleted = false
                 });
 
                 var childAssets = new List<Asset>();
@@ -147,7 +160,6 @@ namespace IMS_Application.Services
                 if (childAssets.Any())
                 {
                     await _unitOfWork.Assets.AddRangeAsync(childAssets);
-
                     await _unitOfWork.SaveChangesAsync();
 
                     foreach (var child in childAssets)
@@ -155,18 +167,59 @@ namespace IMS_Application.Services
                         await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                         {
                             AssetId = child.Id,
-                            Action = "Created",
+                            Action = LogicStrings.ActionCreated,
                             Description =
                                 $"Child asset {child.ItemName} created and attached to parent {mainAsset.ItemName}"
                         });
-                    }
 
-                    await _unitOfWork.SaveChangesAsync();
+                        activitiesToInsert.Add(new RecentActivity
+                        {
+                            ItemId = child.Id,
+                            ItemName = LogicStrings.AssetItemName,
+                            Action = LogicStrings.ActionCreated,
+                            UserId = createdBy,
+                            Details = $"Child asset {child.ItemName} created and attached to parent {mainAsset.ItemName}",
+                            DateTime = child.CreatedAt,
+                            IsDeleted = false
+                        });
+                    }
                 }
-                else
+
+                if (dto.AssignedTo.HasValue)
                 {
-                    await _unitOfWork.SaveChangesAsync();
+                    var assignedUserId = dto.AssignedTo.Value;
+
+                    activitiesToInsert.Add(new RecentActivity
+                    {
+                        ItemId = mainAsset.Id,
+                        ItemName = LogicStrings.AssetItemName,
+                        Action = LogicStrings.ActionAssigned,
+                        UserId = assignedUserId,
+                        Details = $"Asset {mainAsset.ItemName} assigned to user {assignedUserId}",
+                        DateTime = mainAsset.AssignDate ?? DateTime.UtcNow,
+                        IsDeleted = false
+                    });
+
+                    foreach (var child in childAssets)
+                    {
+                        activitiesToInsert.Add(new RecentActivity
+                        {
+                            ItemId = child.Id,
+                            ItemName = LogicStrings.AssetItemName,
+                            Action = LogicStrings.ActionAssigned,
+                            UserId = assignedUserId,
+                            Details = $"Asset {child.ItemName} assigned to user {assignedUserId}",
+                            DateTime = child.AssignDate ?? DateTime.UtcNow,
+                            IsDeleted = false
+                        });
+                    }
                 }
+
+                // Insert recent activity records once: Created + Assigned (when assigned during AddAssets)
+                foreach (var activity in activitiesToInsert)
+                    await _settingRepository.AddRecentActivityAsync(activity);
+
+                await _unitOfWork.SaveChangesAsync();
 
                 return Result<string>.Success(SuccessMessages.AssetsAddedSuccessfully);
             }
@@ -224,7 +277,6 @@ namespace IMS_Application.Services
 
                 bool isParent = asset.ParentAssetId == null && asset.ChildAssets.Any();
                 bool isChild = asset.ParentAssetId != null;
-
                 if (dto.IsManualUnlink && isChild)
                 {
                     asset.ParentAssetId = null;
@@ -237,11 +289,22 @@ namespace IMS_Application.Services
                     await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                     {
                         AssetId = asset.Id,
-                        Action = "Unlinked",
+                        Action = LogicStrings.ActionUnlinked,
                         Description = $"Child asset {asset.ItemName} manually unlinked from parent"
                     });
 
                     await _unitOfWork.SaveChangesAsync();
+
+                    await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                    {
+                        ItemId = asset.Id,
+                        ItemName = LogicStrings.AssetItemName,
+                        Action = LogicStrings.ActionUpdated,
+                        UserId = updatedBy,
+                        Details = $"Child asset {asset.ItemName} manually unlinked from parent",
+                        DateTime = asset.UpdatedAt ?? DateTime.UtcNow,
+                        IsDeleted = false
+                    });
 
                     return Result<string>.Success(SuccessMessages.ChildUnlinkedSuccessfully);
                 }
@@ -258,8 +321,9 @@ namespace IMS_Application.Services
                         await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                         {
                             AssetId = asset.Id,
-                            Action = "Updated",
+                            Action = LogicStrings.ActionUpdated,
                             Description = $"Child asset {asset.ItemName} marked as available"
+
                         });
 
                         await _unitOfWork.SaveChangesAsync();
@@ -306,8 +370,20 @@ namespace IMS_Application.Services
                     await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                     {
                         AssetId = asset.Id,
-                        Action = "Updated",
+                        Action = LogicStrings.ActionUpdated,
                         Description = $"Asset {asset.ItemName} updated from parent context"
+                    });
+
+                    await _unitOfWork.SaveChangesAsync();
+                    await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                    {
+                        ItemId = asset.Id,
+                        ItemName = LogicStrings.AssetItemName,
+                        Action = LogicStrings.ActionUpdated,
+                        UserId = updatedBy,
+                        Details = $"Asset {asset.ItemName} updated from parent context",
+                        DateTime = asset.UpdatedAt ?? DateTime.UtcNow,
+                        IsDeleted = false
                     });
 
                     await _unitOfWork.SaveChangesAsync();
@@ -347,11 +423,22 @@ namespace IMS_Application.Services
                     await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                     {
                         AssetId = asset.Id,
-                        Action = "Updated",
+                        Action = LogicStrings.ActionUpdated,
                         Description = $"Asset {asset.ItemName} updated"
                     });
 
                     await _unitOfWork.SaveChangesAsync();
+
+                    await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                    {
+                        ItemId = asset.Id,
+                        ItemName = LogicStrings.AssetItemName,
+                        Action = LogicStrings.ActionUpdated,
+                        UserId = updatedBy,
+                        Details = $"Asset {asset.ItemName} updated",
+                        DateTime = asset.UpdatedAt ?? DateTime.UtcNow,
+                        IsDeleted = false
+                    });
 
                     return Result<string>.Success(SuccessMessages.AssetUpdatedSuccessfully);
                 }
@@ -392,8 +479,9 @@ namespace IMS_Application.Services
                             await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                             {
                                 AssetId = child.Id,
-                                Action = "Detached",
+                                Action = LogicStrings.ActionDetached,
                                 Description = $"Child asset {child.ItemName} detached because parent {asset.ItemName} was deleted"
+
                             });
                         }
                     }
@@ -416,8 +504,19 @@ namespace IMS_Application.Services
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
                     AssetId = asset.Id,
-                    Action = "Deleted",
+                    Action = LogicStrings.ActionDeleted,
                     Description = $"Asset {asset.ItemName} deleted"
+                });
+
+                await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                {
+                    ItemId = asset.Id,
+                    ItemName = LogicStrings.AssetItemName,
+                    Action = LogicStrings.ActionDeleted,
+                    UserId = deletedBy,
+                    Details = $"Asset {asset.ItemName} deleted",
+                    DateTime = DateTime.UtcNow,
+                    IsDeleted = true
                 });
 
                 await _unitOfWork.SaveChangesAsync();
@@ -518,15 +617,28 @@ namespace IMS_Application.Services
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
                     AssetId = asset.Id,
-                    Action = "Assigned",
+                    Action = LogicStrings.ActionAssigned,
                     Description = $"Asset {asset.ItemName} assigned to user {user.FullName}"
+                });
+
+                await _unitOfWork.SaveChangesAsync();
+
+                // Insert recent activity record for asset assignment
+                await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                {
+                    ItemId = asset.Id,
+                    ItemName = LogicStrings.AssetItemName,
+                    Action = LogicStrings.ActionAssigned,
+                    UserId = user.Id,
+                    Details = $"Asset {asset.ItemName} assigned to user {user.FullName}",
+                    DateTime = asset.AssignDate ?? DateTime.UtcNow,
+                    IsDeleted = false
                 });
 
                 await _unitOfWork.SaveChangesAsync();
 
                 return Result<string>.Success(SuccessMessages.AssetAssignedSuccessfully);
             }
-
             catch (Exception ex)
             {
                 _logger.LogError(ex,
@@ -545,6 +657,7 @@ namespace IMS_Application.Services
             try
             {
                 var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(id);
+
 
                 if (asset == null)
                     return Result<GetAssetByIdResponseDto>.Failure(ErrorMessages.AssetNotFound, 404);
@@ -628,8 +741,9 @@ namespace IMS_Application.Services
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
                     AssetId = child.Id,
-                    Action = "Attached",
+                    Action = LogicStrings.ActionAttached,
                     Description = $"Attached to parent asset {parent.ItemName}"
+
                 });
 
                 await _unitOfWork.SaveChangesAsync();
@@ -678,8 +792,9 @@ namespace IMS_Application.Services
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
                     AssetId = child.Id,
-                    Action = "Created & Attached",
+                    Action = LogicStrings.ActionCreatedAndAttached,
                     Description = $"Created and attached to {parent.ItemName}"
+
                 });
 
                 await _unitOfWork.SaveChangesAsync();
@@ -716,8 +831,9 @@ namespace IMS_Application.Services
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
                     AssetId = child.Id,
-                    Action = "Detached",
+                    Action = LogicStrings.ActionDetached,
                     Description = "Removed from parent asset"
+
                 });
 
                 await _unitOfWork.SaveChangesAsync();
@@ -781,8 +897,9 @@ namespace IMS_Application.Services
                     await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                     {
                         AssetId = assetId,
-                        Action = "Network Added",
+                        Action = LogicStrings.ActionNetworkAdded,
                         Description = $"Network details added for asset {asset.ItemName}"
+
                     });
                 }
                 else
@@ -790,12 +907,12 @@ namespace IMS_Application.Services
                     _mapper.Map(dto, existing);
                     existing.updatedBy = userId.ToString();
                     _unitOfWork.NetworkDetails.Update(existing);
-
                     await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                     {
                         AssetId = assetId,
-                        Action = "Network Updated",
+                        Action = LogicStrings.ActionNetworkUpdated,
                         Description = $"Network details updated for asset {asset.ItemName}"
+
                     });
                 }
 
