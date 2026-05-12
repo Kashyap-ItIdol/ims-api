@@ -166,10 +166,14 @@ try
         c.RoutePrefix = string.Empty;
     });
 
-    app.UseHttpsRedirection();
-    app.UseAuthentication();
-    app.UseAuthorization();
-    app.MapControllers();
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.UseStaticFiles();
+
+app.MapControllers();
 
     app.Run();
 }

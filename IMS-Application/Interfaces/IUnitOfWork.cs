@@ -1,4 +1,4 @@
-﻿using IMS_Domain.Entities;
+using IMS_Domain.Entities;
 
 namespace IMS_Application.Interfaces
 {
@@ -6,6 +6,9 @@ namespace IMS_Application.Interfaces
     {
         IUserRepository Users { get; }
         IRepository<Department> Departments { get; }
+
+        IRepository<TicketAttachment> TicketAttachments { get; }
+
         ICategoryRepository Categories { get; }
         ISubCategoryRepository SubCategories { get; }
         ITicketRepository Tickets { get; }

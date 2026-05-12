@@ -5,6 +5,7 @@ using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
 using IMS_Application.Services.Interfaces;
 using IMS_Domain.Entities;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace IMS_Application.Services
@@ -14,12 +15,14 @@ namespace IMS_Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<TicketService> _logger;
+        private readonly IWebHostEnvironment _env;
 
-        public TicketService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<TicketService> logger)
+        public TicketService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<TicketService> logger, IWebHostEnvironment env)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _env = env;
         }
 
         private async Task<Dictionary<int, User>> GetUsersForTicketAsync(Ticket ticket, int currentUserId)
@@ -77,10 +80,15 @@ namespace IMS_Application.Services
 
             var comments = _mapper.Map<List<TicketCommentInfo>>(allComments);
 
+            var attachments = _mapper.Map<List<TicketAttachmentInfo>>(ticket.Attachments
+                .OrderByDescending(a => a.UploadedAt)
+                .ToList());
+
             return new TicketResponseDto
             {
                 ticket = ticketInfo,
-                comments = comments
+                comments = comments,
+                attachments = attachments
             };
         }
 
@@ -117,8 +125,25 @@ namespace IMS_Application.Services
                 }
 
                 var assignee = await _unitOfWork.Users.GetByIdAsync(dto.assignedTo);
-                if (assignee == null || assignee.Role.Name != LogicStrings.SupportEngineerRole)
+                if (assignee == null || assignee.Role?.Name != LogicStrings.SupportEngineerRole)
                     return Result<TicketResponseDto>.Failure(ErrorMessages.InvalidTicketAssignee, 400);
+
+                if (dto.CategoryId.HasValue)
+                {
+                    var category = await _unitOfWork.Categories.GetByIdAsync(dto.CategoryId.Value);
+                    if (category == null)
+                        return Result<TicketResponseDto>.Failure(ErrorMessages.CategoryNotFound, 400);
+                }
+
+                if (dto.SubCategoryId.HasValue)
+                {
+                    var subCategory = await _unitOfWork.SubCategories.GetByIdAsync(dto.SubCategoryId.Value);
+                    if (subCategory == null)
+                        return Result<TicketResponseDto>.Failure(ErrorMessages.SubCategoryNotFound, 400);
+
+                    if (!dto.CategoryId.HasValue || dto.CategoryId.Value != subCategory.CategoryId)
+                        return Result<TicketResponseDto>.Failure(ErrorMessages.SubCategoryCategoryIdInvalid, 400);
+                }
 
                 var ticket = _mapper.Map<Ticket>(dto);
                 ticket.TicketType = ticketType;
@@ -126,6 +151,12 @@ namespace IMS_Application.Services
                 ticket.Status = Status.Open;
                 ticket.CreatedAt = DateTime.UtcNow;
                 ticket.UpdatedAt = DateTime.UtcNow;
+
+                if (Enum.TryParse<TicketType>(dto.TicketType, true, out var parsedTicketType))
+                    ticket.TicketType = parsedTicketType;
+
+                if (Enum.TryParse<TicketPriority>(dto.Priority, true, out var parsedTicketPriority))
+                    ticket.TicketPriority = parsedTicketPriority;
 
                 var assignment = new TicketAssignment
                 {
@@ -145,10 +176,6 @@ namespace IMS_Application.Services
                 var response = MapToTicketResponseDto(ticket, usersDict);
 
                 return Result<TicketResponseDto>.Success(response, SuccessMessages.TicketCreated);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -175,10 +202,6 @@ namespace IMS_Application.Services
                 await _unitOfWork.SaveChangesAsync();
                 var dto = _mapper.Map<TicketCommentResponseDto>(comment);
                 return Result<TicketCommentResponseDto>.Success(dto, SuccessMessages.CommentCreated);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -214,10 +237,6 @@ namespace IMS_Application.Services
                 var dto = _mapper.Map<TicketCommentResponseDto>(reply);
                 return Result<TicketCommentResponseDto>.Success(dto, SuccessMessages.ReplyCreated);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding reply to comment {ParentCommentId} on ticket {TicketId} by user {UserId}", parentCommentId, ticketId, currentUserId);
@@ -245,10 +264,6 @@ namespace IMS_Application.Services
                 await _unitOfWork.SaveChangesAsync();
                 var dto = _mapper.Map<TicketCommentResponseDto>(comment);
                 return Result<TicketCommentResponseDto>.Success(dto, SuccessMessages.CommentUpdated);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -291,10 +306,6 @@ namespace IMS_Application.Services
                 };
                 return Result<CommentLikeResponseDto>.Success(dto, SuccessMessages.CommentDeleted);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting comment {CommentId} by user {UserId}", commentId, currentUserId);
@@ -324,10 +335,6 @@ namespace IMS_Application.Services
                 await _unitOfWork.SaveChangesAsync();
                 var dto = _mapper.Map<CommentLikeResponseDto>(like);
                 return Result<CommentLikeResponseDto>.Success(dto, SuccessMessages.CommentLiked);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -363,10 +370,6 @@ namespace IMS_Application.Services
                     CreatedAt = like.DeletedAt?.ToString("o") ?? string.Empty
                 };
                 return Result<CommentLikeResponseDto>.Success(dto, SuccessMessages.CommentUnliked);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -409,10 +412,6 @@ namespace IMS_Application.Services
                 var dto = _mapper.Map<CommentReactionResponseDto>(reaction);
                 return Result<CommentReactionResponseDto>.Success(dto, SuccessMessages.ReactionAdded);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding reaction to comment {CommentId} by user {UserId}", commentId, currentUserId);
@@ -448,10 +447,6 @@ namespace IMS_Application.Services
                     CreatedAt = reaction.DeletedAt?.ToString("o") ?? string.Empty
                 };
                 return Result<CommentReactionResponseDto>.Success(dto, SuccessMessages.ReactionRemoved);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -490,10 +485,6 @@ namespace IMS_Application.Services
 
                 var dto = _mapper.Map<UpdateTicketStatusResponseDto>(ticket);
                 return Result<UpdateTicketStatusResponseDto>.Success(dto, SuccessMessages.StatusUpdated);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -549,10 +540,6 @@ namespace IMS_Application.Services
 
                 return Result<PagedResult<TicketResponseDto>>.Success(pagedResult, SuccessMessages.AllTickets);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving tickets for user {UserId}", currentUserId);
@@ -584,12 +571,7 @@ namespace IMS_Application.Services
 
                 var usersDict = await GetUsersForTicketAsync(ticket, currentUserId);
                 var dto = MapToTicketResponseDto(ticket, usersDict);
-
-                return Result<TicketResponseDto>.Success(dto, SuccessMessages.AllTickets);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
+                return Result<TicketResponseDto>.Success(dto, SuccessMessages.TicketFetched);
             }
             catch (Exception ex)
             {
@@ -699,14 +681,45 @@ namespace IMS_Application.Services
 
                 return Result<PagedResult<TicketResponseDto>>.Success(pagedResult, SuccessMessages.AllTickets);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving calendar filtered tickets for user {UserId}", currentUserId);
                 return Result<PagedResult<TicketResponseDto>>.Failure(ErrorMessages.ServerError, 500);
+            }
+        }
+
+        public async Task<Result<bool>> DeleteTicketAsync(int ticketId, int deletedBy)
+
+        {
+            try
+            {
+                var ticket = await _unitOfWork.Tickets.GetTicketByIdAsync(ticketId);
+                if (ticket == null || ticket.IsDeleted)
+                    return Result<bool>.Failure(ErrorMessages.TicketNotFound, 404);
+
+                var latestAssign = ticket.TicketAssignments?
+                    .Where(a => a.status == LogicStrings.Active)
+                    .OrderByDescending(a => a.assigned_at)
+                    .FirstOrDefault();
+
+                if (deletedBy != ticket.CreatedBy && (latestAssign?.assignedTo != deletedBy))
+                    return Result<bool>.Failure(ErrorMessages.Unauthorized, 403);
+
+                ticket.IsDeleted = true;
+                ticket.DeletedBy = deletedBy;
+                ticket.DeletedAt = DateTime.UtcNow;
+
+                _unitOfWork.Tickets.Update(ticket);
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation("Ticket {TicketId} successfully deleted by user {UserId}", ticketId, deletedBy);
+
+                return Result<bool>.Success(true, SuccessMessages.TicketDeleted);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting ticket {TicketId} by user {DeletedBy}", ticketId, deletedBy);
+                return Result<bool>.Failure(ErrorMessages.ServerError, 500);
             }
         }
 
@@ -778,14 +791,201 @@ namespace IMS_Application.Services
 
                 return Result<List<TicketResponseDto>>.Success(dtos, SuccessMessages.AllTickets);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error searching tickets for user {UserId} with query {Query}", currentUserId, q);
                 return Result<List<TicketResponseDto>>.Failure(ErrorMessages.ServerError, 500);
+            }
+        }
+
+        public async Task<Result<TicketResponseDto>> UpdateTicketAsync(int id, UpdateTicketDto dto, int updatedBy)
+        {
+            try
+            {
+                var ticket = await _unitOfWork.Tickets.GetTicketByIdAsync(id);
+                if (ticket == null || ticket.IsDeleted)
+                    return Result<TicketResponseDto>.Failure(ErrorMessages.TicketNotFound, 404);
+
+                _mapper.Map(dto, ticket);
+
+                if (!string.IsNullOrWhiteSpace(dto.TicketType) &&
+                    Enum.TryParse<TicketType>(dto.TicketType, true, out var ticketType))
+                {
+                    ticket.TicketType = ticketType;
+                }
+
+                if (!string.IsNullOrWhiteSpace(dto.TicketPriority) &&
+                    Enum.TryParse<TicketPriority>(dto.TicketPriority, true, out var priority))
+                {
+                    ticket.TicketPriority = priority;
+                }
+
+                ticket.UpdatedAt = DateTime.UtcNow;
+
+                _unitOfWork.Tickets.Update(ticket);
+                await _unitOfWork.SaveChangesAsync();
+
+                var usersDict = await GetUsersForTicketAsync(ticket, ticket.CreatedBy);
+                var response = MapToTicketResponseDto(ticket, usersDict);
+
+                _logger.LogInformation("Ticket {TicketId} updated successfully by {UserId}", id, updatedBy);
+
+                return Result<TicketResponseDto>.Success(response, SuccessMessages.TicketUpdated);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating ticket {TicketId}", id);
+                return Result<TicketResponseDto>.Failure(ErrorMessages.ServerError, 500);
+            }
+        }
+        private bool IsTicketVisibleToUser(Ticket ticket, int userId)
+        {
+            return userId == ticket.CreatedBy ||
+                   ticket.TicketAssignments.Any(a => a.status == LogicStrings.Active && a.assignedTo == userId);
+        }
+
+        public async Task<Result<List<TicketResponseDto>>> FilterTicketsAsync(TicketFilterDto filter, int currentUserId)
+        {
+            try
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(currentUserId);
+                if (user == null)
+                    return Result<List<TicketResponseDto>>.Failure(ErrorMessages.UserNotFoundError, 404);
+
+                var tickets = await _unitOfWork.Tickets.FilterTicketsAsync(filter);
+
+                if (!tickets.Any())
+                    return Result<List<TicketResponseDto>>.Success(new List<TicketResponseDto>(), ErrorMessages.InvalidMatch);
+
+                var allUserIds = new HashSet<int>();
+                foreach (var ticket in tickets)
+                {
+                    allUserIds.Add(ticket.CreatedBy);
+                    var latestAssign = ticket.TicketAssignments?
+                        .Where(a => a.status == LogicStrings.Active)
+                        .OrderByDescending(a => a.assigned_at)
+                        .FirstOrDefault();
+                    if (latestAssign != null)
+                        allUserIds.Add(latestAssign.assignedTo);
+                }
+
+                var allUsersDict = await _unitOfWork.Users.GetUsersByIdsAsync(allUserIds);
+
+                var visibleTickets = tickets
+                    .Where(t => IsTicketVisibleToUser(t, currentUserId))
+                    .OrderByDescending(t => t.UpdatedAt)
+                    .ToList();
+
+                var dtos = visibleTickets.Select(t => MapToTicketResponseDto(t, allUsersDict)).ToList();
+
+                _logger.LogInformation("Filtered {Count} visible tickets for user {UserId} with filter {@Filter}",
+                    dtos.Count, currentUserId, filter);
+
+                return Result<List<TicketResponseDto>>.Success(dtos, SuccessMessages.TicketFetched);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error filtering tickets for user {UserId} with filter {@Filter}", currentUserId, filter);
+                return Result<List<TicketResponseDto>>.Failure(ErrorMessages.ServerError, 500);
+            }
+        }
+
+        public async Task<Result<List<TicketAttachmentResponseDto>>> UploadFilesAsync(TicketAttachmentRequestDto dto, int userId, int ticketId)
+        {
+            try
+            {
+                var ticket = await _unitOfWork.Tickets.GetTicketByIdAsync(ticketId);
+                if (ticket == null)
+                {
+                    _logger.LogWarning("Ticket {TicketId} not found for attachment upload", ticketId);
+                    return Result<List<TicketAttachmentResponseDto>>.Failure(ErrorMessages.TicketNotFound, 404);
+                }
+
+                if (dto.Files == null || !dto.Files.Any())
+                {
+                    return Result<List<TicketAttachmentResponseDto>>.Failure(ErrorMessages.FileNotFound, 400);
+                }
+
+                var folderPath = Path.Combine(_env.WebRootPath, "uploads", ticketId.ToString());
+
+                if (!Directory.Exists(folderPath))
+                    Directory.CreateDirectory(folderPath);
+
+                var attachments = new List<TicketAttachment>();
+
+                foreach (var file in dto.Files)
+                {
+                    if (file.Length == 0)
+                        continue;
+
+                    var ext = Path.GetExtension(file.FileName);
+                    var fileName = $"{Guid.NewGuid()}{ext}";
+                    var fullPath = Path.Combine(folderPath, fileName);
+
+                    using (var stream = new FileStream(fullPath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
+
+                    attachments.Add(new TicketAttachment
+                    {
+                        TicketId = ticketId,
+                        UserId = userId,
+                        FilePath = $"/uploads/{ticketId}/{fileName}",
+                        UploadedAt = DateTime.UtcNow
+                    });
+                }
+
+                if (!attachments.Any())
+                {
+                    return Result<List<TicketAttachmentResponseDto>>.Failure(ErrorMessages.FileNotFound, 400);
+                }
+
+                foreach (var attachment in attachments)
+                {
+                    await _unitOfWork.TicketAttachments.AddAsync(attachment);
+                }
+                await _unitOfWork.SaveChangesAsync();
+
+                var attachmentDtos = _mapper.Map<List<TicketAttachmentResponseDto>>(attachments);
+
+                _logger.LogInformation("{Count} attachments uploaded successfully for ticket {TicketId} by user {UserId}",
+                    attachments.Count, ticketId, userId);
+
+                return Result<List<TicketAttachmentResponseDto>>.Success(attachmentDtos, SuccessMessages.AttachmentUploaded);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error uploading attachments for ticket {TicketId} by user {UserId}", ticketId, userId);
+                return Result<List<TicketAttachmentResponseDto>>.Failure(ErrorMessages.ServerError, 500);
+            }
+        }
+
+        public async Task<Result<TicketAttachmentResponseDto>> GetAttachmentAsync(int attachmentId)
+        {
+            try
+            {
+                var attachment = await _unitOfWork.TicketAttachments.GetByIdAsync(attachmentId);
+                if (attachment == null)
+                {
+                    _logger.LogWarning("Attachment {AttachmentId} not found", attachmentId);
+                    return Result<TicketAttachmentResponseDto>.Failure(ErrorMessages.FileNotFound, 404);
+                }
+
+                var fullPath = Path.Combine(_env.WebRootPath, attachment.FilePath.TrimStart('/'));
+                if (!File.Exists(fullPath))
+                {
+                    _logger.LogWarning("File not found at {FullPath} for attachment {AttachmentId}", fullPath, attachmentId);
+                    return Result<TicketAttachmentResponseDto>.Failure(ErrorMessages.PhysicalFileNotFound, 404);
+                }
+
+                var dto = _mapper.Map<TicketAttachmentResponseDto>(attachment);
+                return Result<TicketAttachmentResponseDto>.Success(dto, SuccessMessages.RetrievedSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving attachment {AttachmentId}", attachmentId);
+                return Result<TicketAttachmentResponseDto>.Failure(ErrorMessages.ServerError, 500);
             }
         }
     }
