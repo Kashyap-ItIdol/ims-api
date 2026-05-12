@@ -233,4 +233,23 @@ static void InitializeDatabase(WebApplication app)
     // Seed email templates (temporarily disabled until EmailTemplates table exists)
     // var emailTemplateRepository = scope.ServiceProvider.GetRequiredService<IEmailTemplateRepository>();
     // await EmailTemplateSeeder.SeedAsync(emailTemplateRepository);
+
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.UseStaticFiles();
+
+app.MapControllers();
+
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "IMS API terminated unexpectedly during startup");
+}
+finally
+{
+    Log.CloseAndFlush();
 }

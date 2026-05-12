@@ -1,12 +1,14 @@
-﻿using IMS_Application.Interfaces;
+using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
+using AutoMapper;
 
 namespace IMS_Infrastructure.Repositories
 {
     public class UnitOfWork : IUnitOfWork
     {
         private readonly AppDbContext _context;
+        private readonly IMapper _mapper;
 
         private IUserRepository? _users;
         public IUserRepository Users => _users ??= new UserRepository(_context);
@@ -47,6 +49,14 @@ namespace IMS_Infrastructure.Repositories
         private IAssetAssignmentRepository? _assetAssignments;
         public IAssetAssignmentRepository AssetAssignments =>
             _assetAssignments ??= new AssetAssignmentRepository(_context);
+        private IRepository<TicketAttachment>? _ticketAttachments;
+        public IRepository<TicketAttachment> TicketAttachments => _ticketAttachments ??= new Repository<TicketAttachment>(_context);
+
+        public UnitOfWork(AppDbContext context, IMapper mapper)
+        {
+            _context = context;
+            _mapper = mapper;
+        }
 
         public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {

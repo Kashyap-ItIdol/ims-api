@@ -74,5 +74,9 @@
         public const string ReactionAdded = "Reaction added successfully";
         public const string ReactionRemoved = "Reaction removed successfully";
 
+        public const string TicketDeleted = "Ticket deleted successfully";
+        public const string AttachmentUploaded = "Attachment Uploaded successfully";
+        public const string TicketUpdated = "Ticket updated successfully";
+        public const string TicketFetched = "Ticket filtered successfully";
     }
 }

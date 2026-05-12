@@ -60,6 +60,14 @@ namespace IMS_Application.Common.Constants
         public const string ServerError = "Internal server error.";
         public const string CommentRequires = "Comment text is required";
         public const string CategoryalreadyExist = "Category Already Exist";
+
+        public const string TicketNotExist = "Ticket not found or already deleted";
+        public const string FileNotFound = "No files Provided or cannot be uploaded";
+        public const string InvalidMatch = "No Matched filter";
+        public const string Unauthorized = "Unauthorized access.";
+        public const string PhysicalFileNotFound = "File link exists but physical file is missing.";
+
+
         public const string CategoryNotFound = "Category not found.";
         public const string CategoryNameRequired = "Category name is required.";
         public const string CategoryNameTooShort = "Category name must be at least 2 characters.";
@@ -126,5 +134,7 @@ namespace IMS_Application.Common.Constants
         public const string UserLocationAlreadyAssigned = "User already belongs to location '{0}'. Location cannot be changed.";
         public const string UserTableAlreadyAssigned = "User already has table number '{0}'. Table number cannot be changed.";
 
+      
+        public const string SubCategoryNotFound = "invalid subCategory";
     }
 }

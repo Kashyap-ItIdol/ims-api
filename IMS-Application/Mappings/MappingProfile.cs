@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using IMS_Application.DTOs;
 using IMS_Application.DTOs.SubCategory;
 using IMS_Domain.Entities;
@@ -125,7 +125,34 @@ namespace IMS_Application.Mappings
                 .ReverseMap();
 
             CreateMap<Category, GetCategoryDto>();
-            CreateMap<SubCategory, IMS_Application.DTOs.SubCategoryDto>();
+            CreateMap<SubCategory, SubCategoryDto>();
+            CreateMap<TicketComment, TicketCommentResponseDto>()
+               .ForMember(dest => dest.ticketId, opt => opt.MapFrom(src => src.TicketId.ToString()))
+               .ForMember(dest => dest.createdAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")))
+               .ReverseMap();
+
+            CreateMap<TicketAttachment, TicketAttachmentResponseDto>()
+                .ForMember(dest => dest.AttachmentId, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.TicketId, opt => opt.MapFrom(src => src.TicketId))
+                .ForMember(dest => dest.FilePath, opt => opt.MapFrom(src => src.FilePath))
+                .ForMember(dest => dest.UploadedAt, opt => opt.MapFrom(src => src.UploadedAt));
+
+            CreateMap<TicketAttachment, TicketAttachmentInfo>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.TicketId, opt => opt.MapFrom(src => src.TicketId))
+                .ForMember(dest => dest.FilePath, opt => opt.MapFrom(src => src.FilePath))
+                .ForMember(dest => dest.UploadedAt, opt => opt.MapFrom(src => src.UploadedAt));
+
+            CreateMap<TicketAttachmentResponseDto, TicketAttachmentInfo>();
+
+            CreateMap<Ticket, TicketFilterDto>();
+
+
+            CreateMap<TicketComment, TicketCommentResponseDto>()
+                .ForMember(dest => dest.ticketId, opt => opt.MapFrom(src => src.TicketId.ToString()))
+                .ForMember(dest => dest.createdAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")))
+                .ReverseMap();
+
             CreateMap<Category, ListCategoriesDto>();
             CreateMap<User, UserInfo>()
                 .ForMember(dest => dest.id, opt => opt.MapFrom(src => src.Id))
@@ -138,6 +165,16 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.AssetId, opt => opt.MapFrom(src => src.AssetId))
                 .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.CategoryId))
                 .ForMember(dest => dest.SubCategoryId, opt => opt.MapFrom(src => src.SubCategoryId));
+
+            CreateMap<UpdateTicketDto, Ticket>()
+
+                .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.TicketTitle))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
+                .ForMember(dest => dest.AssetId, opt => opt.MapFrom(src => src.AssetId))
+                .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.CategoryId))
+                .ForMember(dest => dest.SubCategoryId, opt => opt.MapFrom(src => src.SubCategoryId))
+                .ForMember(dest => dest.TicketType, opt => opt.MapFrom(src => src.TicketType))
+                .ForMember(dest => dest.TicketPriority, opt => opt.MapFrom(src => src.TicketPriority));
 
             CreateMap<Ticket, TicketInfo>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => $"TKT-{src.Id}"))
