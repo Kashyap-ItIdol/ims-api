@@ -177,10 +177,6 @@ namespace IMS_Application.Services
 
                 return Result<TicketResponseDto>.Success(response, SuccessMessages.TicketCreated);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating ticket for user {UserId}", createdBy);
@@ -206,10 +202,6 @@ namespace IMS_Application.Services
                 await _unitOfWork.SaveChangesAsync();
                 var dto = _mapper.Map<TicketCommentResponseDto>(comment);
                 return Result<TicketCommentResponseDto>.Success(dto, SuccessMessages.CommentCreated);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -245,10 +237,6 @@ namespace IMS_Application.Services
                 var dto = _mapper.Map<TicketCommentResponseDto>(reply);
                 return Result<TicketCommentResponseDto>.Success(dto, SuccessMessages.ReplyCreated);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding reply to comment {ParentCommentId} on ticket {TicketId} by user {UserId}", parentCommentId, ticketId, currentUserId);
@@ -276,10 +264,6 @@ namespace IMS_Application.Services
                 await _unitOfWork.SaveChangesAsync();
                 var dto = _mapper.Map<TicketCommentResponseDto>(comment);
                 return Result<TicketCommentResponseDto>.Success(dto, SuccessMessages.CommentUpdated);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -322,10 +306,6 @@ namespace IMS_Application.Services
                 };
                 return Result<CommentLikeResponseDto>.Success(dto, SuccessMessages.CommentDeleted);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting comment {CommentId} by user {UserId}", commentId, currentUserId);
@@ -355,10 +335,6 @@ namespace IMS_Application.Services
                 await _unitOfWork.SaveChangesAsync();
                 var dto = _mapper.Map<CommentLikeResponseDto>(like);
                 return Result<CommentLikeResponseDto>.Success(dto, SuccessMessages.CommentLiked);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -394,10 +370,6 @@ namespace IMS_Application.Services
                     CreatedAt = like.DeletedAt?.ToString("o") ?? string.Empty
                 };
                 return Result<CommentLikeResponseDto>.Success(dto, SuccessMessages.CommentUnliked);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -440,10 +412,6 @@ namespace IMS_Application.Services
                 var dto = _mapper.Map<CommentReactionResponseDto>(reaction);
                 return Result<CommentReactionResponseDto>.Success(dto, SuccessMessages.ReactionAdded);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding reaction to comment {CommentId} by user {UserId}", commentId, currentUserId);
@@ -479,10 +447,6 @@ namespace IMS_Application.Services
                     CreatedAt = reaction.DeletedAt?.ToString("o") ?? string.Empty
                 };
                 return Result<CommentReactionResponseDto>.Success(dto, SuccessMessages.ReactionRemoved);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -521,10 +485,6 @@ namespace IMS_Application.Services
 
                 var dto = _mapper.Map<UpdateTicketStatusResponseDto>(ticket);
                 return Result<UpdateTicketStatusResponseDto>.Success(dto, SuccessMessages.StatusUpdated);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -580,10 +540,6 @@ namespace IMS_Application.Services
 
                 return Result<PagedResult<TicketResponseDto>>.Success(pagedResult, SuccessMessages.AllTickets);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving tickets for user {UserId}", currentUserId);
@@ -616,10 +572,6 @@ namespace IMS_Application.Services
                 var usersDict = await GetUsersForTicketAsync(ticket, currentUserId);
                 var dto = MapToTicketResponseDto(ticket, usersDict);
                 return Result<TicketResponseDto>.Success(dto, SuccessMessages.TicketFetched);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -729,10 +681,6 @@ namespace IMS_Application.Services
 
                 return Result<PagedResult<TicketResponseDto>>.Success(pagedResult, SuccessMessages.AllTickets);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving calendar filtered tickets for user {UserId}", currentUserId);
@@ -767,10 +715,6 @@ namespace IMS_Application.Services
                 _logger.LogInformation("Ticket {TicketId} successfully deleted by user {UserId}", ticketId, deletedBy);
 
                 return Result<bool>.Success(true, SuccessMessages.TicketDeleted);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -888,10 +832,6 @@ namespace IMS_Application.Services
 
                 return Result<TicketResponseDto>.Success(response, SuccessMessages.TicketUpdated);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating ticket {TicketId}", id);
@@ -942,10 +882,6 @@ namespace IMS_Application.Services
                     dtos.Count, currentUserId, filter);
 
                 return Result<List<TicketResponseDto>>.Success(dtos, SuccessMessages.TicketFetched);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
