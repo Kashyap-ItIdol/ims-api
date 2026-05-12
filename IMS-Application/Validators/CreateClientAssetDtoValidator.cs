@@ -14,10 +14,6 @@ namespace IMS_Application.Validators
             RuleFor(x => x.Status)
                 .NotEmpty().WithMessage("Status is required");
 
-            RuleFor(x => x.AssetId)
-                .NotEmpty().WithMessage("Asset ID is required")
-                .GreaterThan(0).WithMessage("Asset ID must be greater than 0");
-
             RuleFor(x => x.CategoryId)
                 .NotEmpty().WithMessage("Category ID is required")
                 .GreaterThan(0).WithMessage("Category ID must be greater than 0");
@@ -49,6 +45,9 @@ namespace IMS_Application.Validators
 
             RuleFor(x => x.Location)
                 .NotEmpty().WithMessage("Location is required");
+
+            RuleFor(x => x.DeskNumber)
+                .GreaterThanOrEqualTo(0).WithMessage("Desk number must be non-negative");
         }
     }
 }

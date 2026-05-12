@@ -9,7 +9,6 @@ namespace IMS_Application.Validators
         public CreateAssetDtoValidator()
         {
             RuleFor(x => x.AssetName)
-                .NotEmpty().WithMessage("Asset name is required.")
                 .MaximumLength(100).WithMessage("Asset name cannot be more than 100 characters.");
 
             RuleFor(x => x.Status)
@@ -18,40 +17,39 @@ namespace IMS_Application.Validators
                 .WithMessage("Status must be either 'Assigned' or 'Returned'.");
 
             RuleFor(x => x.CategoryId)
-                .NotEmpty().WithMessage("Category ID is required.")
-                .GreaterThan(0).WithMessage("Category ID must be greater than 0.");
+                .GreaterThan(0).WithMessage("Category ID must be a greater than 1.");
 
             RuleFor(x => x.SubCategoryId)
-                .NotEmpty().WithMessage("Subcategory ID is required.")
-                .GreaterThan(0).WithMessage("Subcategory ID must be greater than 0.");
+                .GreaterThan(0).WithMessage("Subcategory ID must be a greater than 1.");
 
             RuleFor(x => x.Brand)
-                .NotEmpty().WithMessage("Brand is required.")
                 .MaximumLength(50).WithMessage("Brand cannot exceed 50 characters.");
 
             RuleFor(x => x.Model)
-                .NotEmpty().WithMessage("Model is required")
                 .MaximumLength(50).WithMessage("Model cannot exceed 50 characters");
 
             RuleFor(x => x.SerialNumber)
-                .NotEmpty().WithMessage("Serial number is required.")
                 .MaximumLength(50).WithMessage("Serial number cannot exceed 50 characters.");
 
-            RuleFor(x => x.Condition)
-                .NotEmpty().WithMessage("Condition is required.")
-                .Must(condition => condition == AssetCondition.Good || condition == AssetCondition.Bad)
-                .WithMessage("Condition must be either 'Good' or 'Bad'.");
+            RuleFor(x => x.ConditionId)
+                .NotEmpty().WithMessage("Condition ID is required.")
+                .GreaterThan(0).WithMessage("Condition ID must be greater than 0.");
 
             RuleFor(x => x.ClientPOC)
-                .NotEmpty().WithMessage("ClientPOC is required.")
                 .MaximumLength(100).WithMessage("ClientPOC cannot exceed 100 characters.");
 
             RuleFor(x => x.SalesPOC)
-                .NotEmpty().WithMessage("SalesPOC is required.")
                 .MaximumLength(100).WithMessage("SalesPOC cannot exceed 100 characters.");
 
+            RuleFor(x => x.Vendor)
+                .NotEmpty().WithMessage("Vendor is required")
+                .MaximumLength(100).WithMessage("Vendor cannot be more than 100 characters");
+
+            RuleFor(x => x.InvoiceNumber)
+                .NotEmpty().WithMessage("Invoice number is required")
+                .MaximumLength(100).WithMessage("Invoice number cannot be more than 100 characters");
+
             RuleFor(x => x.CreatedBy)
-                .NotEmpty().WithMessage("CreatedBy is required.")
                 .GreaterThan(0).WithMessage("CreatedBy must be valid");
         }
     }

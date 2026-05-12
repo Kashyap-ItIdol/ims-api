@@ -9,7 +9,6 @@ namespace IMS_Application.Services.Interfaces
         Task<Result<AssetResponseDto>> Create(CreateAssetDto dto, int createdBy);
         Task<Result<List<AssetResponseDto>>> GetAll();
         Task<Result<AssetResponseDto>> GetById(int id);
-        Task<Result<AssetResponseDto>> Update(int id, CreateAssetDto dto, int updatedBy);
         Task<Result<AssetResponseDto>> Delete(int id, int deletedBy);
         Task<Result<string>> AddAssetsAsync(AddAssetDto dto, int createdBy);
         Task<Result<List<AssetResponseDto>>> GetAllAssetsAsync();

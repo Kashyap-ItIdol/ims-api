@@ -12,13 +12,8 @@ namespace IMS_Application.DTOs
         public string Model { get; set; } = string.Empty;
         public string Condition { get; set; } = string.Empty;
         public string ClientName { get; set; } = string.Empty;
-        public string ClientPOC { get; set; } = string.Empty;
-        public string SalesPOC { get; set; } = string.Empty;
-        public string Location { get; set; } = string.Empty;
-        public DateTime? AssignedDate { get; set; }
-        public DateTime? ExpectedReturnDate { get; set; }
-        public string OfficeNo { get; set; } = string.Empty;
-        public string TableNo { get; set; } = string.Empty;
-        public int? DeskNumber { get; set; }
+        public string AssignedUserName { get; set; } = string.Empty;
+        public DateTime? UpdatedAt { get; set; }
+        public int? UpdatedBy { get; set; }
     }
 }

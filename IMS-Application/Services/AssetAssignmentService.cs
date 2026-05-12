@@ -21,6 +21,17 @@ public class AssetAssignmentService : IAssetAssignmentService
         _mapper = mapper;
     }
 
+    private int GetStatusId(string status)
+    {
+        return status.ToLower() switch
+        {
+            "active" => 1,
+            "inactive" => 2,
+            "assigned" => 3,
+            _ => throw new ArgumentException($"Unknown asset status: {status}")
+        };
+    }
+
     public async Task<Result<AssetAssignmentResponseDto>> AssignAssetAsync(AssetAssignmentDto dto, int createdBy)
     {
         if (dto == null)
@@ -113,9 +124,21 @@ public class AssetAssignmentService : IAssetAssignmentService
         if (dto == null)
             return Result<AssetAssignmentResponseDto>.Failure(ErrorMessages.AssetAssignmentRequired, 400);
 
-        // Step 1: Create new asset using AutoMapper
+        // Step 1: Validate that ConditionId exists in AssetConditions table
+        var assetCondition = await _assetRepository.GetAssetConditionByIdAsync(dto.ConditionId);
+        if (assetCondition == null)
+            return Result<AssetAssignmentResponseDto>.Failure($"Asset condition with ID {dto.ConditionId} does not exist", 400);
+
+        // Step 2: Validate that StatusId exists in AssetStatuses table
+        var statusId = GetStatusId(dto.Status);
+        var assetStatus = await _assetRepository.GetAssetStatusByIdAsync(statusId);
+        if (assetStatus == null)
+            return Result<AssetAssignmentResponseDto>.Failure($"Asset status '{dto.Status}' is not valid", 400);
+
+        // Step 3: Create new asset using AutoMapper
         var newAsset = _mapper.Map<Asset>(dto);
         newAsset.CreatedBy = createdBy;
+        newAsset.StatusId = statusId; // Ensure correct StatusId is set
 
         // Save the new asset
         await _assetRepository.Add(newAsset);

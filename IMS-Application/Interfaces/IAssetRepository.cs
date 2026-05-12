@@ -16,6 +16,8 @@ namespace IMS_Application.Interfaces
         Task AddHistoryAsync(AssetHistory history);
         Task<List<AssetHistory>> GetHistoryByAssetIdAsync(int assetId);
         Task<List<AssetHistory>> GetHistoryByAssetIdsAsync(List<int> assetIds);
+        Task<AssetCondition?> GetAssetConditionByIdAsync(int conditionId);
+        Task<AssetStatus?> GetAssetStatusByIdAsync(int statusId);
         Task Add(Asset asset);
         Task<IEnumerable<Asset>> GetAll();
         Task<Asset?> GetById(int id);

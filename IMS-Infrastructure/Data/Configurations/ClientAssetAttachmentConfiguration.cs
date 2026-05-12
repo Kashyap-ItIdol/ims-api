@@ -13,6 +13,7 @@ namespace IMS_Infrastructure.Data.Configurations
 
             // Primary key
             builder.HasKey(x => x.Id);
+            builder.Property(x => x.Id).ValueGeneratedOnAdd();
 
             // Properties
             builder.Property(x => x.FileName)

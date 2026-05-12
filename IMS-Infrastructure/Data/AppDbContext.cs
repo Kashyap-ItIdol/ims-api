@@ -26,15 +26,14 @@ namespace IMS_Infrastructure.Data
         public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; }
         public DbSet<TicketCommentLike> TicketCommentLikes { get; set; }
         public DbSet<TicketCommentReaction> TicketCommentReactions { get; set; }
-        public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; }
+        public DbSet<AssetAssignment> AssetAssignments { get; set; }
+        public DbSet<ClientAsset> ClientAssets { get; set; }
+        public DbSet<ClientAssetAttachment> ClientAssetAttachments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-        {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         }
-
     }
 }

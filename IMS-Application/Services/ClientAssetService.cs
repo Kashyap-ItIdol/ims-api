@@ -2,7 +2,7 @@ using AutoMapper;
 using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
-using IMS_Application.Extensions;
+using IMS_Application.Extentions;
 using IMS_Application.Interfaces;
 using IMS_Application.Services.Interfaces;
 using IMS_Domain.Entities;
@@ -31,11 +31,9 @@ namespace IMS_Application.Services
                 return Result<object>.Failure(ErrorMessages.ClientAssetRequired, 400);
 
             try
-            {
-                // Use AutoMapper to map DTO to entity
+            {                
                 var entity = _mapper.Map<ClientAsset>(dto);
                 entity.CreatedBy = userId;
-                
                 await _repository.AddAsync(entity);
                 await _repository.SaveChangesAsync();
                 
@@ -49,41 +47,43 @@ namespace IMS_Application.Services
             }
         }
 
-        public async Task<Result<IEnumerable<ClientAsset>>> GetAll()
+        public async Task<Result<IEnumerable<ClientAssetResponseDto>>> GetAll()
         {
             try
             {
                 var assets = await _repository.GetAllAsync();
-                return Result<IEnumerable<ClientAsset>>.Success(assets, SuccessMessages.ClientAssetsRetrieved);
+                var responseDtos = _mapper.Map<IEnumerable<ClientAssetResponseDto>>(assets);
+                return Result<IEnumerable<ClientAssetResponseDto>>.Success(responseDtos, SuccessMessages.ClientAssetsRetrieved);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving all client assets");
-                return Result<IEnumerable<ClientAsset>>.Failure(ErrorMessages.UnexpectedError, 500);
+                return Result<IEnumerable<ClientAssetResponseDto>>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
-        public async Task<Result<ClientAsset?>> GetById(int id)
+        public async Task<Result<ClientAssetResponseDto>> GetById(int id)
         {
             try
             {
                 if (id <= 0)
-                    return Result<ClientAsset?>.Failure(ErrorMessages.InvalidClientAssetId, 400);
+                    return Result<ClientAssetResponseDto>.Failure(ErrorMessages.InvalidClientAssetId, 400);
 
                 var asset = await _repository.GetByIdAsync(id);
                 if (asset == null)
-                    return Result<ClientAsset?>.Failure(ErrorMessages.ClientAssetNotFound, 404);
+                    return Result<ClientAssetResponseDto>.Failure(ErrorMessages.ClientAssetNotFound, 404);
 
-                return Result<ClientAsset?>.Success(asset, SuccessMessages.ClientAssetRetrieved);
+                var responseDto = _mapper.Map<ClientAssetResponseDto>(asset);
+                return Result<ClientAssetResponseDto>.Success(responseDto, SuccessMessages.ClientAssetRetrieved);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving client asset with ID: {Id}", id);
-                return Result<ClientAsset?>.Failure(ErrorMessages.UnexpectedError, 500);
+                return Result<ClientAssetResponseDto>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
-        public async Task<Result<bool>> QuickUpdate(int id, EditClientAssetQuickDto dto)
+        public async Task<Result<bool>> QuickUpdate(int id, EditClientAssetQuickDto dto, int userId)
         {
             try
             {
@@ -101,6 +101,7 @@ namespace IMS_Application.Services
                     asset.SerialNumber = dto.SerialNumber;
 
                 asset.UpdatedAt = DateTime.UtcNow;
+                asset.UpdatedBy = userId;
 
                 var result = await _repository.UpdateAsync(asset);
 
@@ -116,7 +117,7 @@ namespace IMS_Application.Services
             }
         }
 
-        public async Task<Result<bool>> FullUpdate(int id, EditClientAssetFullDto dto)
+        public async Task<Result<bool>> FullUpdate(int id, EditClientAssetFullDto dto, int userId)
         {
             try
             {
@@ -129,6 +130,7 @@ namespace IMS_Application.Services
 
                 _mapper.Map(dto, asset);
                 asset.UpdatedAt = DateTime.UtcNow;
+                asset.UpdatedBy = userId;
 
                 var result = await _repository.UpdateAsync(asset);
                 
@@ -151,11 +153,15 @@ namespace IMS_Application.Services
                 if (id <= 0)
                     return Result<bool>.Failure(ErrorMessages.InvalidClientAssetId, 400);
 
-                var exists = await _repository.ExistsAsync(id);
-                if (!exists)
+                var asset = await _repository.GetByIdAsync(id);
+                if (asset == null)
                     return Result<bool>.Failure(ErrorMessages.ClientAssetNotFound, 404);
 
-                var result = await _repository.DeleteAsync(id);
+               
+                asset.IsDeleted = true;
+                asset.DeletedAt = DateTime.UtcNow;
+
+                var result = await _repository.UpdateAsync(asset);
                 
                 if (result)
                     return Result<bool>.Success(true, SuccessMessages.ClientAssetDeleted);
@@ -199,6 +205,7 @@ namespace IMS_Application.Services
                 };
 
                 await _repository.AddAttachmentAsync(attachment);
+                await _repository.SaveChangesAsync();
                 var responseDto = _mapper.Map<AttachmentResponseDto>(attachment);
                 
                 return Result<AttachmentResponseDto>.Success(responseDto, SuccessMessages.AttachmentUploaded);
@@ -258,7 +265,7 @@ namespace IMS_Application.Services
                     return Result<(byte[], string, string)>.Failure(ErrorMessages.FileNotFound, 404);
 
                 var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
-                var contentType = FileHelperExtensions.GetContentType(attachment.FileName);
+                var contentType = FileHelperExtentions.GetContentType(attachment.FileName);
 
                 return Result<(byte[], string, string)>.Success((fileBytes, contentType, attachment.FileName), SuccessMessages.FileDownloaded);
             }

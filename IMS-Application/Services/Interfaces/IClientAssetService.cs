@@ -8,10 +8,10 @@ namespace IMS_Application.Services.Interfaces
     public interface IClientAssetService
     {
         Task<Result<object>> Add(CreateClientAssetDto dto, int userId);
-        Task<Result<IEnumerable<ClientAsset>>> GetAll();
-        Task<Result<ClientAsset?>> GetById(int id);
-        Task<Result<bool>> QuickUpdate(int id, EditClientAssetQuickDto dto);
-        Task<Result<bool>> FullUpdate(int id, EditClientAssetFullDto dto);
+        Task<Result<IEnumerable<ClientAssetResponseDto>>> GetAll();
+        Task<Result<ClientAssetResponseDto>> GetById(int id);
+        Task<Result<bool>> QuickUpdate(int id, EditClientAssetQuickDto dto, int userId);
+        Task<Result<bool>> FullUpdate(int id, EditClientAssetFullDto dto, int userId);
         Task<Result<bool>> Delete(int id);
         Task<IEnumerable<ClientAsset>> FilterAsync(ClientAssetFilterDto filter);
         

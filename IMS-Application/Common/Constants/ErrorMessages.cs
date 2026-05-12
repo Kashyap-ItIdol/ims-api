@@ -24,7 +24,6 @@ namespace IMS_Application.Common.Constants
         public const string VendorRequired = "Vendor is required";
         public const string PurchaseCostInvalid = "PurchaseCost must be greater than 0";
         public const string PurchaseDateRequired = "PurchaseDate is required";
-
         public const string AssignedAssetMustBeAssigned = "Assigned asset must have status = Assigned";
         public const string ExpectedReturnDateBeforeAssignedDate = "ExpectedReturnDate cannot be before AssignedDate";
         public const string SerialAlreadyExistsFormatted = "Serial number already exists";
@@ -41,7 +40,6 @@ namespace IMS_Application.Common.Constants
         public const string InvalidChildAsset = "Invalid child asset";
         public const string InvoiceNumberRequired = "Invoice Number is Required";
         public const string LocationRequired = "Location Required";
-
         public const string InvalidSerialFormat = "Serial number must be 5-20 alphanumeric characters (A-Z0-9-).";
         public const string InvalidPurchaseDate = "Purchase date must be a valid date not in the future.";
         public const string InvalidPurchaseCost = "Purchase cost must be greater than 0 and <= 1,000,000.";
@@ -50,7 +48,6 @@ namespace IMS_Application.Common.Constants
         public const string InvalidTableNo = "Table number must be alphanumeric (A-Z0-9).";
         public const string InvalidIpAddress = "Invalid IP address format.";
         public const string ValidationFailed = "Validation failed. Please check the errors.";
-
         public const string OnlyUnassignedAssetsCanBeAttached = "Only unassigned assets can be attached";
         public const string CannotAssignAdminRole = "Cannot assign Admin role";
         public const string OnlyEmployeeOrSupportCanUpdate = "Only Employee or Support Engineer can be updated";
@@ -82,23 +79,16 @@ namespace IMS_Application.Common.Constants
         public const string SubCategoryCategoryIdInvalid = "Valid CategoryId is required.";
         public const string SubCategoryCategoryNotFound = "Category not found or inactive.";
         public const string DuplicateSubCategoryName = "SubCategory with this name already exists in the category.";
-
         public const string InvalidTicketAssignee = "Assigned user must be a Support Engineer.";
         public const string InvalidTicketStatus = "Invalid status value. Valid values are: Open, InProgress, Solved, Closed.";
         public const string SubCategoryInvalidUser = "Invalid user.";
-        
-        // Asset Assignment Error Messages
         public const string AssetAssignmentNotFound = "Asset assignment not found";
         public const string AssetAssignmentRequired = "Asset assignment data is required";
-        public const string AssetNotFound = "Asset not found";
         public const string EmployeeNotFound = "Employee not found";
         public const string AssetAlreadyAssigned = "Asset is already assigned";
         public const string InvalidAssetAssignmentId = "Invalid asset assignment ID";
         public const string AssetAssignmentDateInvalid = "Assignment date cannot be more than 7 days in the future";
-        public const string ReturnDateInvalid = "Expected return date must be on or after assigned date";
-        
-        // Client Asset Error Messages
-        public const string ClientAssetNotFound = "Client asset not found";
+        public const string ReturnDateInvalid = "Expected return date must be on or after assigned date";        public const string ClientAssetNotFound = "Client asset not found";
         public const string ClientAssetRequired = "Client asset data is required";
         public const string InvalidClientAssetId = "Invalid client asset ID";
         public const string ClientAssetNameRequired = "Client asset name is required";
@@ -109,8 +99,6 @@ namespace IMS_Application.Common.Constants
         public const string ClientAssetClientNameRequired = "Client name is required";
         public const string ClientAssetClientPOCRequired = "Client POC is required";
         public const string ClientAssetSalesPOCRequired = "Sales POC is required";
-        
-        // Attachment Error Messages
         public const string AttachmentNotFound = "Attachment not found";
         public const string AttachmentRequired = "Attachment file is required";
         public const string AttachmentUploadFailed = "Failed to upload attachment";
@@ -119,7 +107,6 @@ namespace IMS_Application.Common.Constants
         public const string FileNotFound = "File not found";
         public const string InvalidFileFormat = "Invalid file format";
         public const string FileSizeExceeded = "File size exceeds limit";
-
         public const string ForgotPasswordUserNotFound = "User not found with this email address";
         public const string OtpSendFailed = "Failed to send OTP. Please try again.";
         public const string InvalidOrExpiredOtp = "Invalid or expired OTP";
@@ -136,9 +123,7 @@ namespace IMS_Application.Common.Constants
         public const string CommentAlreadyLiked = "Comment already liked by user.";
         public const string InvalidPagination = "pageNumber and pageSize must be greater than 0.";
         public const string InvalidDateFilter = "Invalid date filter. Valid values: today, yesterday, lastWeek, lastMonth, all.";
-
         public const string UserLocationAlreadyAssigned = "User already belongs to location '{0}'. Location cannot be changed.";
-
         public const string UserTableAlreadyAssigned = "User already has table number '{0}'. Table number cannot be changed.";
 
     }

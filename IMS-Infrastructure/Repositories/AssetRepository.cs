@@ -13,16 +13,24 @@ namespace IMS_Infrastructure.Repositories
         }
 
         public async Task Add(Asset asset)
-        public async Task AddRangeAsync(List<Asset> assets)
         {
             await AddAsync(asset);
+        }
+        public async Task AddRangeAsync(List<Asset> assets)
+        {
             await _dbSet.AddRangeAsync(assets);
         }
 
         public async Task<IEnumerable<Asset>> GetAll()
-        public async Task<bool> SerialExistsAsync(string serialNo)
         {
             return await _context.Assets
+                .AsNoTracking()
+                .Where(a => a.IsActive)
+                .ToListAsync();
+        }
+
+        public async Task<bool> SerialExistsAsync(string serialNo)
+        {
             return await _dbSet
                 .AsNoTracking()
                 .AnyAsync(x => x.SerialNo == serialNo && x.IsActive);
@@ -36,6 +44,7 @@ namespace IMS_Infrastructure.Repositories
                 .Include(a => a.ChildAssets.Where(c => c.IsActive))
                 .ToListAsync();
         }
+
         public async Task<Asset?> GetByIdAsync(int id)
         {
             return await _dbSet
@@ -47,29 +56,33 @@ namespace IMS_Infrastructure.Repositories
                 .Include(a => a.AssetStatus)
                 .Include(a => a.Category)
                 .Include(a => a.SubCategory)
-                .Where(a => !a.IsDeleted)
+                .Where(a => !a.IsActive)
                 .Include(a => a.AssetCondition)
                 .Include(a => a.AssignedUser)
                     .ThenInclude(u => u.Department)
                 .Include(a => a.ChildAssets.Where(c => c.IsActive))
                 .FirstOrDefaultAsync(a => a.Id == id && a.IsActive);
         }
+
         public async Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId)
         {
             return await _dbSet
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.AssignedTo == userId && x.ParentAssetId == null && x.IsActive);
         }
+
         public async Task<bool> SerialExistsAsync(string serialNo, int excludeId)
         {
             return await _dbSet
                 .AsNoTracking()
                 .AnyAsync(x => x.SerialNo == serialNo && x.Id != excludeId && x.IsActive);
         }
+
         public async Task AddHistoryAsync(AssetHistory history)
         {
             await _context.Set<AssetHistory>().AddAsync(history);
         }
+
         public async Task<List<AssetHistory>> GetHistoryByAssetIdAsync(int assetId)
         {
             return await _context.Set<AssetHistory>()
@@ -80,7 +93,6 @@ namespace IMS_Infrastructure.Repositories
         }
 
         public async Task<Asset?> GetById(int id)
-        public async Task<List<AssetHistory>> GetHistoryByAssetIdsAsync(List<int> assetIds)
         {
             if (id <= 0)
                 return null;
@@ -88,7 +100,11 @@ namespace IMS_Infrastructure.Repositories
             return await _context.Assets
                 .Include(x => x.Category)
                 .Include(x => x.SubCategory)
-                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+                .FirstOrDefaultAsync(x => x.Id == id && !x.IsActive);
+        }
+
+        public async Task<List<AssetHistory>> GetHistoryByAssetIdsAsync(List<int> assetIds)
+        {
             return await _context.Set<AssetHistory>()
                 .AsNoTracking()
                 .Where(x => assetIds.Contains(x.AssetId))
@@ -96,6 +112,21 @@ namespace IMS_Infrastructure.Repositories
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
+
+        public async Task<IMS_Domain.Entities.AssetCondition?> GetAssetConditionByIdAsync(int conditionId)
+        {
+            return await _context.Set<IMS_Domain.Entities.AssetCondition>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == conditionId);
+        }
+
+        public async Task<IMS_Domain.Entities.AssetStatus?> GetAssetStatusByIdAsync(int statusId)
+        {
+            return await _context.Set<IMS_Domain.Entities.AssetStatus>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == statusId);
+        }
+
         public async Task<List<Asset>> FilterAsync(AssetFilterDto dto)
         {
             var query = _dbSet
@@ -106,7 +137,6 @@ namespace IMS_Infrastructure.Repositories
                 .Include(a => a.AssignedUser)
                 .Where(a => a.IsActive);
 
-        public new async Task Update(Asset asset)
             if (dto.CategoryIds?.Any() == true)
                 query = query.Where(a => dto.CategoryIds.Contains(a.CategoryId));
 
@@ -118,16 +148,10 @@ namespace IMS_Infrastructure.Repositories
 
             if (!string.IsNullOrWhiteSpace(dto.Search) && !string.IsNullOrWhiteSpace(dto.SearchType))
             {
-            base.Update(asset);
-            await Task.CompletedTask;
-        }
                 var search = dto.Search;
 
-        public async Task Delete(Asset asset)
                 switch (dto.SearchType.ToLower())
                 {
-            Remove(asset);
-            await Task.CompletedTask;
                     case "category":
                         query = query.Where(a => EF.Functions.Like(a.Category.Name, $"%{search}%"));
                         break;
@@ -142,10 +166,24 @@ namespace IMS_Infrastructure.Repositories
                 }
             }
 
+            return await query.ToListAsync();
+        }
+
+        public new async Task Update(Asset asset)
+        {
+            base.Update(asset);
+            await Task.CompletedTask;
+        }
+
+        public async Task Delete(Asset asset)
+        {
+            Remove(asset);
+            await Task.CompletedTask;
+        }
+
         public async Task Save()
         {
             await _context.SaveChangesAsync();
-            return await query.ToListAsync();
         }
     }
 }

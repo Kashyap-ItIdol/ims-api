@@ -142,6 +142,7 @@ namespace IMS_Infrastructure.Repositories
             attachment.DeletedAt = DateTime.UtcNow;
             
             _context.ClientAssetAttachments.Update(attachment);
+            await _context.SaveChangesAsync();
         }
 
         public async Task SaveChangesAsync()

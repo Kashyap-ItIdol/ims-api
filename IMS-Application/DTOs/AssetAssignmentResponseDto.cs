@@ -2,9 +2,9 @@
 
 public class AssetAssignmentResponseDto
 {
-    public Guid Id { get; set; }
-    public Guid AssetId { get; set; }   
-    public Guid EmployeeId { get; set; }
+    public int Id { get; set; }
+    public int AssetId { get; set; }   
+    public int EmployeeId { get; set; }
 
     public DateTime AssignedDate { get; set; }
     public DateTime? ExpectedReturnDate { get; set; }

@@ -40,10 +40,13 @@ namespace IMS_Infrastructure.Repositories
         public INetworkDetailsRepository NetworkDetails =>
             _networkDetails ??= new NetworkDetailsRepository(_context);
 
-        public UnitOfWork(AppDbContext context)
-        {
-            _context = context;
-        }
+        private IClientAssetRepository? _clientAssets;
+        public IClientAssetRepository ClientAssets =>
+            _clientAssets ??= new ClientAssetRepository(_context);
+
+        private IAssetAssignmentRepository? _assetAssignments;
+        public IAssetAssignmentRepository AssetAssignments =>
+            _assetAssignments ??= new AssetAssignmentRepository(_context);
 
         public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {

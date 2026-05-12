@@ -30,9 +30,22 @@ namespace IMS_Application.Validators
             RuleFor(x => x.SerialNumber)
                 .MaximumLength(50).WithMessage("Serial number cannot exceed 50 characters");
 
-            RuleFor(x => x.Condition)
+            RuleFor(x => x.InvoiceNumber)
+                .NotEmpty().WithMessage("Invoice number is required")
+                .MaximumLength(100).WithMessage("Invoice number cannot exceed 100 characters");
+
+            RuleFor(x => x.Vendor)
+                .NotEmpty().WithMessage("Vendor is required")
+                .MaximumLength(100).WithMessage("Vendor cannot exceed 100 characters");
+
+            RuleFor(x => x.ConditionId)
                 .NotEmpty().WithMessage("Condition is required")
-                .MaximumLength(50).WithMessage("Condition cannot exceed 50 characters");
+                .GreaterThan(0).WithMessage("Condition ID must be greater than 0");
+
+            RuleFor(x => x.Status)
+                .NotEmpty().WithMessage("Status is required")
+                .Must(status => status.ToLower() == "active" || status.ToLower() == "inactive" || status.ToLower() == "assigned")
+                .WithMessage("Status must be either 'Active', 'Inactive', or 'Assigned'");
 
             RuleFor(x => x.ClientPOC)
                 .NotEmpty().WithMessage("Client POC is required")

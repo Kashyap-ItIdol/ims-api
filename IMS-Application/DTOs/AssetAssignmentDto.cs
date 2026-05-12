@@ -1,31 +1,22 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿namespace IMS_Application.DTOs;
 
-namespace IMS_Application.DTOs;
 
-namespace IMS_Application.DTOs
-{
     public class AssetAssignmentDto
     {
-    [Required(ErrorMessage = "Asset ID is required")]
-    public int AssetId { get; set; }
+        public int AssetId { get; set; }
 
-    [Required(ErrorMessage = "Employee ID is required")]
-    public int EmployeeId { get; set; }
+        public int EmployeeId { get; set; }
 
-    [Required(ErrorMessage = "Assigned date is required")]
-    public DateTime AssignedDate { get; set; }
+        public DateTime AssignedDate { get; set; }
 
-    [Required(ErrorMessage = "Expected return date is required")]
-    public DateTime? ExpectedReturnDate { get; set; }
+        public DateTime? ExpectedReturnDate { get; set; }
 
-    [StringLength(20, ErrorMessage = "Office number cannot exceed 20 characters")]
         public string? AssignedTo { get; set; }
         public int? UserId { get; set; }
         public string? Department { get; set; }
         public DateTime? AssignDate { get; set; }
         public string? OfficeNo { get; set; }
 
-    [StringLength(20, ErrorMessage = "Table number cannot exceed 20 characters")]
         public string? TableNo { get; set; }
         public NetworkDetailsDto? Network { get; set; }
         public List<AssetHistoryDto> History { get; set; } = new();

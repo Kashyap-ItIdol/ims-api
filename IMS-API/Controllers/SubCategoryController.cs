@@ -33,9 +33,9 @@ namespace IMS_API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(int categoryId)
         {
-            var result = await _subCategoryService.GetAllSubCategoriesAsync();
+            var result = await _subCategoryService.GetSubCategoriesByCategoryIdAsync(categoryId);
             return FromResult(result);
         }
 

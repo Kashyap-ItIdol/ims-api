@@ -61,7 +61,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userResult);
             }
-            var result = await _service.QuickUpdate(id, dto);
+            var result = await _service.QuickUpdate(id, dto, userResult.Data);
             return FromResult(result);
         }
 
@@ -76,7 +76,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userResult);
             }
-            var result = await _service.FullUpdate(id, dto);
+            var result = await _service.FullUpdate(id, dto, userResult.Data);
             return FromResult(result);
         }
 
@@ -99,16 +99,22 @@ namespace IMS_API.Controllers
             return FromResult(Result<IEnumerable<ClientAsset>>.Success(result));
         }
 
-        [HttpPost("{id}/attachments/upload")]
+        [HttpPost("{id}/attachments")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadAttachment(int id, [FromForm] IFormFile file)
+        public async Task<IActionResult> UploadAttachment(int id, [FromForm] UploadAttachmentRequest request)
         {
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
             {
                 return FromResult(userResult);
             }
-            var result = await _service.UploadAttachmentAsync(id, file, userResult.Data);
+            
+            if (request.File == null || request.File.Length == 0)
+            {
+                return BadRequest("No file uploaded or file is empty.");
+            }
+            
+            var result = await _service.UploadAttachmentAsync(id, request.File, userResult.Data);
             return FromResult(result);
         }
 

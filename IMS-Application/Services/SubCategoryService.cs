@@ -101,6 +101,26 @@ namespace IMS_Application.Services
             }
         }
 
+        public async Task<Result<List<DTOs.SubCategory.SubCategoryDto>>> GetSubCategoriesByCategoryIdAsync(int categoryId)
+        {
+            try
+            {
+                if (categoryId <= 0)
+                {
+                    return Result<List<DTOs.SubCategory.SubCategoryDto>>.Failure("Invalid category ID", 400);
+                }
+
+                var subCategories = await _unitOfWork.SubCategories.GetByCategoryIdAsync(categoryId);
+                var subCategoryDtos = _mapper.Map<List<DTOs.SubCategory.SubCategoryDto>>(subCategories);
+                return Result<List<DTOs.SubCategory.SubCategoryDto>>.Success(subCategoryDtos, "Sub-categories retrieved successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving sub categories for category {CategoryId}", categoryId);
+                return Result<List<DTOs.SubCategory.SubCategoryDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+        }
+
         public async Task<Result<DTOs.SubCategory.SubCategoryDto>> UpdateSubCategoryAsync(int id, UpdateSubCategoryDto request, int updatedBy)
         {
             try
