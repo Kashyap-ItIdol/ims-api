@@ -112,7 +112,6 @@ namespace IMS_Application.Common.Constants
         public const string AttachmentUploadFailed = "Failed to upload attachment";
         public const string AttachmentDeleteFailed = "Failed to delete attachment";
         public const string AttachmentDownloadFailed = "Failed to download attachment";
-        public const string FileNotFound = "File not found";
         public const string InvalidFileFormat = "Invalid file format";
         public const string FileSizeExceeded = "File size exceeds limit";
         public const string ForgotPasswordUserNotFound = "User not found with this email address";

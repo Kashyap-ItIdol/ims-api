@@ -30,7 +30,7 @@ try
     ConfigureAuthentication(builder.Services, builder.Configuration);
 
     var app = builder.Build();
-    
+
     ConfigureMiddleware(app);
     InitializeDatabase(app);
 
@@ -47,10 +47,11 @@ finally
 
 static void ConfigureBuilder(WebApplicationBuilder builder)
 {
-    builder.Host.UseSerilog((context, services, configuration) => configuration
-        .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services)
-        .Enrich.FromLogContext());
+    builder.Host.UseSerilog((context, services, configuration) =>
+        configuration
+            .ReadFrom.Configuration(context.Configuration)
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext());
 }
 
 static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
@@ -59,13 +60,14 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     ConfigureSwagger(services);
     ConfigureControllers(services);
     ConfigureAutoMapper(services);
-    
+
     services.AddApplication();
     services.AddInfrastructure(configuration);
     services.AddValidation();
     services.AddProblemDetails();
     services.AddExceptionHandler<GlobalExceptionHandler>();
 }
+
 static void ConfigureSwagger(IServiceCollection services)
 {
     services.AddSwaggerGen(options =>
@@ -95,7 +97,6 @@ static void ConfigureSwagger(IServiceCollection services)
             }
         });
 
-        // Add support for file uploads
         options.OperationFilter<FileUploadOperationFilter>();
     });
 }
@@ -105,7 +106,8 @@ static void ConfigureControllers(IServiceCollection services)
     services.AddControllers()
         .AddJsonOptions(options =>
         {
-            options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+            options.JsonSerializerOptions.ReferenceHandler =
+                System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
             options.JsonSerializerOptions.WriteIndented = true;
         });
 
@@ -120,15 +122,13 @@ static void ConfigureControllers(IServiceCollection services)
                     kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
                 );
 
-            var response = new
+            return new BadRequestObjectResult(new
             {
                 success = false,
                 message = "Validation failed",
                 data = (object?)null,
-                errors = errors
-            };
-
-            return new BadRequestObjectResult(response);
+                errors
+            });
         };
     });
 }
@@ -203,15 +203,19 @@ static void ConfigureMiddleware(WebApplication app)
 {
     app.UseSerilogRequestLogging();
     app.UseExceptionHandler();
+
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "IMS API V1");
         c.RoutePrefix = string.Empty;
     });
+
     app.UseHttpsRedirection();
+
     app.UseAuthentication();
     app.UseAuthorization();
+
     app.MapControllers();
 }
 
@@ -219,7 +223,7 @@ static void InitializeDatabase(WebApplication app)
 {
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    
+
     try
     {
         context.Database.Migrate();
@@ -229,27 +233,4 @@ static void InitializeDatabase(WebApplication app)
     {
         Console.WriteLine($"Database migration error: {ex.Message}");
     }
-
-    // Seed email templates (temporarily disabled until EmailTemplates table exists)
-    // var emailTemplateRepository = scope.ServiceProvider.GetRequiredService<IEmailTemplateRepository>();
-    // await EmailTemplateSeeder.SeedAsync(emailTemplateRepository);
-
-app.UseHttpsRedirection();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.UseStaticFiles();
-
-app.MapControllers();
-
-    app.Run();
-}
-catch (Exception ex)
-{
-    Log.Fatal(ex, "IMS API terminated unexpectedly during startup");
-}
-finally
-{
-    Log.CloseAndFlush();
 }

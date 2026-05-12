@@ -125,7 +125,6 @@ namespace IMS_Application.Mappings
                 .ReverseMap();
 
             CreateMap<Category, GetCategoryDto>();
-            CreateMap<SubCategory, SubCategoryDto>();
             CreateMap<TicketComment, TicketCommentResponseDto>()
                .ForMember(dest => dest.ticketId, opt => opt.MapFrom(src => src.TicketId.ToString()))
                .ForMember(dest => dest.createdAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")))
