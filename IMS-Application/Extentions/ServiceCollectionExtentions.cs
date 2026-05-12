@@ -1,3 +1,4 @@
+using FluentValidation;
 using IMS_Application.Services;
 using IMS_Application.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,8 @@ namespace IMS_Application.Extentions
             services.AddScoped<ITicketService, TicketService>();
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<ISubCategoryService, SubCategoryService>();
+            services.AddScoped<IClientAssetService, ClientAssetService>();
+            services.AddScoped<IAssetAssignmentService, AssetAssignmentService>();
             services.AddScoped<IAssetService, AssetService>();
             services.AddScoped<IUserService, UserService>();
 

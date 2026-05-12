@@ -14,6 +14,8 @@ namespace IMS_Application.Interfaces
         ITicketRepository Tickets { get; }
         IAssetRepository Assets { get; }
         INetworkDetailsRepository NetworkDetails { get; }
+        IClientAssetRepository ClientAssets { get; }
+        IAssetAssignmentRepository AssetAssignments { get; }
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

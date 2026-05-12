@@ -1,4 +1,5 @@
 namespace IMS_Domain.Entities
+
 {
     public class SubCategory
     {

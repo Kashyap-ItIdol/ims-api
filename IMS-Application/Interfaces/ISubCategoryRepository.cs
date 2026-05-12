@@ -6,5 +6,6 @@ namespace IMS_Application.Interfaces
     {
         Task<SubCategory?> GetByNameAsync(string name);
         Task<SubCategory?> GetByCategoryIdAndNameAsync(int categoryId, string name);
+        Task<IEnumerable<SubCategory>> GetByCategoryIdAsync(int categoryId);
     }
 }
