@@ -4,6 +4,8 @@ namespace IMS_Application.DTOs
     {
         public TicketInfo ticket { get; set; } = new();
         public List<TicketCommentInfo> comments { get; set; } = new();
+        public List<TicketAttachmentInfo> attachments { get; set; } = new();
+
     }
 
     public class TicketInfo
@@ -19,8 +21,12 @@ namespace IMS_Application.DTOs
         public string assetId { get; set; } = string.Empty;
         public string categoryId { get; set; } = string.Empty;
         public string subCategoryId { get; set; } = string.Empty;
+
         public UserInfo createdBy { get; set; } = new();
         public UserInfo? assignedTo { get; set; }
+        public string? categoryName { get; set; }
+        public string? subCategoryName { get; set; }
+
     }
 
     public class UserInfo
@@ -39,5 +45,13 @@ namespace IMS_Application.DTOs
         public int? ParentCommentId { get; set; }
         public int LikeCount { get; set; }
         public List<CommentReactionResponseDto> Reactions { get; set; } = new();
+    }
+
+    public class TicketAttachmentInfo
+    {
+        public int Id { get; set; }
+        public int TicketId { get; set; }
+        public string FilePath { get; set; }
+        public DateTime UploadedAt { get; set; }
     }
 }

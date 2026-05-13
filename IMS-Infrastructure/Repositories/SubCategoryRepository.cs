@@ -24,5 +24,13 @@ namespace IMS_Infrastructure.Repositories
                 .AsNoTracking()
                 .FirstOrDefaultAsync(sc => sc.CategoryId == categoryId && sc.Name.ToLower() == name.ToLower());
         }
+
+        public async Task<IEnumerable<SubCategory>> GetByCategoryIdAsync(int categoryId)
+        {
+            return await _dbSet
+                .AsNoTracking()
+                .Where(sc => sc.CategoryId == categoryId)
+                .ToListAsync();
+        }
     }
 }

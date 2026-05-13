@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+﻿﻿using AutoMapper;
 using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace IMS_Application.Services
 {
-    public class AssetService : IAssetService
+       public class AssetService : IAssetService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
@@ -24,482 +24,174 @@ namespace IMS_Application.Services
             _settingRepository = settingRepository;
         }
 
-        public async Task<Result<string>> AddAssetsAsync(AddAssetDto dto, int createdBy)
+        public async Task<Result<AssetResponseDto>> Create(CreateAssetDto dto, int createdBy)
         {
-            var activitiesToInsert = new List<RecentActivity>();
             try
             {
-                var mainDto = dto.Assets.First(x => x.IsPrimary);
-                var serials = dto.Assets.Select(x => x.SerialNo).ToList();
+                var assetCondition = await _unitOfWork.Assets.GetAssetConditionByIdAsync(dto.ConditionId);
+                if (assetCondition == null)
+                    return Result<AssetResponseDto>.Failure($"Asset condition with ID {dto.ConditionId} does not exist", 400);
 
-                foreach (var serial in serials)
-                {
-                    if (await _unitOfWork.Assets.SerialExistsAsync(serial))
-                        return Result<string>.Failure(ErrorMessages.SerialAlreadyExistsFormatted, 400);
-                }
+                var asset = _mapper.Map<Asset>(dto);
+                asset.CreatedAt = DateTime.UtcNow;
+                asset.UpdatedAt = DateTime.UtcNow;
+                asset.CreatedBy = createdBy;
+                asset.UpdatedBy = createdBy;
+                asset.IsActive = true;
 
-                if (dto.AssignedTo.HasValue)
-                {
-                    var user = await _unitOfWork.Users.GetByIdAsync(dto.AssignedTo.Value);
-
-                    if (user == null)
-                        return Result<string>.Failure(
-                            string.Format(ErrorMessages.UserNotFoundById, dto.AssignedTo.Value),
-                            404);
-
-                    if (!string.IsNullOrWhiteSpace(user.TableNo))
-                    {
-                        if (!string.Equals(user.TableNo, dto.TableNo, StringComparison.OrdinalIgnoreCase))
-                        {
-                            return Result<string>.Failure(
-                                string.Format(ErrorMessages.UserTableAlreadyAssigned, user.TableNo),
-                                400);
-                        }
-                    }
-                    else
-                    {
-                        if (!string.IsNullOrWhiteSpace(dto.TableNo))
-                        {
-                            var isUsed = await _unitOfWork.Users.TableAlreadyAssignedAsync(dto.TableNo);
-
-                            if (isUsed)
-                            {
-                                return Result<string>.Failure(
-                                    string.Format(ErrorMessages.TableAlreadyAssignedToUser, dto.TableNo),
-                                    400);
-                            }
-
-                            user.TableNo = dto.TableNo;
-                        }
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(user.Location))
-                    {
-                        if (!string.Equals(user.Location, dto.Location, StringComparison.OrdinalIgnoreCase))
-                        {
-                            return Result<string>.Failure(
-                                string.Format(ErrorMessages.UserLocationAlreadyAssigned, user.Location),
-                                400);
-                        }
-                    }
-                    else
-                    {
-                        if (!string.IsNullOrWhiteSpace(dto.Location))
-                        {
-                            user.Location = dto.Location;
-                        }
-                    }
-
-                    dto.Location = user.Location;
-                    dto.TableNo = user.TableNo;
-                }
-
-                var mainAsset = _mapper.Map<Asset>(mainDto);
-
-                mainAsset.AssignedTo = dto.AssignedTo;
-                mainAsset.AssignDate = dto.AssignedTo.HasValue
-                    ? (dto.AssignedDate ?? DateTime.UtcNow)
-                    : null;
-
-                mainAsset.ExpectedReturnDate = dto.ExpectedReturnDate;
-                mainAsset.CreatedAt = DateTime.UtcNow;
-                mainAsset.UpdatedAt = DateTime.UtcNow;
-                mainAsset.CreatedBy = createdBy;
-                mainAsset.UpdatedBy = createdBy;
-
-                await _unitOfWork.Assets.AddRangeAsync(new List<Asset> { mainAsset });
+                await _unitOfWork.Assets.AddRangeAsync(new List<Asset> { asset });
                 await _unitOfWork.SaveChangesAsync();
 
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
-                    AssetId = mainAsset.Id,
+                    AssetId = asset.Id,
                     Action = LogicStrings.ActionCreated,
-                    Description =
-                        $"Asset {mainAsset.ItemName} created" +
-                        $"{(dto.AssignedTo.HasValue ? $" and assigned to user {dto.AssignedTo}" : "")}"
+                    Description = $"Asset {asset.ItemName} created"
                 });
 
-                activitiesToInsert.Add(new RecentActivity
+                await _settingRepository.AddRecentActivityAsync(new RecentActivity
                 {
-                    ItemId = mainAsset.Id,
+                    ItemId = asset.Id,
                     ItemName = LogicStrings.AssetItemName,
                     Action = LogicStrings.ActionCreated,
                     UserId = createdBy,
-                    Details = $"Asset {mainAsset.ItemName} created",
-                    DateTime = mainAsset.CreatedAt,
+                    Details = $"Asset {asset.ItemName} created",
+                    DateTime = DateTime.UtcNow,
                     IsDeleted = false
                 });
 
-                var childAssets = new List<Asset>();
-
-                foreach (var item in dto.Assets.Where(x => !x.IsPrimary))
-                {
-                    var asset = _mapper.Map<Asset>(item);
-
-                    asset.StatusId = mainAsset.StatusId;
-                    asset.AssignedTo = dto.AssignedTo;
-                    asset.AssignDate = mainAsset.AssignDate;
-                    asset.ExpectedReturnDate = dto.ExpectedReturnDate;
-                    asset.ParentAssetId = mainAsset.Id;
-                    asset.CreatedAt = DateTime.UtcNow;
-                    asset.UpdatedAt = DateTime.UtcNow;
-                    asset.CreatedBy = createdBy;
-                    asset.UpdatedBy = createdBy;
-
-                    if (item.IsPurchaseDetailsSame)
-                    {
-                        asset.Vendor = mainAsset.Vendor;
-                        asset.PurchaseCost = mainAsset.PurchaseCost;
-                        asset.PurchaseDate = mainAsset.PurchaseDate;
-                        asset.InvoiceNumber = mainAsset.InvoiceNumber;
-                    }
-
-                    childAssets.Add(asset);
-                }
-
-                if (childAssets.Any())
-                {
-                    await _unitOfWork.Assets.AddRangeAsync(childAssets);
-                    await _unitOfWork.SaveChangesAsync();
-
-                    foreach (var child in childAssets)
-                    {
-                        await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
-                        {
-                            AssetId = child.Id,
-                            Action = LogicStrings.ActionCreated,
-                            Description =
-                                $"Child asset {child.ItemName} created and attached to parent {mainAsset.ItemName}"
-                        });
-
-                        activitiesToInsert.Add(new RecentActivity
-                        {
-                            ItemId = child.Id,
-                            ItemName = LogicStrings.AssetItemName,
-                            Action = LogicStrings.ActionCreated,
-                            UserId = createdBy,
-                            Details = $"Child asset {child.ItemName} created and attached to parent {mainAsset.ItemName}",
-                            DateTime = child.CreatedAt,
-                            IsDeleted = false
-                        });
-                    }
-                }
-
-                if (dto.AssignedTo.HasValue)
-                {
-                    var assignedUserId = dto.AssignedTo.Value;
-
-                    activitiesToInsert.Add(new RecentActivity
-                    {
-                        ItemId = mainAsset.Id,
-                        ItemName = LogicStrings.AssetItemName,
-                        Action = LogicStrings.ActionAssigned,
-                        UserId = assignedUserId,
-                        Details = $"Asset {mainAsset.ItemName} assigned to user {assignedUserId}",
-                        DateTime = mainAsset.AssignDate ?? DateTime.UtcNow,
-                        IsDeleted = false
-                    });
-
-                    foreach (var child in childAssets)
-                    {
-                        activitiesToInsert.Add(new RecentActivity
-                        {
-                            ItemId = child.Id,
-                            ItemName = LogicStrings.AssetItemName,
-                            Action = LogicStrings.ActionAssigned,
-                            UserId = assignedUserId,
-                            Details = $"Asset {child.ItemName} assigned to user {assignedUserId}",
-                            DateTime = child.AssignDate ?? DateTime.UtcNow,
-                            IsDeleted = false
-                        });
-                    }
-                }
-
-                // Insert recent activity records once: Created + Assigned (when assigned during AddAssets)
-                foreach (var activity in activitiesToInsert)
-                    await _settingRepository.AddRecentActivityAsync(activity);
-
                 await _unitOfWork.SaveChangesAsync();
 
-                return Result<string>.Success(SuccessMessages.AssetsAddedSuccessfully);
+                return Result<AssetResponseDto>.Success(_mapper.Map<AssetResponseDto>(asset));
             }
-
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Unexpected error during adding assets");
-
-                return Result<string>.Failure(
-                    ErrorMessages.UnexpectedError,
-                    500);
+                _logger.LogError(ex, "Error creating asset");
+                return Result<AssetResponseDto>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
         public async Task<Result<List<AssetResponseDto>>> GetAllAssetsAsync()
         {
+            return await GetAll();
+        }
+        
+
+
+        public async Task<Result<List<AssetResponseDto>>> GetAll()
+        {
+
+
             try
             {
                 var assets = await _unitOfWork.Assets.GetAllAsync();
-                var parentAssets = assets.Where(a => a.ParentAssetId == null).ToList();
-                var result = _mapper.Map<List<AssetResponseDto>>(parentAssets);
+                var result = _mapper.Map<List<AssetResponseDto>>(assets);
 
                 foreach (var dto in result)
                 {
-                    var childAssets = assets.Where(x => x.ParentAssetId == dto!.Id).ToList();
-                    dto!.Children = _mapper.Map<List<AssetResponseDto>>(childAssets);
+                    var children = assets.Where(x => x.ParentAssetId == dto.Id).ToList();
+                    dto.Children = _mapper.Map<List<AssetResponseDto>>(children);
                 }
 
                 return Result<List<AssetResponseDto>>.Success(result);
             }
-
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Unexpected error during retrieving all assets");
+                _logger.LogError(ex, "Error fetching assets");
+                return Result<List<AssetResponseDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+        }
 
-                return Result<List<AssetResponseDto>>.Failure(
-                    ErrorMessages.UnexpectedError,
-                    500);
+        public async Task<Result<AssetResponseDto>> GetById(int id)
+        {
+            try
+            {
+                var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(id);
+                if (asset == null)
+                    return Result<AssetResponseDto>.Failure(ErrorMessages.AssetNotFound, 404);
+
+                var response = _mapper.Map<AssetResponseDto>(asset);
+                response.Children = _mapper.Map<List<AssetResponseDto>>(asset.ChildAssets?.Where(x => x.IsActive).ToList() ?? new List<Asset>());
+
+                return Result<AssetResponseDto>.Success(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching asset by id {AssetId}", id);
+                return Result<AssetResponseDto>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
         public async Task<Result<string>> UpdateAssetAsync(UpdateAssetDto dto, int updatedBy)
         {
+            return await Update(dto, updatedBy);
+        }
+
+        public async Task<Result<string>> Update(UpdateAssetDto dto, int updatedBy)
+        {
+
             try
             {
-                var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(dto.Id);
-
+                var asset = await _unitOfWork.Assets.GetByIdAsync(dto.Id);
                 if (asset == null)
                     return Result<string>.Failure(ErrorMessages.AssetNotFound, 404);
 
-                if (await _unitOfWork.Assets.SerialExistsAsync(dto.SerialNo, dto.Id))
-                    return Result<string>.Failure(ErrorMessages.SerialAlreadyExists, 400);
+                _mapper.Map(dto, asset);
+                asset.UpdatedAt = DateTime.UtcNow;
+                asset.UpdatedBy = updatedBy;
 
-                bool isParent = asset.ParentAssetId == null && asset.ChildAssets.Any();
-                bool isChild = asset.ParentAssetId != null;
-                if (dto.IsManualUnlink && isChild)
+                await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
-                    asset.ParentAssetId = null;
-                    asset.StatusId = 1;
-                    asset.AssignedTo = null;
-                    asset.AssignDate = null;
-                    asset.UpdatedAt = DateTime.UtcNow;
-                    asset.UpdatedBy = updatedBy;
+                    AssetId = asset.Id,
+                    Action = LogicStrings.ActionUpdated,
+                    Description = $"Asset {asset.ItemName} updated"
+                });
 
-                    await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
-                    {
-                        AssetId = asset.Id,
-                        Action = LogicStrings.ActionUnlinked,
-                        Description = $"Child asset {asset.ItemName} manually unlinked from parent"
-                    });
+                await _unitOfWork.SaveChangesAsync();
 
-                    await _unitOfWork.SaveChangesAsync();
-
-                    await _settingRepository.AddRecentActivityAsync(new RecentActivity
-                    {
-                        ItemId = asset.Id,
-                        ItemName = LogicStrings.AssetItemName,
-                        Action = LogicStrings.ActionUpdated,
-                        UserId = updatedBy,
-                        Details = $"Child asset {asset.ItemName} manually unlinked from parent",
-                        DateTime = asset.UpdatedAt ?? DateTime.UtcNow,
-                        IsDeleted = false
-                    });
-
-                    return Result<string>.Success(SuccessMessages.ChildUnlinkedSuccessfully);
-                }
-
-                if (dto.IsFromParentContext)
+                await _settingRepository.AddRecentActivityAsync(new RecentActivity
                 {
-                    if (isChild && dto.StatusId == 1)
-                    {
-                        asset.AssignedTo = null;
-                        asset.AssignDate = null;
-                        asset.UpdatedAt = DateTime.UtcNow;
-                        asset.UpdatedBy = updatedBy;
+                    ItemId = asset.Id,
+                    ItemName = LogicStrings.AssetItemName,
+                    Action = LogicStrings.ActionUpdated,
+                    UserId = updatedBy,
+                    Details = $"Asset {asset.ItemName} updated",
+                    DateTime = DateTime.UtcNow,
+                    IsDeleted = false
+                });
 
-                        await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
-                        {
-                            AssetId = asset.Id,
-                            Action = LogicStrings.ActionUpdated,
-                            Description = $"Child asset {asset.ItemName} marked as available"
+                await _unitOfWork.SaveChangesAsync();
 
-                        });
-
-                        await _unitOfWork.SaveChangesAsync();
-
-                        return Result<string>.Success(SuccessMessages.ChildMarkedAvailable);
-                    }
-
-                    if (isChild && dto.StatusId == 2)
-                    {
-                        var parent = await _unitOfWork.Assets.GetByIdAsync(asset.ParentAssetId!.Value);
-
-                        if (parent?.AssignedTo == null)
-                            return Result<string>.Failure(ErrorMessages.CannotAssignChildParentNotAssigned, 400);
-
-                        if (parent.AssignedTo != dto.AssignedTo)
-                            return Result<string>.Failure(ErrorMessages.ChildMustMatchParentAssignment, 400);
-                    }
-
-                    if (isParent)
-                    {
-                        if (asset.AssignedTo != dto.AssignedTo && dto.AssignedTo.HasValue)
-                        {
-                            foreach (var child in asset.ChildAssets)
-                            {
-                                child.ParentAssetId = null;
-                            }
-                        }
-
-                        if (dto.StatusId == 1)
-                        {
-                            asset.AssignedTo = null;
-                            asset.AssignDate = null;
-                        }
-                    }
-
-                    _mapper.Map(dto, asset);
-                    asset.StatusId = dto.StatusId;
-                    asset.AssignedTo = dto.AssignedTo;
-                    asset.AssignDate = dto.AssignedDate;
-                    asset.ExpectedReturnDate = dto.ExpectedReturnDate;
-                    asset.UpdatedAt = DateTime.UtcNow;
-                    asset.UpdatedBy = updatedBy;
-
-                    await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
-                    {
-                        AssetId = asset.Id,
-                        Action = LogicStrings.ActionUpdated,
-                        Description = $"Asset {asset.ItemName} updated from parent context"
-                    });
-
-                    await _unitOfWork.SaveChangesAsync();
-                    await _settingRepository.AddRecentActivityAsync(new RecentActivity
-                    {
-                        ItemId = asset.Id,
-                        ItemName = LogicStrings.AssetItemName,
-                        Action = LogicStrings.ActionUpdated,
-                        UserId = updatedBy,
-                        Details = $"Asset {asset.ItemName} updated from parent context",
-                        DateTime = asset.UpdatedAt ?? DateTime.UtcNow,
-                        IsDeleted = false
-                    });
-
-                    await _unitOfWork.SaveChangesAsync();
-
-                    return Result<string>.Success(SuccessMessages.AssetUpdatedSuccessfully);
-                }
-                else
-                {
-                    if (dto.StatusId == 2)
-                    {
-                        if (asset.StatusId != 1)
-                            return Result<string>.Failure(ErrorMessages.OnlyAvailableAssetsCanBeAssigned, 400);
-
-                        if (!dto.AssignedTo.HasValue)
-                            return Result<string>.Failure(ErrorMessages.AssignedToRequired, 400);
-
-                        if (isChild)
-                        {
-                            asset.ParentAssetId = null;
-                        }
-
-                        asset.AssignedTo = dto.AssignedTo;
-                        asset.AssignDate = dto.AssignedDate ?? DateTime.UtcNow;
-                        asset.StatusId = 2;
-                    }
-                    else
-                    {
-                        asset.StatusId = dto.StatusId;
-                        asset.AssignedTo = null;
-                        asset.AssignDate = null;
-                    }
-
-                    _mapper.Map(dto, asset);
-                    asset.UpdatedAt = DateTime.UtcNow;
-                    asset.UpdatedBy = updatedBy;
-
-                    await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
-                    {
-                        AssetId = asset.Id,
-                        Action = LogicStrings.ActionUpdated,
-                        Description = $"Asset {asset.ItemName} updated"
-                    });
-
-                    await _unitOfWork.SaveChangesAsync();
-
-                    await _settingRepository.AddRecentActivityAsync(new RecentActivity
-                    {
-                        ItemId = asset.Id,
-                        ItemName = LogicStrings.AssetItemName,
-                        Action = LogicStrings.ActionUpdated,
-                        UserId = updatedBy,
-                        Details = $"Asset {asset.ItemName} updated",
-                        DateTime = asset.UpdatedAt ?? DateTime.UtcNow,
-                        IsDeleted = false
-                    });
-
-                    return Result<string>.Success(SuccessMessages.AssetUpdatedSuccessfully);
-                }
+                return Result<string>.Success(SuccessMessages.AssetUpdatedSuccessfully);
             }
-
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Unexpected error during updating asset {AssetId}",
-                    dto.Id);
-
-                return Result<string>.Failure(
-                    ErrorMessages.UnexpectedError,
-                    500);
+                _logger.LogError(ex, "Error updating asset {AssetId}", dto.Id);
+                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
         public async Task<Result<string>> DeleteAssetAsync(int id, int deletedBy)
         {
+            var result = await Delete(id, deletedBy);
+            return result.IsSuccess
+                ? Result<string>.Success(SuccessMessages.AssetDeletedSuccessfully)
+                : Result<string>.Failure( ErrorMessages.AssetNotFound, 400);
+        }
+
+        public async Task<Result<AssetResponseDto>> Delete(int id, int deletedBy)
+        {
+
+
             try
             {
                 var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(id);
-
                 if (asset == null)
-                    return Result<string>.Failure(ErrorMessages.AssetNotFound, 404);
+                    return Result<AssetResponseDto>.Failure(ErrorMessages.AssetNotFound, 404);
 
-                bool isParent = asset.ParentAssetId == null;
-                bool isChild = asset.ParentAssetId != null;
-
-                if (isParent)
-                {
-                    if (asset.ChildAssets.Any())
-                    {
-                        foreach (var child in asset.ChildAssets)
-                        {
-                            child.ParentAssetId = null;
-
-                            await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
-                            {
-                                AssetId = child.Id,
-                                Action = LogicStrings.ActionDetached,
-                                Description = $"Child asset {child.ItemName} detached because parent {asset.ItemName} was deleted"
-
-                            });
-                        }
-                    }
-
-                    asset.IsActive = false;
-                    asset.DeletedAt = DateTime.UtcNow;
-                    asset.DeletedBy = deletedBy;
-                }
-
-                if (isChild)
-                {
-                    asset.ParentAssetId = null;
-                    asset.AssignedTo = null;
-                    asset.AssignDate = null;
-                    asset.IsActive = false;
-                    asset.DeletedAt = DateTime.UtcNow;
-                    asset.DeletedBy = deletedBy;
-                }
+                asset.IsActive = false;
+                asset.DeletedAt = DateTime.UtcNow;
+                asset.DeletedBy = deletedBy;
 
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
@@ -521,18 +213,15 @@ namespace IMS_Application.Services
 
                 await _unitOfWork.SaveChangesAsync();
 
-                return Result<string>.Success(SuccessMessages.AssetDeletedSuccessfully);
-            }
+                var response = _mapper.Map<AssetResponseDto>(asset);
+                response.Children = _mapper.Map<List<AssetResponseDto>>(asset.ChildAssets?.Where(x => x.IsActive).ToList() ?? new List<Asset>());
 
+                return Result<AssetResponseDto>.Success(response);
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Unexpected error during deleting asset {AssetId}",
-                    id);
-
-                return Result<string>.Failure(
-                    ErrorMessages.UnexpectedError,
-                    500);
+                _logger.LogError(ex, "Error deleting asset {AssetId}", id);
+                return Result<AssetResponseDto>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
@@ -541,19 +230,12 @@ namespace IMS_Application.Services
             try
             {
                 var users = await _unitOfWork.Users.GetUsersWithOpenTicketsAsync();
-                var result = _mapper.Map<List<UserDto>>(users);
-
-                return Result<List<UserDto>>.Success(result);
+                return Result<List<UserDto>>.Success(_mapper.Map<List<UserDto>>(users));
             }
-
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Unexpected error during retrieving suggested users");
-
-                return Result<List<UserDto>>.Failure(
-                    ErrorMessages.UnexpectedError,
-                    500);
+                _logger.LogError(ex, "Error fetching suggested users");
+                return Result<List<UserDto>>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
@@ -562,93 +244,143 @@ namespace IMS_Application.Services
             try
             {
                 var users = await _unitOfWork.Users.SearchAsync(query);
-                var result = _mapper.Map<List<UserDto>>(users);
-
-                return Result<List<UserDto>>.Success(result);
+                return Result<List<UserDto>>.Success(_mapper.Map<List<UserDto>>(users));
             }
-
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Unexpected error during searching users with query {Query}",
-                    query);
-
-                return Result<List<UserDto>>.Failure(
-                    ErrorMessages.UnexpectedError,
-                    500);
+                _logger.LogError(ex, "Error searching users");
+                return Result<List<UserDto>>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
         public async Task<Result<string>> AssignAssetAsync(AssignAssetDto dto)
         {
+            if (dto == null)
+                return Result<string>.Failure(ErrorMessages.UnexpectedError, 400);
+            var asset = await _unitOfWork.Assets.GetByIdAsync(dto.AssetId);
+            if (asset == null)
+                return Result<string>.Failure(ErrorMessages.AssetNotFound, 404);
+
+            asset.AssignedTo = dto.UserId;
+            asset.AssignDate = dto.AssignedDate;
+            asset.ExpectedReturnDate = dto.ExpectedReturnDate;
+            asset.Notes = dto.Location;
+            asset.UpdatedAt = DateTime.UtcNow;
+            asset.UpdatedBy = dto.UserId;
+
+            await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
+            {
+                AssetId = asset.Id,
+                Action = LogicStrings.ActionAssigned,
+                Description = $"Asset {asset.ItemName} assigned"
+            });
+
+            await _unitOfWork.SaveChangesAsync();
+
+            await _settingRepository.AddRecentActivityAsync(new RecentActivity
+            {
+                ItemId = asset.Id,
+                ItemName = LogicStrings.AssetItemName,
+                Action = LogicStrings.ActionAssigned,
+                UserId = dto.UserId,
+                Details = $"Asset {asset.ItemName} assigned",
+                DateTime = DateTime.UtcNow,
+                IsDeleted = false
+            });
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result<string>.Success(SuccessMessages.AssetAssignedSuccessfully);
+        }
+
+        public async Task<Result<string>> AddAssetsAsync(AddAssetDto dto, int createdBy)
+
+        {
             try
             {
-                var asset = await _unitOfWork.Assets.GetByIdAsync(dto.AssetId);
+                if (dto?.Assets == null || !dto.Assets.Any())
+                    return Result<string>.Failure("No assets provided", 400);
 
-                if (asset == null)
-                    return Result<string>.Failure(ErrorMessages.AssetNotFound, 404);
+                var assets = new List<Asset>();
+                var now = DateTime.UtcNow;
 
-                if (asset.StatusId != 1)
-                    return Result<string>.Failure(ErrorMessages.OnlyAvailableAssetsCanBeAssigned, 400);
-
-                var user = await _unitOfWork.Users.GetByIdAsync(dto.UserId);
-
-                if (user == null)
-                    return Result<string>.Failure(ErrorMessages.UserNotFound, 404);
-
-                if (!string.IsNullOrEmpty(dto.TableNo))
+                foreach (var assetItem in dto.Assets)
                 {
-                    var isTableUsed = await _unitOfWork.Users.TableAlreadyAssignedAsync(dto.TableNo);
+                    var assetCondition = await _unitOfWork.Assets.GetAssetConditionByIdAsync(assetItem.ConditionId);
+                    if (assetCondition == null)
+                        return Result<string>.Failure($"Asset condition with ID {assetItem.ConditionId} does not exist for asset {assetItem.ItemName}", 400);
 
-                    if (isTableUsed)
-                        return Result<string>.Failure(string.Format(ErrorMessages.TableAlreadyAssignedShort, dto.TableNo), 400);
+                    var asset = _mapper.Map<Asset>(assetItem);
+                    asset.CreatedBy = createdBy;
+                    asset.CreatedAt = now;
+                    asset.UpdatedAt = now;
+                    asset.UpdatedBy = createdBy;
+                    asset.IsActive = true;
 
-                    user.TableNo = dto.TableNo;
+                    asset.AssignedTo = dto.AssignedTo;
+                    asset.AssignDate = dto.AssignedDate ?? now;
+                    asset.ExpectedReturnDate = dto.ExpectedReturnDate;
+                    asset.Notes = dto.Location;
+
+                    assets.Add(asset);
                 }
 
-                if (!string.IsNullOrEmpty(dto.Location))
-                    user.Location = dto.Location;
+                await _unitOfWork.Assets.AddRangeAsync(assets);
+                await _unitOfWork.SaveChangesAsync();
 
-                asset.AssignedTo = dto.UserId;
-                asset.AssignDate = dto.AssignedDate;
-                asset.ExpectedReturnDate = dto.ExpectedReturnDate;
-                asset.StatusId = 2;
-
-                await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
+                // Add history + recent activities for each created asset (and optional assignment)
+                foreach (var asset in assets)
                 {
-                    AssetId = asset.Id,
-                    Action = LogicStrings.ActionAssigned,
-                    Description = $"Asset {asset.ItemName} assigned to user {user.FullName}"
-                });
+                    await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
+                    {
+                        AssetId = asset.Id,
+                        Action = LogicStrings.ActionCreated,
+                        Description = $"Asset {asset.ItemName} created",
+                        CreatedBy = createdBy
+                    });
+
+                    await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                    {
+                        ItemId = asset.Id,
+                        ItemName = LogicStrings.AssetItemName,
+                        Action = LogicStrings.ActionCreated,
+                        UserId = createdBy,
+                        Details = $"Asset {asset.ItemName} created",
+                        DateTime = DateTime.UtcNow,
+                        IsDeleted = false
+                    });
+
+                    if (dto.AssignedTo.HasValue)
+                    {
+                        await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
+                        {
+                            AssetId = asset.Id,
+                            Action = LogicStrings.ActionAssigned,
+                            Description = $"Asset {asset.ItemName} assigned",
+                            CreatedBy = dto.AssignedTo.Value
+                        });
+
+                        await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                        {
+                            ItemId = asset.Id,
+                            ItemName = LogicStrings.AssetItemName,
+                            Action = LogicStrings.ActionAssigned,
+                            UserId = dto.AssignedTo.Value,
+                            Details = $"Asset {asset.ItemName} assigned",
+                            DateTime = DateTime.UtcNow,
+                            IsDeleted = false
+                        });
+                    }
+                }
 
                 await _unitOfWork.SaveChangesAsync();
 
-                // Insert recent activity record for asset assignment
-                await _settingRepository.AddRecentActivityAsync(new RecentActivity
-                {
-                    ItemId = asset.Id,
-                    ItemName = LogicStrings.AssetItemName,
-                    Action = LogicStrings.ActionAssigned,
-                    UserId = user.Id,
-                    Details = $"Asset {asset.ItemName} assigned to user {user.FullName}",
-                    DateTime = asset.AssignDate ?? DateTime.UtcNow,
-                    IsDeleted = false
-                });
-
-                await _unitOfWork.SaveChangesAsync();
-
-                return Result<string>.Success(SuccessMessages.AssetAssignedSuccessfully);
+                return Result<string>.Success(SuccessMessages.AssetsAddedSuccessfully);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Unexpected error during assigning asset {AssetId} to user {UserId}",
-                    dto.AssetId,
-                    dto.UserId);
-
-                return Result<string>.Failure(
-                    ErrorMessages.UnexpectedError,
-                    500);
+                _logger.LogError(ex, "Error adding assets");
+                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
@@ -657,52 +389,22 @@ namespace IMS_Application.Services
             try
             {
                 var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(id);
-
-
                 if (asset == null)
                     return Result<GetAssetByIdResponseDto>.Failure(ErrorMessages.AssetNotFound, 404);
 
-                var isParent = asset.ParentAssetId == null;
                 var response = _mapper.Map<GetAssetByIdResponseDto>(asset);
+                response.Overview.Children = _mapper.Map<List<ChildAssetDto>>(asset.ChildAssets?.Where(c => c.IsActive).ToList() ?? new List<Asset>());
+
                 var network = await _unitOfWork.NetworkDetails.GetByAssetIdAsync(asset.Id);
-
                 if (network != null)
-                {
                     response.Assignment.Network = _mapper.Map<NetworkDetailsDto>(network);
-                }
-
-                List<AssetHistory> historyList;
-
-                if (isParent && asset.ChildAssets.Any(c => c.IsActive))
-                {
-                    var assetIds = new List<int> { asset.Id };
-                    assetIds.AddRange(asset.ChildAssets.Where(c => c.IsActive).Select(c => c.Id));
-                    historyList = await _unitOfWork.Assets.GetHistoryByAssetIdsAsync(assetIds);
-                }
-                else
-                {
-                    historyList = await _unitOfWork.Assets.GetHistoryByAssetIdAsync(asset.Id);
-                }
-
-                response.Assignment.History = _mapper.Map<List<AssetHistoryDto>>(historyList);
-
-                if (isParent)
-                {
-                    response.Overview.Children = _mapper.Map<List<ChildAssetDto>>(asset.ChildAssets.Where(c => c.IsActive));
-                }
 
                 return Result<GetAssetByIdResponseDto>.Success(response);
             }
-
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Unexpected error during retrieving asset by id {AssetId}",
-                    id);
-
-                return Result<GetAssetByIdResponseDto>.Failure(
-                    ErrorMessages.UnexpectedError,
-                    500);
+                _logger.LogError(ex, "Unexpected error during retrieving asset by id {AssetId}", id);
+                return Result<GetAssetByIdResponseDto>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
@@ -711,12 +413,10 @@ namespace IMS_Application.Services
             try
             {
                 var parent = await _unitOfWork.Assets.GetByIdAsync(dto.ParentId);
-
                 if (parent == null || parent.ParentAssetId != null)
                     return Result<string>.Failure(ErrorMessages.InvalidParentAsset, 400);
 
                 var child = await _unitOfWork.Assets.GetByIdAsync(dto.ChildId);
-
                 if (child == null)
                     return Result<string>.Failure(ErrorMessages.ChildAssetNotFound, 404);
 
@@ -729,6 +429,7 @@ namespace IMS_Application.Services
                 if (child.AssignedTo != null)
                     return Result<string>.Failure(ErrorMessages.OnlyUnassignedAssetsCanBeAttached, 400);
 
+                child.UpdatedAt = DateTime.UtcNow;
                 child.ParentAssetId = parent.Id;
 
                 if (parent.AssignedTo != null)
@@ -738,29 +439,22 @@ namespace IMS_Application.Services
                     child.StatusId = 2;
                 }
 
+                await _unitOfWork.SaveChangesAsync();
+
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
                     AssetId = child.Id,
                     Action = LogicStrings.ActionAttached,
                     Description = $"Attached to parent asset {parent.ItemName}"
-
                 });
 
                 await _unitOfWork.SaveChangesAsync();
-
                 return Result<string>.Success(SuccessMessages.ChildAttachedSuccessfully);
             }
-
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Unexpected error during attaching child {ChildId} to parent {ParentId}",
-                    dto.ChildId,
-                    dto.ParentId);
-
-                return Result<string>.Failure(
-                    ErrorMessages.UnexpectedError,
-                    500);
+                _logger.LogError(ex, "Unexpected error during attaching child {ChildId} to parent {ParentId}", dto.ChildId, dto.ParentId);
+                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
@@ -769,11 +463,11 @@ namespace IMS_Application.Services
             try
             {
                 var parent = await _unitOfWork.Assets.GetByIdAsync(dto.ParentId);
-
                 if (parent == null || parent.ParentAssetId != null)
                     return Result<string>.Failure(ErrorMessages.InvalidParentAsset, 400);
 
-                if (await _unitOfWork.Assets.SerialExistsAsync(dto.SerialNo))
+                var serialExists = await _unitOfWork.Assets.SerialExistsAsync(dto.SerialNo);
+                if (serialExists)
                     return Result<string>.Failure(ErrorMessages.SerialAlreadyExists, 400);
 
                 var child = _mapper.Map<Asset>(dto);
@@ -794,23 +488,15 @@ namespace IMS_Application.Services
                     AssetId = child.Id,
                     Action = LogicStrings.ActionCreatedAndAttached,
                     Description = $"Created and attached to {parent.ItemName}"
-
                 });
 
                 await _unitOfWork.SaveChangesAsync();
-
                 return Result<string>.Success(SuccessMessages.ChildCreatedAndAttachedSuccessfully);
             }
-
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Unexpected error during creating and attaching child to parent {ParentId}",
-                    dto.ParentId);
-
-                return Result<string>.Failure(
-                    ErrorMessages.UnexpectedError,
-                    500);
+                _logger.LogError(ex, "Unexpected error during creating and attaching child to parent {ParentId}", dto.ParentId);
+                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
@@ -819,37 +505,30 @@ namespace IMS_Application.Services
             try
             {
                 var child = await _unitOfWork.Assets.GetByIdAsync(dto.ChildId);
-
                 if (child == null || child.ParentAssetId == null)
                     return Result<string>.Failure(ErrorMessages.InvalidChildAsset, 400);
 
+                child.UpdatedAt = DateTime.UtcNow;
                 child.ParentAssetId = null;
                 child.AssignedTo = null;
                 child.AssignDate = null;
                 child.StatusId = 1;
 
+                await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
                     AssetId = child.Id,
                     Action = LogicStrings.ActionDetached,
                     Description = "Removed from parent asset"
-
                 });
 
                 await _unitOfWork.SaveChangesAsync();
-
                 return Result<string>.Success(SuccessMessages.ChildDetachedSuccessfully);
             }
-
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Unexpected error during detaching child {ChildId}",
-                    dto.ChildId);
-
-                return Result<string>.Failure(
-                    ErrorMessages.UnexpectedError,
-                    500);
+                _logger.LogError(ex, "Unexpected error during detaching child {ChildId}", dto.ChildId);
+                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
@@ -858,19 +537,12 @@ namespace IMS_Application.Services
             try
             {
                 var assets = await _unitOfWork.Assets.FilterAsync(dto);
-                var response = _mapper.Map<List<AssetListDto>>(assets);
-
-                return Result<List<AssetListDto>>.Success(response);
+                return Result<List<AssetListDto>>.Success(_mapper.Map<List<AssetListDto>>(assets));
             }
-
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Unexpected error during filtering assets");
-
-                return Result<List<AssetListDto>>.Failure(
-                    ErrorMessages.UnexpectedError,
-                    500);
+                _logger.LogError(ex, "Unexpected error during filtering assets");
+                return Result<List<AssetListDto>>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
@@ -879,7 +551,6 @@ namespace IMS_Application.Services
             try
             {
                 var asset = await _unitOfWork.Assets.GetByIdAsync(assetId);
-
                 if (asset == null)
                     return Result<string>.Failure(ErrorMessages.AssetNotFound, 404);
 
@@ -899,7 +570,6 @@ namespace IMS_Application.Services
                         AssetId = assetId,
                         Action = LogicStrings.ActionNetworkAdded,
                         Description = $"Network details added for asset {asset.ItemName}"
-
                     });
                 }
                 else
@@ -907,29 +577,22 @@ namespace IMS_Application.Services
                     _mapper.Map(dto, existing);
                     existing.updatedBy = userId.ToString();
                     _unitOfWork.NetworkDetails.Update(existing);
+
                     await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                     {
                         AssetId = assetId,
                         Action = LogicStrings.ActionNetworkUpdated,
                         Description = $"Network details updated for asset {asset.ItemName}"
-
                     });
                 }
 
                 await _unitOfWork.SaveChangesAsync();
-
                 return Result<string>.Success(SuccessMessages.NetworkUpdatedSuccessfully);
             }
-
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Unexpected error during adding/updating network for asset {AssetId}",
-                    assetId);
-
-                return Result<string>.Failure(
-                    ErrorMessages.UnexpectedError,
-                    500);
+                _logger.LogError(ex, "Unexpected error during adding/updating network for asset {AssetId}", assetId);
+                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
     }

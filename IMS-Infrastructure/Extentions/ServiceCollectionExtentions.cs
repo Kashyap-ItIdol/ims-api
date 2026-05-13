@@ -1,5 +1,6 @@
 using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
+using IMS_Application.Services;
 using IMS_Application.Services.Interfaces;
 using IMS_Infrastructure.Data;
 using IMS_Infrastructure.Repositories;
@@ -26,6 +27,9 @@ namespace IMS_Infrastructure.Extentions
             services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
             services.AddOptions<MailSettings>().Bind(config.GetSection("MailSettings"));
             services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IAssetRepository, AssetRepository>();
+            services.AddScoped<IClientAssetRepository, ClientAssetRepository>();
+            services.AddScoped<IAssetAssignmentRepository, AssetAssignmentRepository>();
             services.AddMemoryCache();
             return services;
         }

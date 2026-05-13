@@ -1,0 +1,12 @@
+﻿namespace IMS_Application.DTOs.SubCategory
+{
+    public class SubCategoryDto
+    {
+        public int Id { get; set; }
+        public int CategoryId { get; set; }
+        public required string Name { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public int? CreatedBy { get; set; }
+        public bool IsActive { get; set; }
+    }
+}

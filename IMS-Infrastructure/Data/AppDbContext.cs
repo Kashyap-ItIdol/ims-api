@@ -10,6 +10,10 @@ namespace IMS_Infrastructure.Data
 
         }
         public DbSet<Asset> Assets { get; set; }
+        public DbSet<AssetAssignment> AssetAssignments { get; set; }
+        public DbSet<ClientAsset> ClientAssets { get; set; }
+        public DbSet<ClientAssetAttachment> ClientAssetAttachments { get; set; }
+
         public DbSet<Category> Categories { get; set; }
         public DbSet<SubCategory> SubCategories { get; set; }
         public DbSet<AssetHistory> AssetHistories { get; set; }
@@ -27,6 +31,7 @@ namespace IMS_Infrastructure.Data
         public DbSet<TicketCommentLike> TicketCommentLikes { get; set; }
         public DbSet<TicketCommentReaction> TicketCommentReactions { get; set; }
         public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; }
+        public DbSet<TicketAttachment> TicketAttachments { get; set; }
         public DbSet<RecentActivity> RecentActivities { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

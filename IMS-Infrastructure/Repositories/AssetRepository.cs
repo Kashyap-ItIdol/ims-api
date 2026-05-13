@@ -31,14 +31,17 @@ namespace IMS_Infrastructure.Repositories
                 .Include(a => a.ChildAssets.Where(c => c.IsActive))
                 .ToListAsync();
         }
-        public async Task<Asset?> GetByIdAsync(int id)
+public async Task<Asset?> GetByIdAsync(int id)
         {
             return await _dbSet
-                .FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => x.Id == id);
         }
-        public async Task<Asset?> GetByIdWithChildrenAsync(int id)
+
+public async Task<Asset?> GetByIdWithChildrenAsync(int id)
         {
             return await _dbSet
+                .IgnoreQueryFilters()
                 .Include(a => a.AssetStatus)
                 .Include(a => a.Category)
                 .Include(a => a.SubCategory)
@@ -46,12 +49,14 @@ namespace IMS_Infrastructure.Repositories
                 .Include(a => a.AssignedUser)
                     .ThenInclude(u => u.Department)
                 .Include(a => a.ChildAssets.Where(c => c.IsActive))
-                .FirstOrDefaultAsync(a => a.Id == id && a.IsActive);
+                .FirstOrDefaultAsync(a => a.Id == id);
         }
-        public async Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId)
+
+public async Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId)
         {
             return await _dbSet
                 .AsNoTracking()
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(x => x.AssignedTo == userId && x.ParentAssetId == null && x.IsActive);
         }
         public async Task<bool> SerialExistsAsync(string serialNo, int excludeId)
@@ -81,6 +86,16 @@ namespace IMS_Infrastructure.Repositories
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
+        public Task<AssetCondition?> GetAssetConditionByIdAsync(int id)
+            => _context.Set<AssetCondition>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+        public Task<AssetStatus?> GetAssetStatusByIdAsync(int id)
+            => _context.Set<AssetStatus>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id);
+
         public async Task<List<Asset>> FilterAsync(AssetFilterDto dto)
         {
             var query = _dbSet
@@ -124,3 +139,4 @@ namespace IMS_Infrastructure.Repositories
         }
     }
 }
+

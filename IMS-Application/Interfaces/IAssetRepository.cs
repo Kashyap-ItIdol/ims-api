@@ -1,4 +1,4 @@
-﻿using IMS_Application.DTOs;
+﻿﻿using IMS_Application.DTOs;
 using IMS_Domain.Entities;
 
 namespace IMS_Application.Interfaces
@@ -16,5 +16,7 @@ namespace IMS_Application.Interfaces
         Task AddHistoryAsync(AssetHistory history);
         Task<List<AssetHistory>> GetHistoryByAssetIdAsync(int assetId);
         Task<List<AssetHistory>> GetHistoryByAssetIdsAsync(List<int> assetIds);
+        Task<AssetCondition?> GetAssetConditionByIdAsync(int id);
+        Task<AssetStatus?> GetAssetStatusByIdAsync(int id);
     }
 }

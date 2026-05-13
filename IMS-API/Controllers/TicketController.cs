@@ -3,6 +3,7 @@ using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
 
 namespace IMS_API.Controllers
 {
@@ -11,12 +12,13 @@ namespace IMS_API.Controllers
     public class TicketController : BaseController
     {
         private readonly ITicketService _ticketService;
+        private readonly IWebHostEnvironment _env;
 
-        public TicketController(ITicketService ticketService)
+        public TicketController(ITicketService ticketService, IWebHostEnvironment env)
         {
             _ticketService = ticketService;
+            _env = env;
         }
-
 
         [HttpPost("create")]
         public async Task<IActionResult> CreateTicket(CreateTicketRequestDto dto)
@@ -185,6 +187,106 @@ namespace IMS_API.Controllers
             }
             return FromResult(await _ticketService.GetSupportEngineersAsync(pageNumber, pageSize));
         }
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTicket(int id)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
 
+            var result = await _ticketService.DeleteTicketAsync(id, userIdResult.Data);
+            return FromResult(result);
+        }
+
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> UpdateTicket(int id, [FromBody] UpdateTicketDto dto)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
+
+            var result = await _ticketService.UpdateTicketAsync(id, dto, userIdResult.Data);
+            return FromResult(result);
+        }
+
+        [Authorize]
+        [HttpPost("FilterTickets")]
+        public async Task<IActionResult> FilterTickets([FromBody] TicketFilterDto filter)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
+
+            var result = await _ticketService.FilterTicketsAsync(filter ?? new TicketFilterDto(), userIdResult.Data);
+            return FromResult(result);
+        }
+
+        [HttpPost("{ticketId}/attachments")]
+        [Authorize(Roles = "Admin,Employee")]
+        public async Task<IActionResult> UploadAttachments(int ticketId, [FromForm] TicketAttachmentRequestDto dto)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
+
+            var result = await _ticketService.UploadFilesAsync(dto, userIdResult.Data, ticketId);
+            return FromResult(result);
+        }
+
+
+        [HttpGet("attachments/{attachmentId}")]
+        [Authorize(Roles = "Admin,Employee")]
+        public async Task<IActionResult> GetAttachment(int attachmentId)
+        {
+            var result = await _ticketService.GetAttachmentAsync(attachmentId);
+            return FromResult(result);
+        }
+
+        [HttpGet("attachments/{attachmentId}/download")]
+        [Authorize(Roles = "Admin,Employee")]
+        public async Task<IActionResult> DownloadAttachment(int attachmentId)
+        {
+            var result = await _ticketService.GetAttachmentAsync(attachmentId);
+            if (!result.IsSuccess)
+            {
+                return FromResult(result);
+            }
+            var fullPath = Path.Combine(_env.WebRootPath, result.Data!.FilePath.TrimStart('/'));
+            var fileName = Path.GetFileName(fullPath);
+            var provider = new FileExtensionContentTypeProvider();
+            provider.TryGetContentType(fullPath, out var contentType);
+            if (string.IsNullOrEmpty(contentType))
+            {
+                contentType = "application/octet-stream";
+            }
+            return File(System.IO.File.OpenRead(fullPath), contentType, fileName, enableRangeProcessing: true);
+        }
+
+        [HttpGet("attachments/{attachmentId}/view")]
+        [Authorize(Roles = "Admin,Employee")]
+        public async Task<IActionResult> ViewAttachment(int attachmentId)
+        {
+            var result = await _ticketService.GetAttachmentAsync(attachmentId);
+            if (!result.IsSuccess)
+            {
+                return FromResult(result);
+            }
+            var fullPath = Path.Combine(_env.WebRootPath, result.Data!.FilePath.TrimStart('/'));
+            var provider = new FileExtensionContentTypeProvider();
+            provider.TryGetContentType(fullPath, out var contentType);
+            if (string.IsNullOrEmpty(contentType))
+            {
+                contentType = "application/octet-stream";
+            }
+            return PhysicalFile(fullPath, contentType, enableRangeProcessing: false);
+        }
     }
 }
