@@ -29,27 +29,43 @@ namespace IMS_Infrastructure.Services
 
         public async Task<Result<bool>> SendOtpAsync(string toEmail, int otp)
         {
+            return await SendTemplateEmailAsync(
+                toEmail: toEmail,
+                templateName: "ForgotPassword",
+                subject: null,
+                replaceHtml: html => html.Replace("{otp}", otp.ToString())
+                                          .Replace("{email}", toEmail),
+                logContext: $"OTP to {toEmail}");
+        }
+
+        public async Task<Result<bool>> SendNewUserPasswordAsync(string toEmail, string fullName, string password, string roleTitle)
+        {
+            return await SendTemplateEmailAsync(
+                toEmail: toEmail,
+                templateName: "NewUserPassword",
+                subject: null,
+                replaceHtml: html => html.Replace("{email}", toEmail)
+                                          .Replace("{fullName}", fullName)
+                                          .Replace("{password}", password)
+                                          .Replace("{roleTitle}", roleTitle),
+                logContext: $"New user password to {toEmail}");
+        }
+
+        private async Task<Result<bool>> SendTemplateEmailAsync(string toEmail,string templateName, string? subject,Func<string, string> replaceHtml,string logContext)
+        {
             try
             {
-                // Get template from database
-                var template = await _templateRepository.GetByNameAsync("ForgotPassword");
-
+                var template = await _templateRepository.GetByNameAsync(templateName);
                 if (template == null)
-                {
-                    throw new InvalidOperationException("ForgotPassword email template not found in database.");
-                }
+                    throw new InvalidOperationException($"{templateName} email template not found in database.");
 
-                string subject = template.Subject;
-                string htmlBody = template.BodyHtml;
-
-                // Replace placeholders
-                htmlBody = htmlBody.Replace("{otp}", otp.ToString())
-                                  .Replace("{email}", toEmail);
+                var subjectValue = subject ?? template.Subject;
+                var htmlBody = replaceHtml(template.BodyHtml);
 
                 var message = new MimeMessage();
                 message.From.Add(new MailboxAddress(_mailSettings.SenderName ?? "IMS", _mailSettings.SenderEmail ?? "no-reply@ims.com"));
                 message.To.Add(new MailboxAddress("", toEmail));
-                message.Subject = subject;
+                message.Subject = subjectValue;
 
                 var bodyBuilder = new BodyBuilder
                 {
@@ -63,7 +79,6 @@ namespace IMS_Infrastructure.Services
                     {
                         var image = bodyBuilder.LinkedResources.Add(imagePath);
                         image.ContentId = MimeUtils.GenerateMessageId();
-                        // Replace logo placeholder with embedded image
                         htmlBody = htmlBody.Replace("{logo}", $"<img src=\"cid:{image.ContentId}\" width=\"75\" height=\"75\" alt=\"IMS Logo\" />");
                         bodyBuilder.HtmlBody = htmlBody;
                     }
@@ -83,12 +98,12 @@ namespace IMS_Infrastructure.Services
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
 
-                _logger.LogInformation("OTP email sent successfully to {Email}", toEmail);
+                _logger.LogInformation("Email sent successfully ({LogContext})", logContext);
                 return Result<bool>.Success(true);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to send OTP email to {Email}", toEmail);
+                _logger.LogError(ex, "Failed to send email ({LogContext})", logContext);
                 return Result<bool>.Failure("Failed to send email.", 500);
             }
         }

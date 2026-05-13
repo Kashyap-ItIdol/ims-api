@@ -16,12 +16,14 @@ namespace IMS_Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<UserService> _logger;
+        private readonly IEmailService _emailService;
 
-        public UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserService> logger)
+        public UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserService> logger, IEmailService emailService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _emailService = emailService;
         }
 
         public async Task<Result<string>> CreateUserAsync(CreateUserDto dto, int currentUserId)
@@ -32,14 +34,13 @@ namespace IMS_Application.Services
 
                 if (await _unitOfWork.Users.UserExistsAsync(email))
                     return Result<string>.Failure(ErrorMessages.UserAlreadyExists, 400);
-
                 if (dto.RoleId == RoleConstants.Admin)
                     return Result<string>.Failure(ErrorMessages.CannotAssignAdminRole, 400);
 
                 var user = _mapper.Map<User>(dto);
 
                 user.Email = email;
-                var defaultPassword = Guid.NewGuid().ToString("N")[..8];
+                var defaultPassword = Guid.NewGuid().ToString("N")[..12];
                 user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(defaultPassword);
                 user.IsActive = true;
                 user.IsDeleted = false;
@@ -48,6 +49,18 @@ namespace IMS_Application.Services
 
                 await _unitOfWork.Users.AddAsync(user);
                 await _unitOfWork.SaveChangesAsync();
+
+                try
+                {
+                    var roleTitle = user.RoleId == RoleConstants.SupportEngineer ? "Support Engineer" : "Employee";
+                    var emailResult = await _emailService.SendNewUserPasswordAsync(user.Email, user.FullName, defaultPassword, roleTitle);
+                    if (!emailResult.IsSuccess)
+                        _logger.LogWarning("New user password email failed for {Email}.", user.Email);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "New user password email failed for {Email}.", user.Email);
+                }
 
                 return Result<string>.Success(SuccessMessages.RegisterSuccess);
             }

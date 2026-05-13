@@ -56,11 +56,11 @@ namespace IMS_Application.Services
                 .OrderByDescending(a => a.assigned_at)
                 .FirstOrDefault();
 
-            UserInfo? assignedToInfo = latestAssign == null
-                            ? null
-                            : (usersDict.TryGetValue(latestAssign.assignedTo, out var assignee)
-                                ? _mapper.Map<UserInfo>(assignee)
-                                : new UserInfo { id = latestAssign.assignedTo, name = LogicStrings.Unassigned });
+            UserInfo assignedToInfo = latestAssign == null
+                ? null
+                : (usersDict.TryGetValue(latestAssign.assignedTo, out var assignee)
+                    ? _mapper.Map<UserInfo>(assignee)
+                    : new UserInfo { id = latestAssign.assignedTo, name = LogicStrings.Unassigned });
 
             var ticketInfo = _mapper.Map<TicketInfo>(ticket);
 
