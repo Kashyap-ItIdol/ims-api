@@ -7,7 +7,8 @@ using IMS_Application.Services.Interfaces;
 using IMS_Domain.Constants;
 using IMS_Domain.Entities;
 using Microsoft.Extensions.Logging;
-
+using IMS_Application.DTOs;
+using System.Linq;
 
 namespace IMS_Application.Services
 {
@@ -42,7 +43,6 @@ namespace IMS_Application.Services
                 user.Email = email;
                 var defaultPassword = Guid.NewGuid().ToString("N")[..12];
                 user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(defaultPassword);
-                user.IsActive = true;
                 user.IsDeleted = false;
                 user.CreatedAt = DateTime.UtcNow;
                 user.CreatedBy = currentUserId;
@@ -130,7 +130,7 @@ namespace IMS_Application.Services
                     Email = u.Email,
                     Role = u.Role.Name,
                     Department = u.Department != null ? u.Department.Name : null,
-                    IsActive = u.IsActive
+                    IsDeleted = u.IsDeleted
                 }).ToList();
 
                 return Result<List<UserResponseDto>>.Success(result);
@@ -256,6 +256,118 @@ namespace IMS_Application.Services
             {
                 _logger.LogError(ex, "Error retrieving user overview for id {UserId}", id);
                 return Result<UserOverviewResponseDto>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+        }
+
+        public async Task<Result<List<UserResponseDto>>> FilterUsersAsync(UserFilterDto filter)
+        {
+            try
+            {
+                filter ??= new UserFilterDto();
+
+                // Repository is intentionally kept simple; apply the filter logic in the service.
+                var users = await _unitOfWork.Users.FilterAsync(filter);
+
+                if (filter.FullNames != null && filter.FullNames.Count > 0 && !filter.FullNames.Contains("all"))
+                    users = users.Where(u => filter.FullNames!.Contains(u.FullName)).ToList();
+
+                if (filter.RoleKeys != null && filter.RoleKeys.Count > 0 && !filter.RoleKeys.Contains("all"))
+                {
+                    var wantEmployee = filter.RoleKeys.Contains("employee");
+                    var wantSupport = filter.RoleKeys.Contains("support-engineer");
+
+                    if (wantEmployee && !wantSupport)
+                        users = users.Where(u => u.RoleId == RoleConstants.Employee).ToList();
+                    else if (!wantEmployee && wantSupport)
+                        users = users.Where(u => u.RoleId == RoleConstants.SupportEngineer).ToList();
+                    // if both selected => no extra filter
+                }
+
+                if (filter.DepartmentNames != null && filter.DepartmentNames.Count > 0 && !filter.DepartmentNames.Contains("all"))
+                    users = users.Where(u => u.Department != null && filter.DepartmentNames!.Contains(u.Department.Name)).ToList();
+
+                // Status filter -> IsDeleted
+                if (filter.StatusKeys != null && filter.StatusKeys.Count > 0 && !filter.StatusKeys.Contains("all"))
+                {
+                    var wantActive = filter.StatusKeys.Contains("active");
+                    var wantInactive = filter.StatusKeys.Contains("inactive");
+
+                    if (wantActive && !wantInactive)
+                        users = users.Where(u => !u.IsDeleted).ToList();
+                    else if (!wantActive && wantInactive)
+                        users = users.Where(u => u.IsDeleted).ToList();
+                    // if both selected => no extra filter
+                }
+
+                // mapping should match GetAllUsersAsync
+                return Result<List<UserResponseDto>>.Success(users.Select((u, index) => new UserResponseDto
+                {
+                    Id = u.Id,
+                    EmpCode = $"EMP-{(index + 1).ToString("D3")}",
+                    FullName = u.FullName,
+                    Email = u.Email,
+                    Role = u.Role?.Name ?? string.Empty,
+                    Department = u.Department != null ? u.Department.Name : null,
+                    IsDeleted = u.IsDeleted
+                }).ToList());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error filtering users");
+                return Result<List<UserResponseDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+        }
+
+        public async Task<Result<UserFilterOptionsDto>> GetUserFilterOptionsAsync()
+        {
+            try
+            {
+                var users = await _unitOfWork.Users.GetAllWithRolesAsync();
+
+                var fullNames = users.Select(u => u.FullName)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct()
+                    .OrderBy(x => x)
+                    .Select(x => new UserFilterOptionsDto.CheckboxOption { Key = x, Label = x })
+                    .ToList();
+
+                var roles = new List<UserFilterOptionsDto.CheckboxOption>
+                {
+                    new() { Key = "all", Label = "All" },
+                    new() { Key = "employee", Label = "Employee" },
+                    new() { Key = "support-engineer", Label = "Support Engineer" },
+                };
+
+                var departments = users
+                    .Where(u => u.Department != null)
+                    .Select(u => u.Department!.Name)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct()
+                    .OrderBy(x => x)
+                    .Select(x => new UserFilterOptionsDto.CheckboxOption { Key = x, Label = x })
+                    .ToList();
+
+                departments.Insert(0, new UserFilterOptionsDto.CheckboxOption { Key = "all", Label = "All" });
+
+                var statuses = new List<UserFilterOptionsDto.CheckboxOption>
+                {
+                    new() { Key = "all", Label = "All" },
+                    new() { Key = "active", Label = "Active" },
+                    new() { Key = "inactive", Label = "Inactive" },
+                };
+
+                return Result<UserFilterOptionsDto>.Success(new UserFilterOptionsDto
+                {
+                    FullNames = new() { Options = fullNames },
+                    Roles = new() { Options = roles },
+                    Departments = new() { Options = departments },
+                    Statuses = new() { Options = statuses }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving user filter options");
+                return Result<UserFilterOptionsDto>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
     }

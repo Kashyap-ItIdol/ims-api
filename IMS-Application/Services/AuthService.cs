@@ -80,7 +80,6 @@ namespace IMS_Application.Services
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                     RoleId = 3,
                     DepartmentId = dto.DepartmentId,
-                    IsActive = true,
                     IsVerified = false,
                     IsDeleted = false,
                     CreatedAt = DateTime.UtcNow,

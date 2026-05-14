@@ -112,7 +112,6 @@ namespace IMS_Application.Mappings
                    .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
                    .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                    .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
-                   .ForMember(dest => dest.IsActive, opt => opt.Ignore())
                    .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
 
             CreateMap<UpdateUserDto, User>()

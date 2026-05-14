@@ -8,7 +8,7 @@
         public string Email { get; set; } = null!;
         public string Role { get; set; } = null!;
         public string? Department { get; set; }
-        public bool IsActive { get; set; }
-        public string Status => IsActive ? "Active" : "Inactive";
+        public bool IsDeleted { get; set; }
+        public string Status => IsDeleted ? "Inactive" : "Active";
     }
 }
