@@ -172,6 +172,92 @@ namespace IMS_Application.Services
                 return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
+        public async Task<Result<UserOverviewResponseDto>> GetUserOverviewByIdAsync(int id)
+        {
+            try
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(id);
+                if (user == null)
+                    return Result<UserOverviewResponseDto>.Failure(ErrorMessages.UserNotFound, 404);
+
+                var userDto = _mapper.Map<UserResponseDto>(user);
+
+                var assignedAssetIdsFromAssignments = (await _unitOfWork.AssetAssignments.GetAllAsync())
+                    .Where(a => a.EmployeeId == id)
+                    .Select(a => a.AssetId)
+                    .Distinct()
+                    .ToList();
+
+                var assignedAssetIdsFromAssetTable = (await _unitOfWork.Assets.GetAllAsync())
+                    .Where(a => a.AssignedTo == id)
+                    .Select(a => a.Id)
+                    .Distinct()
+                    .ToList();
+
+                var assignedAssetIds = assignedAssetIdsFromAssignments
+                    .Concat(assignedAssetIdsFromAssetTable)
+                    .Distinct()
+                    .ToList();
+
+                var assignedAssets = (await _unitOfWork.Assets.GetAllAsync())
+                    .Where(a => assignedAssetIds.Contains(a.Id))
+                    .ToList();
+
+                var assetDtos = _mapper.Map<List<AssetResponseDto>>(assignedAssets);
+
+                var roleName = user.Role?.Name ?? string.Empty;
+                var tickets = await _unitOfWork.Tickets.GetTicketsForUserAsync(id, roleName);
+
+                tickets = tickets.Where(t => t.CreatedBy == id).ToList();
+
+                var ticketDtos = new List<TicketResponseDto>();
+                foreach (var ticket in tickets)
+                {
+                    var creator = new UserInfo
+                    {
+                        id = ticket.CreatedBy,
+                        name = user.FullName
+                    };
+
+                    var latestAssign = ticket.TicketAssignments?
+                        .Where(a => a.status == IMS_Application.Common.Constants.LogicStrings.Active)
+                        .OrderByDescending(a => a.assigned_at)
+                        .FirstOrDefault();
+
+                    UserInfo? assignedToInfo = null;
+                    if (latestAssign != null)
+                    {
+                        assignedToInfo = new UserInfo { id = latestAssign.assignedTo, name = LogicStrings.Unassigned };
+                    }
+
+                    var mappedTicketInfo = _mapper.Map<TicketInfo>(ticket);
+
+                    mappedTicketInfo.createdBy = creator;
+                    mappedTicketInfo.assignedTo = assignedToInfo;
+
+                    var dto = new TicketResponseDto
+                    {
+                        ticket = mappedTicketInfo,
+                        comments = _mapper.Map<List<TicketCommentInfo>>(ticket.Comments ?? new List<TicketComment>()),
+                        attachments = _mapper.Map<List<TicketAttachmentInfo>>(ticket.Attachments ?? new List<TicketAttachment>())
+                    };
+
+                    ticketDtos.Add(dto);
+                }
+
+                return Result<UserOverviewResponseDto>.Success(new UserOverviewResponseDto
+                {
+                    user = userDto,
+                    assignedAssets = assetDtos,
+                    createdTickets = ticketDtos
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving user overview for id {UserId}", id);
+                return Result<UserOverviewResponseDto>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+        }
     }
 }
 

@@ -9,5 +9,6 @@ namespace IMS_Application.Services.Interfaces
         Task<Result<string>> UpdateUserAsync(UpdateUserDto dto, int currentUserId);
         Task<Result<string>> DeleteUserAsync(int id, int currentUserId);
         Task<Result<List<UserResponseDto>>> GetAllUsersAsync();
+        Task<Result<UserOverviewResponseDto>> GetUserOverviewByIdAsync(int id);
     }
 }

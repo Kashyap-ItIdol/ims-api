@@ -88,7 +88,7 @@ namespace IMS_Infrastructure.Data.Configurations
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Soft delete filter
-            builder.HasQueryFilter(x => !x.IsActive);
+            builder.HasQueryFilter(x => x.IsActive);
         }
     }
 }

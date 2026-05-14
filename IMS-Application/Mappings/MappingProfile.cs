@@ -102,6 +102,7 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.Assignment, opt => opt.MapFrom(src => src));
 
             CreateMap<User, UserResponseDto>()
+                .ForMember(dest => dest.EmpCode, opt => opt.MapFrom(_ => "EMP-000"))
                 .ForMember(dest => dest.Role,
                     opt => opt.MapFrom(src => src.Role != null ? src.Role.Name : null))
                 .ForMember(dest => dest.Department,
