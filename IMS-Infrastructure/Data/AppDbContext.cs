@@ -1,4 +1,4 @@
-using IMS_Domain.Entities;
+﻿using IMS_Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace IMS_Infrastructure.Data
@@ -7,8 +7,13 @@ namespace IMS_Infrastructure.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
+
         }
         public DbSet<Asset> Assets { get; set; }
+        public DbSet<AssetAssignment> AssetAssignments { get; set; }
+        public DbSet<ClientAsset> ClientAssets { get; set; }
+        public DbSet<ClientAssetAttachment> ClientAssetAttachments { get; set; }
+
         public DbSet<Category> Categories { get; set; }
         public DbSet<SubCategory> SubCategories { get; set; }
         public DbSet<AssetHistory> AssetHistories { get; set; }
@@ -27,17 +32,12 @@ namespace IMS_Infrastructure.Data
         public DbSet<TicketCommentReaction> TicketCommentReactions { get; set; }
         public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; }
         public DbSet<TicketAttachment> TicketAttachments { get; set; }
-        public DbSet<AssetAssignment> AssetAssignments { get; set; }
-        public DbSet<ClientAsset> ClientAssets { get; set; }
-        public DbSet<ClientAssetAttachment> ClientAssetAttachments { get; set; }
+        public DbSet<RecentActivity> RecentActivities { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-
-            // Global query filter for soft delete
-            modelBuilder.Entity<Ticket>().HasQueryFilter(t => !t.IsDeleted);
         }
+
     }
 }

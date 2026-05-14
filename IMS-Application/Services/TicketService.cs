@@ -17,72 +17,75 @@ namespace IMS_Application.Services
         private readonly ILogger<TicketService> _logger;
         private readonly IWebHostEnvironment _env;
 
-        public TicketService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<TicketService> logger, IWebHostEnvironment env)
+        private readonly ISettingRepository _settingRepository;
+        public TicketService(
+            IUnitOfWork unitOfWork,
+            IMapper mapper,
+            ILogger<TicketService> logger,
+            ISettingRepository settingRepository,
+            IWebHostEnvironment env)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _settingRepository = settingRepository;
             _env = env;
         }
 
         private async Task<Dictionary<int, User>> GetUsersForTicketAsync(Ticket ticket, int currentUserId)
         {
             var userIds = new HashSet<int> { currentUserId, ticket.CreatedBy };
+
             var latestAssign = ticket.TicketAssignments?
                 .Where(a => a.status == LogicStrings.Active)
                 .OrderByDescending(a => a.assigned_at)
                 .FirstOrDefault();
+
             if (latestAssign != null)
-            {
                 userIds.Add(latestAssign.assignedTo);
-            }
 
             return await _unitOfWork.Users.GetUsersByIdsAsync(userIds);
         }
 
         private TicketResponseDto MapToTicketResponseDto(Ticket ticket, Dictionary<int, User> usersDict)
         {
-            var creator = usersDict.TryGetValue(ticket.CreatedBy, out var c) ? c : null;
+            usersDict.TryGetValue(ticket.CreatedBy, out var creator);
 
             var latestAssign = ticket.TicketAssignments?
                 .Where(a => a.status == LogicStrings.Active)
                 .OrderByDescending(a => a.assigned_at)
                 .FirstOrDefault();
 
-            UserInfo? assignedToInfo = null;
-            if (latestAssign != null)
-            {
-                if (usersDict.TryGetValue(latestAssign.assignedTo, out var assignee))
-                {
-                    assignedToInfo = _mapper.Map<UserInfo>(assignee);
-                }
-                else
-                {
-                    assignedToInfo = new UserInfo { id = latestAssign.assignedTo, name = LogicStrings.Unassigned };
-                }
-            }
+            UserInfo assignedToInfo = latestAssign == null
+                ? null
+                : (usersDict.TryGetValue(latestAssign.assignedTo, out var assignee)
+                    ? _mapper.Map<UserInfo>(assignee)
+                    : new UserInfo { id = latestAssign.assignedTo, name = LogicStrings.Unassigned });
 
             var ticketInfo = _mapper.Map<TicketInfo>(ticket);
+
             ticketInfo.createdBy = creator != null
                 ? _mapper.Map<UserInfo>(creator)
                 : new UserInfo { id = ticket.CreatedBy, name = LogicStrings.Unknown };
+
             ticketInfo.assignedTo = assignedToInfo;
-
-            var allComments = new List<TicketComment>();
-            foreach (var comment in ticket.Comments.Where(c => c.ParentCommentId == null).OrderByDescending(c => c.CreatedAt))
-            {
-                allComments.Add(comment);
-                if (comment.Replies != null)
-                {
-                    allComments.AddRange(comment.Replies.OrderByDescending(r => r.CreatedAt));
-                }
-            }
-
-            var comments = _mapper.Map<List<TicketCommentInfo>>(allComments);
 
             var attachments = _mapper.Map<List<TicketAttachmentInfo>>(ticket.Attachments
                 .OrderByDescending(a => a.UploadedAt)
                 .ToList());
+
+            var rootComments = ticket.Comments
+                .Where(c => c.ParentCommentId == null)
+                .OrderByDescending(c => c.CreatedAt)
+                .ToList();
+
+            var orderedDomainComments = rootComments
+                .SelectMany(c => c.Replies != null
+                    ? new[] { c }.Concat(c.Replies.OrderByDescending(r => r.CreatedAt))
+                    : new[] { c })
+                .ToList();
+
+            var comments = _mapper.Map<List<TicketCommentInfo>>(orderedDomainComments);
 
             return new TicketResponseDto
             {
@@ -96,37 +99,18 @@ namespace IMS_Application.Services
         {
             try
             {
-
-                TicketType ticketType;
-                if (dto.CategoryId.HasValue && dto.SubCategoryId.HasValue)
-                {
-                    ticketType = TicketType.Hardware;
-                }
-                else if (!Enum.TryParse<TicketType>(dto.TicketType, true, out ticketType))
-                {
-                    return Result<TicketResponseDto>.Failure(ErrorMessages.InvalidTicketType, 400);
-                }
-
                 if (!Enum.TryParse<TicketPriority>(dto.Priority, true, out var ticketPriority))
                     return Result<TicketResponseDto>.Failure(ErrorMessages.InvalidTicketPriority, 400);
 
-                if (dto.CategoryId.HasValue)
-                {
-                    var category = await _unitOfWork.Categories.GetByIdAsync(dto.CategoryId.Value);
-                    if (category == null)
-                        return Result<TicketResponseDto>.Failure(ErrorMessages.CategoryOrSubCategoryNotFound, 400);
-                }
-
-                if (dto.SubCategoryId.HasValue)
-                {
-                    var subCategory = await _unitOfWork.SubCategories.GetByIdAsync(dto.SubCategoryId.Value);
-                    if (subCategory == null)
-                        return Result<TicketResponseDto>.Failure(ErrorMessages.CategoryOrSubCategoryNotFound, 400);
-                }
-
-                var assignee = await _unitOfWork.Users.GetByIdAsync(dto.assignedTo);
-                if (assignee == null || assignee.Role?.Name != LogicStrings.SupportEngineerRole)
+                var assignedUser = await _unitOfWork.Users.GetByIdAsync(dto.assignedTo);
+                if (assignedUser == null || assignedUser.Role == null || assignedUser.Role.Name != LogicStrings.SupportEngineerRole)
                     return Result<TicketResponseDto>.Failure(ErrorMessages.InvalidTicketAssignee, 400);
+
+                var ticketType = (!dto.CategoryId.HasValue || !dto.SubCategoryId.HasValue)
+                    ? (Enum.TryParse<TicketType>(dto.TicketType ?? string.Empty, true, out var parsedType)
+                        ? parsedType
+                        : TicketType.Hardware)
+                    : TicketType.Hardware;
 
                 if (dto.CategoryId.HasValue)
                 {
@@ -152,30 +136,35 @@ namespace IMS_Application.Services
                 ticket.CreatedAt = DateTime.UtcNow;
                 ticket.UpdatedAt = DateTime.UtcNow;
 
-                if (Enum.TryParse<TicketType>(dto.TicketType, true, out var parsedTicketType))
-                    ticket.TicketType = parsedTicketType;
-
-                if (Enum.TryParse<TicketPriority>(dto.Priority, true, out var parsedTicketPriority))
-                    ticket.TicketPriority = parsedTicketPriority;
-
-                var assignment = new TicketAssignment
+                ticket.TicketAssignments.Add(new TicketAssignment
                 {
                     assignedTo = dto.assignedTo,
                     assigned_by = createdBy,
                     assigned_at = DateTime.UtcNow,
                     status = LogicStrings.Active
-                };
-                ticket.TicketAssignments.Add(assignment);
+                });
 
                 await _unitOfWork.Tickets.AddTicketAsync(ticket);
                 await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("Ticket {TicketId} created successfully by user {UserId}", ticket.Id, createdBy);
+                await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                {
+                    ItemId = ticket.Id,
+                    ItemName = LogicStrings.TicketItemName,
+                    Action = LogicStrings.ActionCreated,
+                    UserId = createdBy,
+                    Details = ticket.Description ?? "Ticket created",
+                    DateTime = ticket.CreatedAt,
+                    IsDeleted = false
+                });
+
+                await _unitOfWork.SaveChangesAsync();
 
                 var usersDict = await GetUsersForTicketAsync(ticket, createdBy);
-                var response = MapToTicketResponseDto(ticket, usersDict);
 
-                return Result<TicketResponseDto>.Success(response, SuccessMessages.TicketCreated);
+                return Result<TicketResponseDto>.Success(
+                    MapToTicketResponseDto(ticket, usersDict),
+                    SuccessMessages.TicketCreated);
             }
             catch (Exception ex)
             {
@@ -195,13 +184,13 @@ namespace IMS_Application.Services
                 {
                     TicketId = ticketId,
                     UserId = currentUserId,
-                    CommentText = commentText,
+                    CommentText = commentText.Trim(),
                     CreatedAt = DateTime.UtcNow
                 };
                 await _unitOfWork.Tickets.AddCommentAsync(comment);
                 await _unitOfWork.SaveChangesAsync();
-                var dto = _mapper.Map<TicketCommentResponseDto>(comment);
-                return Result<TicketCommentResponseDto>.Success(dto, SuccessMessages.CommentCreated);
+
+                return Result<TicketCommentResponseDto>.Success(_mapper.Map<TicketCommentResponseDto>(comment), SuccessMessages.CommentCreated);
             }
             catch (Exception ex)
             {
@@ -209,7 +198,6 @@ namespace IMS_Application.Services
                 return Result<TicketCommentResponseDto>.Failure(ErrorMessages.ServerError, 500);
             }
         }
-
         public async Task<Result<TicketCommentResponseDto>> AddReplyAsync(int ticketId, int parentCommentId, string commentText, int currentUserId)
         {
             if (string.IsNullOrWhiteSpace(commentText))
@@ -229,13 +217,13 @@ namespace IMS_Application.Services
                     TicketId = ticketId,
                     UserId = currentUserId,
                     ParentCommentId = parentCommentId,
-                    CommentText = commentText,
+                    CommentText = commentText.Trim(),
                     CreatedAt = DateTime.UtcNow
                 };
                 await _unitOfWork.Tickets.AddCommentAsync(reply);
                 await _unitOfWork.SaveChangesAsync();
-                var dto = _mapper.Map<TicketCommentResponseDto>(reply);
-                return Result<TicketCommentResponseDto>.Success(dto, SuccessMessages.ReplyCreated);
+
+                return Result<TicketCommentResponseDto>.Success(_mapper.Map<TicketCommentResponseDto>(reply), SuccessMessages.ReplyCreated);
             }
             catch (Exception ex)
             {
@@ -243,7 +231,6 @@ namespace IMS_Application.Services
                 return Result<TicketCommentResponseDto>.Failure(ErrorMessages.ServerError, 500);
             }
         }
-
         public async Task<Result<TicketCommentResponseDto>> EditCommentAsync(int commentId, string commentText, int currentUserId)
         {
             if (string.IsNullOrWhiteSpace(commentText))
@@ -258,12 +245,12 @@ namespace IMS_Application.Services
                 if (comment.UserId != currentUserId)
                     return Result<TicketCommentResponseDto>.Failure(ErrorMessages.UnauthorizedCommentEdit, 403);
 
-                comment.CommentText = commentText;
+                comment.CommentText = commentText.Trim();
                 comment.UpdatedAt = DateTime.UtcNow;
                 await _unitOfWork.Tickets.UpdateCommentAsync(comment);
                 await _unitOfWork.SaveChangesAsync();
-                var dto = _mapper.Map<TicketCommentResponseDto>(comment);
-                return Result<TicketCommentResponseDto>.Success(dto, SuccessMessages.CommentUpdated);
+
+                return Result<TicketCommentResponseDto>.Success(_mapper.Map<TicketCommentResponseDto>(comment), SuccessMessages.CommentUpdated);
             }
             catch (Exception ex)
             {
@@ -287,11 +274,14 @@ namespace IMS_Application.Services
                 comment.DeletedAt = DateTime.UtcNow;
                 comment.DeletedBy = currentUserId;
 
-                foreach (var reply in comment.Replies)
+                if (comment.Replies != null)
                 {
-                    reply.IsDeleted = true;
-                    reply.DeletedAt = DateTime.UtcNow;
-                    reply.DeletedBy = currentUserId;
+                    foreach (var reply in comment.Replies)
+                    {
+                        reply.IsDeleted = true;
+                        reply.DeletedAt = DateTime.UtcNow;
+                        reply.DeletedBy = currentUserId;
+                    }
                 }
 
                 await _unitOfWork.Tickets.DeleteCommentAsync(comment);
@@ -333,8 +323,8 @@ namespace IMS_Application.Services
                 };
                 await _unitOfWork.Tickets.AddCommentLikeAsync(like);
                 await _unitOfWork.SaveChangesAsync();
-                var dto = _mapper.Map<CommentLikeResponseDto>(like);
-                return Result<CommentLikeResponseDto>.Success(dto, SuccessMessages.CommentLiked);
+
+                return Result<CommentLikeResponseDto>.Success(_mapper.Map<CommentLikeResponseDto>(like), SuccessMessages.CommentLiked);
             }
             catch (Exception ex)
             {
@@ -355,10 +345,12 @@ namespace IMS_Application.Services
                 if (like == null)
                     return Result<CommentLikeResponseDto>.Failure(ErrorMessages.LikeNotFound, 404);
 
+                if (like.UserId != currentUserId)
+                    return Result<CommentLikeResponseDto>.Failure(ErrorMessages.UnauthorizedCommentDelete, 403);
+
                 like.IsDeleted = true;
                 like.DeletedAt = DateTime.UtcNow;
                 like.DeletedBy = currentUserId;
-
                 await _unitOfWork.Tickets.UpdateCommentLikeAsync(like);
                 await _unitOfWork.SaveChangesAsync();
 
@@ -396,8 +388,8 @@ namespace IMS_Application.Services
                     existingReaction.CreatedAt = DateTime.UtcNow;
                     await _unitOfWork.Tickets.UpdateCommentReactionAsync(existingReaction);
                     await _unitOfWork.SaveChangesAsync();
-                    var updatedDto = _mapper.Map<CommentReactionResponseDto>(existingReaction);
-                    return Result<CommentReactionResponseDto>.Success(updatedDto, SuccessMessages.ReactionAdded);
+
+                    return Result<CommentReactionResponseDto>.Success(_mapper.Map<CommentReactionResponseDto>(existingReaction), SuccessMessages.ReactionAdded);
                 }
 
                 var reaction = new TicketCommentReaction
@@ -409,8 +401,8 @@ namespace IMS_Application.Services
                 };
                 await _unitOfWork.Tickets.AddCommentReactionAsync(reaction);
                 await _unitOfWork.SaveChangesAsync();
-                var dto = _mapper.Map<CommentReactionResponseDto>(reaction);
-                return Result<CommentReactionResponseDto>.Success(dto, SuccessMessages.ReactionAdded);
+
+                return Result<CommentReactionResponseDto>.Success(_mapper.Map<CommentReactionResponseDto>(reaction), SuccessMessages.ReactionAdded);
             }
             catch (Exception ex)
             {
@@ -430,6 +422,9 @@ namespace IMS_Application.Services
                 var reaction = await _unitOfWork.Tickets.GetCommentReactionAsync(commentId, currentUserId);
                 if (reaction == null)
                     return Result<CommentReactionResponseDto>.Failure(ErrorMessages.ReactionNotFound, 404);
+
+                if (reaction.UserId != currentUserId)
+                    return Result<CommentReactionResponseDto>.Failure(ErrorMessages.UnauthorizedCommentDelete, 403);
 
                 reaction.IsDeleted = true;
                 reaction.DeletedAt = DateTime.UtcNow;
@@ -455,8 +450,64 @@ namespace IMS_Application.Services
             }
         }
 
+        public async Task<Result<TicketResponseDto>> UpdateTicketAsync(int id, UpdateTicketDto dto, int updatedBy)
+        {
+            try
+            {
+                if (dto == null)
+                    return Result<TicketResponseDto>.Failure(ErrorMessages.InvalidMatch, 400);
+
+                var ticket = await _unitOfWork.Tickets.GetTicketByIdAsync(id);
+                if (ticket == null)
+                    return Result<TicketResponseDto>.Failure(ErrorMessages.TicketNotFound, 404);
+
+                // Basic field updates
+                ticket.Title = dto.TicketTitle ?? ticket.Title;
+                if (!string.IsNullOrWhiteSpace(dto.Description))
+                    ticket.Description = dto.Description;
+
+                if (!string.IsNullOrWhiteSpace(dto.TicketType) && Enum.TryParse<TicketType>(dto.TicketType, true, out var parsedType))
+                    ticket.TicketType = parsedType;
+
+                if (!string.IsNullOrWhiteSpace(dto.TicketPriority) && Enum.TryParse<TicketPriority>(dto.TicketPriority, true, out var parsedPriority))
+                    ticket.TicketPriority = parsedPriority;
+
+                // Assignment update
+                ticket.UpdatedAt = DateTime.UtcNow;
+                // repository method may handle assignment changes
+                await _unitOfWork.Tickets.UpdateTicketAsync(id, dto);
+                await _unitOfWork.SaveChangesAsync();
+
+                var updated = await _unitOfWork.Tickets.GetTicketByIdAsync(id);
+                if (updated == null)
+                    return Result<TicketResponseDto>.Failure(ErrorMessages.TicketNotFound, 404);
+
+                await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                {
+                    ItemId = updated.Id,
+                    ItemName = LogicStrings.TicketItemName,
+                    Action = LogicStrings.ActionUpdated,
+                    UserId = updatedBy,
+                    Details = $"Ticket {updated.Id} updated",
+                    DateTime = DateTime.UtcNow,
+                    IsDeleted = false
+                });
+                await _unitOfWork.SaveChangesAsync();
+
+                var usersDict = await GetUsersForTicketAsync(updated, updatedBy);
+                return Result<TicketResponseDto>.Success(MapToTicketResponseDto(updated, usersDict), SuccessMessages.TicketUpdated);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating ticket {TicketId} by user {UserId}", id, updatedBy);
+                return Result<TicketResponseDto>.Failure(ErrorMessages.ServerError, 500);
+            }
+        }
+
         public async Task<Result<UpdateTicketStatusResponseDto>> UpdateStatusAsync(int ticketId, string status, int currentUserId)
         {
+
+
             if (string.IsNullOrWhiteSpace(status) || !Enum.TryParse<Status>(status, true, out var newStatus))
                 return Result<UpdateTicketStatusResponseDto>.Failure(ErrorMessages.InvalidTicketStatus, 400);
 
@@ -483,8 +534,22 @@ namespace IMS_Application.Services
                 await _unitOfWork.Tickets.UpdateTicketStatusAsync(ticket, newStatus, currentUserId);
                 await _unitOfWork.SaveChangesAsync();
 
-                var dto = _mapper.Map<UpdateTicketStatusResponseDto>(ticket);
-                return Result<UpdateTicketStatusResponseDto>.Success(dto, SuccessMessages.StatusUpdated);
+                if (oldStatus != newStatus)
+                {
+                    await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                    {
+                        ItemId = ticket.Id,
+                        ItemName = LogicStrings.TicketItemName,
+                        Action = LogicStrings.ActionUpdated,
+                        UserId = currentUserId,
+                        Details = $"Status changed from {oldStatus} to {newStatus}",
+                        DateTime = DateTime.UtcNow,
+                        IsDeleted = false
+                    });
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                return Result<UpdateTicketStatusResponseDto>.Success(_mapper.Map<UpdateTicketStatusResponseDto>(ticket), SuccessMessages.StatusUpdated);
             }
             catch (Exception ex)
             {
@@ -509,22 +574,23 @@ namespace IMS_Application.Services
 
                 var tickets = await _unitOfWork.Tickets.GetTicketsForUserAsync(currentUserId, user.Role.Name);
 
-                var allUsersDict = new Dictionary<int, User>();
-                foreach (var ticket in tickets)
-                {
-                    var users = await GetUsersForTicketAsync(ticket, currentUserId);
-                    foreach (var kvp in users)
-                    {
-                        allUsersDict[kvp.Key] = kvp.Value;
-                    }
-                }
-
                 var orderedTickets = tickets.OrderByDescending(t => t.CreatedAt).ToList();
                 var totalCount = orderedTickets.Count;
                 var pagedTickets = orderedTickets
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
                     .ToList();
+
+                var allUsersDict = new Dictionary<int, User>();
+                foreach (var ticket in tickets)
+                {
+                    var users = await GetUsersForTicketAsync(ticket, currentUserId);
+                    foreach (var kvp in users)
+                    {
+                        if (!allUsersDict.ContainsKey(kvp.Key))
+                            allUsersDict[kvp.Key] = kvp.Value;
+                    }
+                }
 
                 var dtos = pagedTickets
                               .Select(t => MapToTicketResponseDto(t, allUsersDict))
@@ -569,9 +635,7 @@ namespace IMS_Application.Services
                 if (!hasAccess)
                     return Result<TicketResponseDto>.Failure(ErrorMessages.UnauthorizedTicketView, 403);
 
-                var usersDict = await GetUsersForTicketAsync(ticket, currentUserId);
-                var dto = MapToTicketResponseDto(ticket, usersDict);
-                return Result<TicketResponseDto>.Success(dto, SuccessMessages.TicketFetched);
+                return Result<TicketResponseDto>.Success(MapToTicketResponseDto(ticket, await GetUsersForTicketAsync(ticket, currentUserId)), SuccessMessages.AllTickets);
             }
             catch (Exception ex)
             {
@@ -614,10 +678,6 @@ namespace IMS_Application.Services
                 }
                 else if (!string.IsNullOrEmpty(dateFilter))
                 {
-                    var validFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "today", "yesterday", "lastWeek", "lastMonth", "currentMonth", "all" };
-                    if (!validFilters.Contains(dateFilter))
-                        return Result<PagedResult<TicketResponseDto>>.Failure(ErrorMessages.InvalidDateFilter, 400);
-
                     var today = DateTime.Today.ToUniversalTime();
                     DateTime filterStart = DateTime.MinValue;
                     DateTime filterEnd = DateTime.MaxValue;
@@ -644,7 +704,6 @@ namespace IMS_Application.Services
                             filterEnd = filterStart.AddMonths(1);
                             break;
                         case "all":
-                            // no filter
                             break;
                     }
                     tickets = tickets.Where(t => t.CreatedAt >= filterStart && t.CreatedAt < filterEnd).ToList();
@@ -689,8 +748,8 @@ namespace IMS_Application.Services
         }
 
         public async Task<Result<bool>> DeleteTicketAsync(int ticketId, int deletedBy)
-
         {
+
             try
             {
                 var ticket = await _unitOfWork.Tickets.GetTicketByIdAsync(ticketId);
@@ -710,6 +769,18 @@ namespace IMS_Application.Services
                 ticket.DeletedAt = DateTime.UtcNow;
 
                 _unitOfWork.Tickets.Update(ticket);
+                await _unitOfWork.SaveChangesAsync();
+
+                await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                {
+                    ItemId = ticket.Id,
+                    ItemName = LogicStrings.TicketItemName,
+                    Action = LogicStrings.ActionDeleted,
+                    UserId = deletedBy,
+                    Details = $"Ticket {ticket.Id} deleted",
+                    DateTime = DateTime.UtcNow,
+                    IsDeleted = true
+                });
                 await _unitOfWork.SaveChangesAsync();
 
                 _logger.LogInformation("Ticket {TicketId} successfully deleted by user {UserId}", ticketId, deletedBy);
@@ -797,45 +868,40 @@ namespace IMS_Application.Services
                 return Result<List<TicketResponseDto>>.Failure(ErrorMessages.ServerError, 500);
             }
         }
-
-        public async Task<Result<TicketResponseDto>> UpdateTicketAsync(int id, UpdateTicketDto dto, int updatedBy)
+        public async Task<Result<PagedResult<UserResponseDto>>> GetSupportEngineersAsync(int pageNumber, int pageSize)
         {
+            if (pageNumber < 1 || pageSize < 1)
+
+                return Result<PagedResult<UserResponseDto>>.Failure(ErrorMessages.InvalidPagination, 400);
+
             try
             {
-                var ticket = await _unitOfWork.Tickets.GetTicketByIdAsync(id);
-                if (ticket == null || ticket.IsDeleted)
-                    return Result<TicketResponseDto>.Failure(ErrorMessages.TicketNotFound, 404);
+                var users = await _unitOfWork.Users.GetAllWithRolesAsync();
+                var supportEngineers = users
+                    .Where(u => u.Role != null && u.Role.Name == LogicStrings.SupportEngineerRole)
+                    .OrderBy(u => u.Id)
+                    .ToList();
 
-                _mapper.Map(dto, ticket);
+                var paged = supportEngineers
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
 
-                if (!string.IsNullOrWhiteSpace(dto.TicketType) &&
-                    Enum.TryParse<TicketType>(dto.TicketType, true, out var ticketType))
+
+                var pagedResult = new PagedResult<UserResponseDto>
                 {
-                    ticket.TicketType = ticketType;
-                }
+                    Items = _mapper.Map<List<UserResponseDto>>(paged),
+                    TotalCount = supportEngineers.Count,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
 
-                if (!string.IsNullOrWhiteSpace(dto.TicketPriority) &&
-                    Enum.TryParse<TicketPriority>(dto.TicketPriority, true, out var priority))
-                {
-                    ticket.TicketPriority = priority;
-                }
-
-                ticket.UpdatedAt = DateTime.UtcNow;
-
-                _unitOfWork.Tickets.Update(ticket);
-                await _unitOfWork.SaveChangesAsync();
-
-                var usersDict = await GetUsersForTicketAsync(ticket, ticket.CreatedBy);
-                var response = MapToTicketResponseDto(ticket, usersDict);
-
-                _logger.LogInformation("Ticket {TicketId} updated successfully by {UserId}", id, updatedBy);
-
-                return Result<TicketResponseDto>.Success(response, SuccessMessages.TicketUpdated);
+                return Result<PagedResult<UserResponseDto>>.Success(pagedResult, SuccessMessages.RetrievedSuccessfully);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating ticket {TicketId}", id);
-                return Result<TicketResponseDto>.Failure(ErrorMessages.ServerError, 500);
+                _logger.LogError(ex, "Error retrieving support engineers");
+                return Result<PagedResult<UserResponseDto>>.Failure(ErrorMessages.ServerError, 500);
             }
         }
         private bool IsTicketVisibleToUser(Ticket ticket, int userId)
@@ -885,7 +951,7 @@ namespace IMS_Application.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error filtering tickets for user {UserId} with filter {@Filter}", currentUserId, filter);
+                _logger.LogError(ex, "Error retrieving support engineers");
                 return Result<List<TicketResponseDto>>.Failure(ErrorMessages.ServerError, 500);
             }
         }
@@ -906,16 +972,83 @@ namespace IMS_Application.Services
                     return Result<List<TicketAttachmentResponseDto>>.Failure(ErrorMessages.FileNotFound, 400);
                 }
 
-                var folderPath = Path.Combine(_env.WebRootPath, "uploads", ticketId.ToString());
+                if (_env == null)
+                {
+                    // In case env isn't injected (misconfiguration), still allow upload using current directory.
+                    var fallbackRoot = Directory.GetCurrentDirectory();
+                    if (string.IsNullOrWhiteSpace(fallbackRoot))
+                        return Result<List<TicketAttachmentResponseDto>>.Failure(ErrorMessages.ServerError, 500);
+
+                    var folderPathFallback = Path.Combine(fallbackRoot, "uploads", ticketId.ToString());
+                    if (!Directory.Exists(folderPathFallback))
+                        Directory.CreateDirectory(folderPathFallback);
+
+                    var attachmentsFallback = new List<TicketAttachment>();
+                    foreach (var file in dto.Files)
+                    {
+                        if (file == null || file.Length == 0)
+                            continue;
+                        if (string.IsNullOrWhiteSpace(file.FileName))
+                            continue;
+
+                        var ext = Path.GetExtension(file.FileName);
+                        var fileName = $"{Guid.NewGuid()}{ext}";
+                        var fullPath = Path.Combine(folderPathFallback, fileName);
+
+                        using (var stream = new FileStream(fullPath, FileMode.Create))
+                        {
+                            await file.CopyToAsync(stream);
+                        }
+
+                        attachmentsFallback.Add(new TicketAttachment
+                        {
+                            TicketId = ticketId,
+                            UserId = userId,
+                            FilePath = $"/uploads/{ticketId}/{fileName}",
+                            UploadedAt = DateTime.UtcNow
+                        });
+                    }
+
+                    if (!attachmentsFallback.Any())
+                        return Result<List<TicketAttachmentResponseDto>>.Failure(ErrorMessages.FileNotFound, 400);
+
+                    foreach (var attachment in attachmentsFallback)
+                        await _unitOfWork.TicketAttachments.AddAsync(attachment);
+
+                    await _unitOfWork.SaveChangesAsync();
+
+                    var attachmentDtosFallback = _mapper.Map<List<TicketAttachmentResponseDto>>(attachmentsFallback);
+                    return Result<List<TicketAttachmentResponseDto>>.Success(attachmentDtosFallback, SuccessMessages.AttachmentUploaded);
+                }
+
+                var webRootPath = _env.WebRootPath;
+
+                if (string.IsNullOrWhiteSpace(webRootPath))
+                {
+                    // Fallback when wwwroot is not configured
+                    webRootPath = _env.ContentRootPath;
+                }
+
+                if (string.IsNullOrWhiteSpace(webRootPath))
+                {
+                    _logger.LogError("Both WebRootPath and ContentRootPath are null/empty in UploadFilesAsync");
+                    return Result<List<TicketAttachmentResponseDto>>.Failure(ErrorMessages.ServerError, 500);
+                }
+
+                var folderPath = Path.Combine(webRootPath, "uploads", ticketId.ToString());
 
                 if (!Directory.Exists(folderPath))
                     Directory.CreateDirectory(folderPath);
+
 
                 var attachments = new List<TicketAttachment>();
 
                 foreach (var file in dto.Files)
                 {
-                    if (file.Length == 0)
+                    if (file == null || file.Length == 0)
+                        continue;
+
+                    if (string.IsNullOrWhiteSpace(file.FileName))
                         continue;
 
                     var ext = Path.GetExtension(file.FileName);
@@ -935,6 +1068,7 @@ namespace IMS_Application.Services
                         UploadedAt = DateTime.UtcNow
                     });
                 }
+
 
                 if (!attachments.Any())
                 {
@@ -961,6 +1095,7 @@ namespace IMS_Application.Services
             }
         }
 
+
         public async Task<Result<TicketAttachmentResponseDto>> GetAttachmentAsync(int attachmentId)
         {
             try
@@ -972,12 +1107,44 @@ namespace IMS_Application.Services
                     return Result<TicketAttachmentResponseDto>.Failure(ErrorMessages.FileNotFound, 404);
                 }
 
-                var fullPath = Path.Combine(_env.WebRootPath, attachment.FilePath.TrimStart('/'));
+                if (string.IsNullOrWhiteSpace(attachment.FilePath))
+                    return Result<TicketAttachmentResponseDto>.Failure(ErrorMessages.FileNotFound, 404);
+
+                string? webRootPath = _env?.WebRootPath;
+                if (string.IsNullOrWhiteSpace(webRootPath))
+                {
+                    var contentRoot = _env?.ContentRootPath;
+                    if (!string.IsNullOrWhiteSpace(contentRoot))
+                        webRootPath = Path.Combine(contentRoot, "wwwroot");
+                }
+                if (string.IsNullOrWhiteSpace(webRootPath))
+                {
+                    var cwd = Directory.GetCurrentDirectory();
+                    if (!string.IsNullOrWhiteSpace(cwd))
+                        webRootPath = Path.Combine(cwd, "wwwroot");
+                }
+
+                if (string.IsNullOrWhiteSpace(webRootPath))
+                    return Result<TicketAttachmentResponseDto>.Failure(ErrorMessages.ServerError, 500);
+
+                var relativePath = attachment.FilePath.TrimStart('/', '\\').Replace("\\", Path.DirectorySeparatorChar.ToString());
+                var fullPath = Path.Combine(webRootPath, relativePath);
+                var directoryExists = Directory.Exists(Path.GetDirectoryName(fullPath) ?? string.Empty);
+
+                // Extra debug info to diagnose 404 "physical file missing" issues.
+                _logger.LogWarning(
+                    "Attachment file check failed. attachmentId={AttachmentId}, filePathInDb={FilePathInDb}, webRootPath={WebRootPath}, computedFullPath={FullPath}, directoryExists={DirectoryExists}",
+                    attachmentId,
+                    attachment.FilePath,
+                    webRootPath,
+                    fullPath,
+                    directoryExists);
+
                 if (!File.Exists(fullPath))
                 {
-                    _logger.LogWarning("File not found at {FullPath} for attachment {AttachmentId}", fullPath, attachmentId);
                     return Result<TicketAttachmentResponseDto>.Failure(ErrorMessages.PhysicalFileNotFound, 404);
                 }
+
 
                 var dto = _mapper.Map<TicketAttachmentResponseDto>(attachment);
                 return Result<TicketAttachmentResponseDto>.Success(dto, SuccessMessages.RetrievedSuccessfully);

@@ -1,4 +1,5 @@
-﻿using IMS_Application.Interfaces;
+﻿﻿using IMS_Application.DTOs;
+using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -50,7 +51,6 @@ namespace IMS_Infrastructure.Repositories
                 .AsNoTracking()
                 .AnyAsync(u =>
                     u.TableNo == tableNo &&
-                    u.IsActive &&
                     !u.IsDeleted);
         }
 
@@ -68,7 +68,7 @@ namespace IMS_Infrastructure.Repositories
         {
             return await _dbSet
                 .AsNoTracking()
-                .Where(u => u.IsActive && !u.IsDeleted &&
+                .Where(u => !u.IsDeleted &&
                     (EF.Functions.Like(u.FullName, $"%{query}%") ||
                      EF.Functions.Like(u.Email, $"%{query}%")))
                 .ToListAsync();
@@ -82,7 +82,7 @@ namespace IMS_Infrastructure.Repositories
                     _context.Tickets.Any(t =>
                         t.CreatedBy == u.Id &&
                         t.Status == Status.Open)
-                    && u.IsActive && !u.IsDeleted)
+                    && !u.IsDeleted)
                 .ToListAsync();
         }
 
@@ -101,6 +101,16 @@ namespace IMS_Infrastructure.Repositories
                 .Include(x => x.Role)
                 .Include(x => x.Department)
                 .ToDictionaryAsync(x => x.Id);
+        }
+
+        public async Task<List<User>> FilterAsync(UserFilterDto filter)
+        {
+            return await _dbSet
+                .AsNoTracking()
+                .Include(x => x.Role)
+                .Include(x => x.Department)
+                .Where(u => !u.IsDeleted)
+                .ToListAsync();
         }
     }
 }

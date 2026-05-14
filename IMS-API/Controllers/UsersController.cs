@@ -46,6 +46,13 @@ namespace IMS_API.Controllers
             return FromResult(data);
         }
 
+        [HttpGet("{id}/overview")]
+        public async Task<IActionResult> GetOverviewById(int id)
+        {
+            var data = await _userService.GetUserOverviewByIdAsync(id);
+            return FromResult(data);
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -55,6 +62,20 @@ namespace IMS_API.Controllers
 
             var result = await _userService.DeleteUserAsync(id, userResult.Data);
             return FromResult(result);
+        }
+
+        [HttpPost("filter")]
+        public async Task<IActionResult> Filter([FromBody] UserFilterDto filter)
+        {
+            var data = await _userService.FilterUsersAsync(filter ?? new UserFilterDto());
+            return FromResult(data);
+        }
+
+        [HttpGet("filter/options")]
+        public async Task<IActionResult> GetFilterOptions()
+        {
+            var data = await _userService.GetUserFilterOptionsAsync();
+            return FromResult(data);
         }
     }
 }

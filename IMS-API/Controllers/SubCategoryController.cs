@@ -8,7 +8,7 @@ namespace IMS_API.Controllers
 {
     [Route("api/settings/general/category/{categoryId}/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin,SupportEngineer")]
+    [Authorize(Roles = "Admin,Support Engineer")]
     public class SubCategoryController : BaseController
     {
         private readonly ISubCategoryService _subCategoryService;
@@ -26,10 +26,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userResult);
             }
-            int createdBy = userResult.Data;
-
-            var result = await _subCategoryService.CreateSubCategoryAsync(name, categoryId, createdBy);
-            return FromResult(result);
+            return FromResult(await _subCategoryService.CreateSubCategoryAsync(name, categoryId, userResult.Data));
         }
 
         [HttpGet]

@@ -262,7 +262,5 @@ namespace IMS_Infrastructure.Repositories
             return await _context.TicketAttachments
                 .FirstOrDefaultAsync(a => a.Id == attachmentId);
         }
-
-
     }
 }

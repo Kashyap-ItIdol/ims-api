@@ -3,23 +3,18 @@ using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using FluentValidation;
 
 [ApiController]
 [Route("api/[controller]")]
 public class AssetController : BaseController
 {
     private readonly IAssetService _assetService;
-    private readonly IValidator<AttachChildDto> _attachChildValidator;
-    private readonly IValidator<DetachChildDto> _detachChildValidator;
 
-    public AssetController(IAssetService assetService, IValidator<AttachChildDto> attachChildValidator, IValidator<DetachChildDto> detachChildValidator)
+    public AssetController(IAssetService assetService)
     {
         _assetService = assetService;
-        _attachChildValidator = attachChildValidator;
-        _detachChildValidator = detachChildValidator;
     }
-    
+    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("Add-Asset")]
     public async Task<IActionResult> AddInventoryAssets(AddAssetDto dto)
     {
@@ -106,12 +101,6 @@ public class AssetController : BaseController
     [HttpPost("attach-child")]
     public async Task<IActionResult> AttachChild(AttachChildDto dto)
     {
-        var validationResult = await _attachChildValidator.ValidateAsync(dto);
-        if (!validationResult.IsValid)
-        {
-            return BadRequest(new { success = false, message = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)), data = (object?)null });
-        }
-
         var result = await _assetService.AttachChildAsync(dto);
         return FromResult(result);
     }
@@ -128,12 +117,6 @@ public class AssetController : BaseController
     [HttpPost("detach-child")]
     public async Task<IActionResult> DetachChild(DetachChildDto dto)
     {
-        var validationResult = await _detachChildValidator.ValidateAsync(dto);
-        if (!validationResult.IsValid)
-        {
-            return BadRequest(new { success = false, message = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)), data = (object?)null });
-        }
-
         var result = await _assetService.DetachChildAsync(dto);
         return FromResult(result);
     }

@@ -5,36 +5,32 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IMS_Infrastructure.Repositories
 {
-    public class EmailTemplateRepository : IEmailTemplateRepository
+    public class EmailTemplateRepository : Repository<EmailTemplate>, IEmailTemplateRepository
     {
-        private readonly AppDbContext _context;
-
-        public EmailTemplateRepository(AppDbContext context)
+        public EmailTemplateRepository(AppDbContext context) : base(context)
         {
-            _context = context;
         }
 
         public async Task<EmailTemplate?> GetByNameAsync(string name)
         {
-            return await _context.EmailTemplates
+            return await _dbSet
+                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Name == name && x.IsActive);
         }
+        public async Task<EmailTemplate?> GetByIdAsync(int id) => await _dbSet.FindAsync(id);
 
-        public async Task<EmailTemplate?> GetByIdAsync(int id)
+        public new async Task<IEnumerable<EmailTemplate>> GetAllAsync()
         {
-            return await _context.EmailTemplates.FindAsync(id);
-        }
-
-        public async Task<IEnumerable<EmailTemplate>> GetAllAsync()
-        {
-            return await _context.EmailTemplates
+            return await _dbSet
+                .AsNoTracking()
                 .Where(x => x.IsActive)
                 .ToListAsync();
         }
 
         public async Task<EmailTemplate> AddAsync(EmailTemplate template)
         {
-            _context.EmailTemplates.Add(template);
+            template.UpdatedAt = DateTime.UtcNow;
+            await _dbSet.AddAsync(template);
             await _context.SaveChangesAsync();
             return template;
         }
@@ -42,7 +38,7 @@ namespace IMS_Infrastructure.Repositories
         public async Task UpdateAsync(EmailTemplate template)
         {
             template.UpdatedAt = DateTime.UtcNow;
-            _context.EmailTemplates.Update(template);
+            _dbSet.Update(template);
             await _context.SaveChangesAsync();
         }
     }

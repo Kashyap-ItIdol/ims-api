@@ -86,22 +86,19 @@ namespace IMS_API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordRequestDto dto)
         {
-            var result = await _authService.RequestForgotPasswordAsync(dto);
-            return FromResult(result);
+            return FromResult(await _authService.RequestForgotPasswordAsync(dto));
         }
         [HttpPost("verify-otp")]
         [AllowAnonymous]
         public async Task<IActionResult> VerifyOtp(OtpVerificationRequestDto dto)
         {
-            var result = await _authService.VerifyOtpAsync(dto);
-            return FromResult(result);
+            return FromResult(await _authService.VerifyOtpAsync(dto));
         }
         [HttpPost("reset-password")]
         [AllowAnonymous]
         public async Task<IActionResult> ResetPassword(ResetPasswordRequestDto dto)
         {
-            var result = await _authService.ResetPasswordAsync(dto);
-            return FromResult(result);
+            return FromResult(await _authService.ResetPasswordAsync(dto));
         }
     }
 }

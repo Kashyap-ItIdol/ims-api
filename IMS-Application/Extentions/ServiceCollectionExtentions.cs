@@ -11,10 +11,10 @@ namespace IMS_Application.Extentions
         {
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IDepartmentService, DepartmentService>();
-            //services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<ITicketService, TicketService>();
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<ISubCategoryService, SubCategoryService>();
+            services.AddScoped<ISettingService, SettingService>();
             services.AddScoped<IClientAssetService, ClientAssetService>();
             services.AddScoped<IAssetAssignmentService, AssetAssignmentService>();
             services.AddScoped<IAssetService, AssetService>();

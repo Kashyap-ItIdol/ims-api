@@ -21,7 +21,7 @@ namespace IMS_API.Controllers
         }
 
         [HttpPost("create")]
-        public async Task<IActionResult> CreateTicket([FromBody] CreateTicketRequestDto dto)
+        public async Task<IActionResult> CreateTicket(CreateTicketRequestDto dto)
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
@@ -29,8 +29,7 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            var result = await _ticketService.CreateTicketAsync(dto, userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.CreateTicketAsync(dto, userIdResult.Data));
         }
 
         [HttpPost("{ticketId}/comments")]
@@ -42,8 +41,7 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            var result = await _ticketService.AddCommentAsync(ticketId, commentText, userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.AddCommentAsync(ticketId, commentText, userIdResult.Data));
         }
 
         [HttpPost("{ticketId}/comments/{parentCommentId}/replies")]
@@ -54,9 +52,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userIdResult);
             }
-
-            var result = await _ticketService.AddReplyAsync(ticketId, parentCommentId, commentText, userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.AddReplyAsync(ticketId, parentCommentId, commentText, userIdResult.Data));
         }
 
         [HttpPatch("comments/{commentId}")]
@@ -67,9 +63,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userIdResult);
             }
-
-            var result = await _ticketService.EditCommentAsync(commentId, commentText, userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.EditCommentAsync(commentId, commentText, userIdResult.Data));
         }
 
         [HttpDelete("comments/{commentId}")]
@@ -80,9 +74,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userIdResult);
             }
-
-            var result = await _ticketService.DeleteCommentAsync(commentId, userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.DeleteCommentAsync(commentId, userIdResult.Data));
         }
 
         [HttpPost("comments/{commentId}/like")]
@@ -93,9 +85,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userIdResult);
             }
-
-            var result = await _ticketService.LikeCommentAsync(commentId, userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.LikeCommentAsync(commentId, userIdResult.Data));
         }
 
         [HttpDelete("comments/{commentId}/like")]
@@ -106,9 +96,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userIdResult);
             }
-
-            var result = await _ticketService.UnlikeCommentAsync(commentId, userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.UnlikeCommentAsync(commentId, userIdResult.Data));
         }
 
         [HttpPost("comments/{commentId}/reactions")]
@@ -119,9 +107,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userIdResult);
             }
-
-            var result = await _ticketService.AddReactionAsync(commentId, reactionType, userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.AddReactionAsync(commentId, reactionType, userIdResult.Data));
         }
 
         [HttpDelete("comments/{commentId}/reactions")]
@@ -132,9 +118,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userIdResult);
             }
-
-            var result = await _ticketService.RemoveReactionAsync(commentId, userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.RemoveReactionAsync(commentId, userIdResult.Data));
         }
 
         [HttpPatch("{ticketId}/status")]
@@ -145,9 +129,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userIdResult);
             }
-
-            var result = await _ticketService.UpdateStatusAsync(ticketId, status, userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.UpdateStatusAsync(ticketId, status, userIdResult.Data));
         }
 
         [HttpGet]
@@ -158,9 +140,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userIdResult);
             }
-
-            var result = await _ticketService.GetAllTicketsAsync(userIdResult.Data, pageNumber, pageSize);
-            return FromResult(result);
+            return FromResult(await _ticketService.GetAllTicketsAsync(userIdResult.Data, pageNumber, pageSize));
         }
 
         [HttpGet("{ticketId}")]
@@ -171,11 +151,8 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userIdResult);
             }
-
-            var result = await _ticketService.GetTicketByIdAsync(ticketId, userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.GetTicketByIdAsync(ticketId, userIdResult.Data));
         }
-
 
         [HttpGet("search")]
         public async Task<IActionResult> SearchTickets([FromQuery] string? q)
@@ -185,9 +162,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userIdResult);
             }
-
-            var result = await _ticketService.SearchTicketsGroupedAsync(q, userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.SearchTicketsGroupedAsync(q, userIdResult.Data));
         }
 
         [HttpGet("thismonth")]
@@ -200,10 +175,17 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userIdResult);
             }
-
-
-            var result = await _ticketService.GetCalendarFilteredTicketsAsync(userIdResult.Data, pageNumber, pageSize, dateFilter, startDate, endDate);
-            return FromResult(result);
+            return FromResult(await _ticketService.GetCalendarFilteredTicketsAsync(userIdResult.Data, pageNumber, pageSize, dateFilter, startDate, endDate));
+        }
+        [HttpGet("support-engineers")]
+        public async Task<IActionResult> GetSupportEngineers([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            var userIdResult = GetCurrentUserId();
+            if (!userIdResult.IsSuccess)
+            {
+                return FromResult(userIdResult);
+            }
+            return FromResult(await _ticketService.GetSupportEngineersAsync(pageNumber, pageSize));
         }
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTicket(int id)

@@ -21,19 +21,19 @@ namespace IMS_Application.Services
             _mapper = mapper;
             _logger = logger;
         }
-        public async Task<Result<IEnumerable<DepartmentDto>>> GetAllDepartmentsAsync()
+        public async Task<Result<IEnumerable<Department>>> GetAllDepartmentsAsync()
         {
             try
             {
                 var departments = await _unitOfWork.Departments.GetAllAsync();
-                var dtos = _mapper.Map<IEnumerable<DepartmentDto>>(departments);
+                var dtos = _mapper.Map<IEnumerable<Department>>(departments);
 
-                return Result<IEnumerable<DepartmentDto>>.Success(dtos,SuccessMessages.RetrievedSuccessfully);
+                return Result<IEnumerable<Department>>.Success(dtos,SuccessMessages.RetrievedSuccessfully);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving departments");
-                return Result<IEnumerable<DepartmentDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+                return Result<IEnumerable<Department>>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
     }

@@ -102,6 +102,7 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.Assignment, opt => opt.MapFrom(src => src));
 
             CreateMap<User, UserResponseDto>()
+                .ForMember(dest => dest.EmpCode, opt => opt.MapFrom(_ => "EMP-000"))
                 .ForMember(dest => dest.Role,
                     opt => opt.MapFrom(src => src.Role != null ? src.Role.Name : null))
                 .ForMember(dest => dest.Department,
@@ -111,7 +112,6 @@ namespace IMS_Application.Mappings
                    .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
                    .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                    .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
-                   .ForMember(dest => dest.IsActive, opt => opt.Ignore())
                    .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
 
             CreateMap<UpdateUserDto, User>()
@@ -333,6 +333,13 @@ namespace IMS_Application.Mappings
             CreateMap<Ticket, UpdateTicketStatusResponseDto>()
                 .ForMember(dest => dest.updatedStatus, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.updatedAt, opt => opt.MapFrom(src => src.UpdatedAt));
+
+            CreateMap<RecentActivity, RecentActivityItemDto>()
+                            .ForMember(dest => dest.User,
+                                opt => opt.MapFrom(src =>
+                                    src.UserId > 0
+                                        ? (src.User != null ? src.User.FullName : src.UserId.ToString())
+                                        : "Unknown"));
         }
     }
 }

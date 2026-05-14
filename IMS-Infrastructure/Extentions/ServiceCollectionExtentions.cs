@@ -22,6 +22,7 @@ namespace IMS_Infrastructure.Extentions
             services.AddScoped<ITicketRepository, TicketRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<ISubCategoryRepository, SubCategoryRepository>();
+            services.AddScoped<ISettingRepository, SettingRepository>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
             services.AddOptions<MailSettings>().Bind(config.GetSection("MailSettings"));

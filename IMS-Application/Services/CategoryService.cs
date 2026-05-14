@@ -14,12 +14,15 @@ namespace IMS_Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<CategoryService> _logger;
+        private readonly ISettingRepository _settingRepository;
 
-        public CategoryService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<CategoryService> logger)
+        public CategoryService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<CategoryService> logger, ISettingRepository settingRepository)
+
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _settingRepository = settingRepository;
         }
 
         public async Task<Result<ListCategoriesDto>> CreateCategoryAsync(string name, int createdBy)
@@ -30,26 +33,20 @@ namespace IMS_Application.Services
                 {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryNameRequired, 400);
                 }
-                var trimmedName = name.Trim();
-                if (trimmedName.Length < 2)
+                var cleanName = name.Trim();
+                if (cleanName.Length < 2)
                 {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryNameTooShort, 400);
                 }
-                if (!System.Text.RegularExpressions.Regex.IsMatch(trimmedName, @"^[a-zA-Z0-9 &-_]*$"))
+                if (!System.Text.RegularExpressions.Regex.IsMatch(cleanName, @"^[a-zA-Z0-9 &-_]*$"))
                 {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryNameInvalidChars, 400);
                 }
-                var cleanName = trimmedName;
 
                 var existingCategory = await _unitOfWork.Categories.GetByNameAsync(cleanName);
                 if (existingCategory != null)
                 {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryalreadyExist, 400);
-                }
-
-                if (createdBy <= 0)
-                {
-                    return Result<ListCategoriesDto>.Failure(ErrorMessages.InvalidCredentials, 401);
                 }
 
                 var category = new Category
@@ -63,8 +60,19 @@ namespace IMS_Application.Services
                 await _unitOfWork.Categories.AddAsync(category);
                 await _unitOfWork.SaveChangesAsync();
 
-                var categoryDto = _mapper.Map<ListCategoriesDto>(category);
-                return Result<ListCategoriesDto>.Success(categoryDto, SuccessMessages.CategoryCreated);
+                await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                {
+                    ItemId = category.Id,
+                    ItemName = LogicStrings.CategoryItemName,
+                    Action = LogicStrings.ActionCreated,
+                    UserId = createdBy,
+                    Details = $"Category created: {category.Name}",
+                    DateTime = category.CreatedAt,
+                    IsDeleted = false
+                });
+                await _unitOfWork.SaveChangesAsync();
+
+                return Result<ListCategoriesDto>.Success(_mapper.Map<ListCategoriesDto>(category), SuccessMessages.CategoryCreated);
             }
             catch (Exception ex)
             {
@@ -78,9 +86,8 @@ namespace IMS_Application.Services
             try
             {
                 var categories = await _unitOfWork.Categories.GetAllActiveCategoriesAsync();
-                var categoryDtos = _mapper.Map<List<ListCategoriesDto>>(categories);
 
-                return Result<List<ListCategoriesDto>>.Success(categoryDtos, SuccessMessages.AllCategories);
+                return Result<List<ListCategoriesDto>>.Success(_mapper.Map<List<ListCategoriesDto>>(categories), SuccessMessages.AllCategories);
             }
             catch (Exception ex)
             {
@@ -93,17 +100,13 @@ namespace IMS_Application.Services
         {
             try
             {
-                if (id <= 0)
+                if (id <= 0 || updatedBy <= 0)
                 {
-                    return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryNotFound, 400);
+                    return Result<ListCategoriesDto>.Failure(ErrorMessages.InvalidInput, 400);
                 }
                 if (string.IsNullOrWhiteSpace(name))
                 {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryNameRequired, 400);
-                }
-                if (updatedBy <= 0)
-                {
-                    return Result<ListCategoriesDto>.Failure(ErrorMessages.UserNotFound, 400);
                 }
 
                 var category = await _unitOfWork.Categories.GetByIdAsync(id);
@@ -126,8 +129,19 @@ namespace IMS_Application.Services
                 _unitOfWork.Categories.Update(category);
                 await _unitOfWork.SaveChangesAsync();
 
-                var categoryDto = _mapper.Map<ListCategoriesDto>(category);
-                return Result<ListCategoriesDto>.Success(categoryDto, SuccessMessages.CategoryUpdated);
+                await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                {
+                    ItemId = category.Id,
+                    ItemName = LogicStrings.CategoryItemName,
+                    Action = LogicStrings.ActionUpdated,
+                    UserId = updatedBy,
+                    Details = $"Category updated: {category.Name}",
+                    DateTime = category.UpdatedAt!.Value,
+                    IsDeleted = false
+                });
+                await _unitOfWork.SaveChangesAsync();
+
+                return Result<ListCategoriesDto>.Success(_mapper.Map<ListCategoriesDto>(category), SuccessMessages.CategoryUpdated);
             }
             catch (Exception ex)
             {
@@ -140,14 +154,9 @@ namespace IMS_Application.Services
         {
             try
             {
-                if (categoryId <= 0)
+                if (categoryId <= 0 || updatedBy <= 0)
                 {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.InvalidInput, 400);
-                }
-
-                if (updatedBy <= 0)
-                {
-                    return Result<ListCategoriesDto>.Failure(ErrorMessages.InvalidCredentials, 401);
                 }
 
                 var category = await _unitOfWork.Categories.GetByIdAsync(categoryId);
@@ -168,8 +177,19 @@ namespace IMS_Application.Services
                 _unitOfWork.Categories.Update(category);
                 await _unitOfWork.SaveChangesAsync();
 
-                var categoryDto = _mapper.Map<ListCategoriesDto>(category);
-                return Result<ListCategoriesDto>.Success(categoryDto, SuccessMessages.CategoryDeleted);
+                await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                {
+                    ItemId = category.Id,
+                    ItemName = LogicStrings.CategoryItemName,
+                    Action = LogicStrings.ActionDeleted,
+                    UserId = updatedBy,
+                    Details = $"Category deleted: {category.Name}",
+                    DateTime = category.DeletedAt!.Value,
+                    IsDeleted = true
+                });
+                await _unitOfWork.SaveChangesAsync();
+
+                return Result<ListCategoriesDto>.Success(_mapper.Map<ListCategoriesDto>(category), SuccessMessages.CategoryDeleted);
             }
             catch (Exception ex)
             {
@@ -193,8 +213,7 @@ namespace IMS_Application.Services
                     return Result<GetCategoryDto>.Failure(ErrorMessages.CategoryNotFound, 404);
                 }
 
-                var categoryDto = _mapper.Map<GetCategoryDto>(category);
-                return Result<GetCategoryDto>.Success(categoryDto, SuccessMessages.CategoryById);
+                return Result<GetCategoryDto>.Success(_mapper.Map<GetCategoryDto>(category), SuccessMessages.CategoryById);
             }
             catch (Exception ex)
             {

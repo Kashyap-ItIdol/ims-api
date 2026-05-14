@@ -141,8 +141,9 @@ public class AssetAssignmentService : IAssetAssignmentService
         newAsset.StatusId = statusId; // Ensure correct StatusId is set
 
         // Save the new asset
-        await _assetRepository.Add(newAsset);
-        await _assetRepository.Save();
+        await _assetRepository.AddRangeAsync(new List<Asset> { newAsset });
+        // If your repository/unit-of-work persists changes internally, no further Save call is needed.
+
 
         // Step 2: Create assignment for the newly created asset using AutoMapper
         var assignment = _mapper.Map<AssetAssignment>(dto);

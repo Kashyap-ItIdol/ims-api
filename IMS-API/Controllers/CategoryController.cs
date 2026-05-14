@@ -7,7 +7,7 @@ namespace IMS_API.Controllers
 {
     [Route("api/settings/general/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin,SupportEngineer")]
+    [Authorize(Roles = "Admin,Support Engineer")]
     public class CategoryController : BaseController
     {
         private readonly ICategoryService _categoryService;
@@ -25,24 +25,19 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userResult);
             }
-            int createdBy = userResult.Data;
-
-            var result = await _categoryService.CreateCategoryAsync(name, createdBy);
-            return FromResult(result);
+            return FromResult(await _categoryService.CreateCategoryAsync(name, userResult.Data));
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var result = await _categoryService.GetAllCategoriesAsync();
-            return FromResult(result);
+            return FromResult(await _categoryService.GetAllCategoriesAsync());
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var result = await _categoryService.GetCategoryByIdAsync(id);
-            return FromResult(result);
+            return FromResult(await _categoryService.GetCategoryByIdAsync(id));
         }
 
         [HttpPut("{id}")]
@@ -53,10 +48,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userResult);
             }
-            int updatedBy = userResult.Data;
-
-            var result = await _categoryService.UpdateCategoryAsync(id, name, updatedBy);
-            return FromResult(result);
+            return FromResult(await _categoryService.UpdateCategoryAsync(id, name, userResult.Data));
         }
 
         [HttpDelete("{id}")]
@@ -67,10 +59,7 @@ namespace IMS_API.Controllers
             {
                 return FromResult(userResult);
             }
-            int updatedBy = userResult.Data;
-
-            var result = await _categoryService.DeleteCategoryAsync(id, updatedBy);
-            return FromResult(result);
+            return FromResult(await _categoryService.DeleteCategoryAsync(id, userResult.Data));
         }
     }
 }

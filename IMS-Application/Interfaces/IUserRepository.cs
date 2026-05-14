@@ -1,4 +1,5 @@
-﻿﻿using IMS_Domain.Entities;
+﻿﻿using IMS_Application.DTOs;
+using IMS_Domain.Entities;
 
 namespace IMS_Application.Interfaces
 {
@@ -13,5 +14,6 @@ namespace IMS_Application.Interfaces
         Task<List<User>> GetAllWithRolesAsync();
         Task<List<User>> GetUsersWithOpenTicketsAsync();
         Task<List<User>> SearchAsync(string query);
+        Task<List<User>> FilterAsync(UserFilterDto filter);
     }
 }

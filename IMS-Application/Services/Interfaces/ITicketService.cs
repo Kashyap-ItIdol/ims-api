@@ -18,9 +18,8 @@ namespace IMS_Application.Services.Interfaces
         Task<Result<PagedResult<TicketResponseDto>>> GetAllTicketsAsync(int currentUserId, int pageNumber, int pageSize);
         Task<Result<TicketResponseDto>> GetTicketByIdAsync(int ticketId, int currentUserId);
         Task<Result<List<TicketResponseDto>>> SearchTicketsGroupedAsync(string q, int currentUserId);
+        Task<Result<PagedResult<UserResponseDto>>> GetSupportEngineersAsync(int pageNumber, int pageSize);
         Task<Result<PagedResult<TicketResponseDto>>> GetCalendarFilteredTicketsAsync(int currentUserId, int pageNumber, int pageSize, string? dateFilter, DateOnly? startDate, DateOnly? endDate);
-
-
         Task<Result<bool>> DeleteTicketAsync(int ticketId, int deletedBy);
         Task<Result<TicketResponseDto>> UpdateTicketAsync(int id, UpdateTicketDto dto, int updatedBy);
         Task<Result<List<TicketResponseDto>>> FilterTicketsAsync(TicketFilterDto filter, int currentUserId);
