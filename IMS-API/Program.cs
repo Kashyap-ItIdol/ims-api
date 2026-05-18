@@ -1,4 +1,5 @@
 using IMS_API.ExceptionHandlers;
+using IMS_API.Extensions;
 using IMS_Application.Extentions;
 using IMS_Application.Interfaces;
 using IMS_Infrastructure.Data.Configurations;
@@ -89,6 +90,7 @@ try
     builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddValidation();
     builder.Services.AddProblemDetails();
+    builder.Services.AddApiServices();
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
