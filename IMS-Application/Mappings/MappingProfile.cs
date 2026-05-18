@@ -1,6 +1,5 @@
 using AutoMapper;
 using IMS_Application.DTOs;
-using IMS_Application.DTOs.SubCategory;
 using IMS_Domain.Entities;
 
 namespace IMS_Application.Mappings
@@ -125,6 +124,9 @@ namespace IMS_Application.Mappings
                 .ReverseMap();
 
             CreateMap<Category, GetCategoryDto>();
+
+            CreateMap<SubCategory,SubCategoryDto>();
+
             CreateMap<TicketComment, TicketCommentResponseDto>()
                .ForMember(dest => dest.ticketId, opt => opt.MapFrom(src => src.TicketId.ToString()))
                .ForMember(dest => dest.createdAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")))

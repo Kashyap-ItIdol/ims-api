@@ -33,6 +33,7 @@ namespace IMS_Infrastructure.Data
         public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; }
         public DbSet<TicketAttachment> TicketAttachments { get; set; }
         public DbSet<RecentActivity> RecentActivities { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
