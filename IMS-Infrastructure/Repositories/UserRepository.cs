@@ -1,4 +1,4 @@
-﻿﻿using IMS_Application.DTOs;
+﻿using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
@@ -64,15 +64,8 @@ namespace IMS_Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<List<User>> SearchAsync(string query)
-        {
-            return await _dbSet
-                .AsNoTracking()
-                .Where(u => !u.IsDeleted &&
-                    (EF.Functions.Like(u.FullName, $"%{query}%") ||
-                     EF.Functions.Like(u.Email, $"%{query}%")))
-                .ToListAsync();
-        }
+
+
 
         public async Task<List<User>> GetUsersWithOpenTicketsAsync()
         {

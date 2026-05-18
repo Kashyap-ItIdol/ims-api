@@ -1,4 +1,4 @@
-﻿﻿using AutoMapper;
+﻿﻿﻿﻿using AutoMapper;
 using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
@@ -243,8 +243,24 @@ namespace IMS_Application.Services
         {
             try
             {
-                var users = await _unitOfWork.Users.SearchAsync(query);
-                return Result<List<UserDto>>.Success(_mapper.Map<List<UserDto>>(users));
+                query ??= string.Empty;
+                query = query.Trim();
+
+                var users = await _unitOfWork.Users.GetAllWithRolesAsync();
+
+                var isNumeric = int.TryParse(query, out var userId);
+
+                var filtered = users.Where(u =>
+                    (isNumeric && u.Id == userId) ||
+                    (!string.IsNullOrEmpty(u.FullName) && u.FullName.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(u.Email) && u.Email.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (u.Department != null && !string.IsNullOrEmpty(u.Department.Name) &&
+                     u.Department.Name.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (u.Role != null && !string.IsNullOrEmpty(u.Role.Name) &&
+                     u.Role.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                ).ToList();
+
+                return Result<List<UserDto>>.Success(_mapper.Map<List<UserDto>>(filtered));
             }
             catch (Exception ex)
             {

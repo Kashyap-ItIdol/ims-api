@@ -11,6 +11,7 @@ namespace IMS_Application.Services.Interfaces
         Task<Result<List<UserResponseDto>>> GetAllUsersAsync();
         Task<Result<UserOverviewResponseDto>> GetUserOverviewByIdAsync(int id);
         Task<Result<List<UserResponseDto>>> FilterUsersAsync(UserFilterDto filter);
+        Task<Result<List<UserResponseDto>>> SearchUsersAsync(string query);
         Task<Result<UserFilterOptionsDto>> GetUserFilterOptionsAsync();
     }
 }

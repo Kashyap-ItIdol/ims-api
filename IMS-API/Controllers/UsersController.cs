@@ -77,5 +77,13 @@ namespace IMS_API.Controllers
             var data = await _userService.GetUserFilterOptionsAsync();
             return FromResult(data);
         }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string query)
+        {
+            var data = await _userService.SearchUsersAsync(query);
+            return FromResult(data);
+        }
+
     }
 }

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "Admin,Support Engineer")]
 public class AssetController : BaseController
 {
     private readonly IAssetService _assetService;
@@ -14,7 +15,6 @@ public class AssetController : BaseController
     {
         _assetService = assetService;
     }
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("Add-Asset")]
     public async Task<IActionResult> AddInventoryAssets(AddAssetDto dto)
     {
@@ -22,14 +22,17 @@ public class AssetController : BaseController
         if (!userResult.IsSuccess)
             return FromResult(userResult);
 
-        var result = await _assetService.AddAssetsAsync(dto, userResult.Data);
-        return FromResult(result);
+        return FromResult(await _assetService.AddAssetsAsync(dto, userResult.Data));
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
+    [Authorize(Roles = "Admin,Support Engineer,Employee")]
     [HttpGet("get-all-Assets")]
     public async Task<IActionResult> GetAllAssets()
     {
+        var userResult = GetCurrentUserId();
+        if (!userResult.IsSuccess)
+            return FromResult(userResult);
+
         var result = await _assetService.GetAllAssetsAsync();
 
         if (!result.IsSuccess)
@@ -38,7 +41,6 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateAsset(int id, UpdateAssetDto dto)
     {
@@ -49,11 +51,9 @@ public class AssetController : BaseController
         if (!userResult.IsSuccess)
             return FromResult(userResult);
 
-        var result = await _assetService.UpdateAssetAsync(dto, userResult.Data);
-        return FromResult(result);
+        return FromResult(await _assetService.UpdateAssetAsync(dto, userResult.Data));
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteAsset(int id)
     {
@@ -61,75 +61,57 @@ public class AssetController : BaseController
         if (!userResult.IsSuccess)
             return FromResult(userResult);
 
-        var result = await _assetService.DeleteAssetAsync(id, userResult.Data);
-        return FromResult(result);
+        return FromResult(await _assetService.DeleteAssetAsync(id, userResult.Data));
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpGet("suggest-users")]
     public async Task<IActionResult> GetSuggestedUsers()
     {
-        var result = await _assetService.GetSuggestedUsersAsync();
-        return FromResult(result);
+        return FromResult(await _assetService.GetSuggestedUsersAsync());
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpGet("search-users")]
-    public async Task<IActionResult> SearchUsers(string query)
+    public async Task<IActionResult> SearchUsers([FromQuery] string query)
     {
-        var result = await _assetService.SearchUsersAsync(query);
-        return FromResult(result);
+        return FromResult(await _assetService.SearchUsersAsync(query));
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("assign-asset")]
     public async Task<IActionResult> AssignAsset(AssignAssetDto dto)
     {
-        var result = await _assetService.AssignAssetAsync(dto);
-        return FromResult(result);
+        return FromResult(await _assetService.AssignAssetAsync(dto));
     }
-
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetAssetById(int id)
     {
-        var result = await _assetService.GetAssetByIdAsync(id);
-        return FromResult(result);
+        return FromResult(await _assetService.GetAssetByIdAsync(id));
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("attach-child")]
     public async Task<IActionResult> AttachChild(AttachChildDto dto)
     {
-        var result = await _assetService.AttachChildAsync(dto);
-        return FromResult(result);
+        return FromResult(await _assetService.AttachChildAsync(dto));
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("create-child")]
     public async Task<IActionResult> CreateChild(CreateChildAssetDto dto)
     {
-        var result = await _assetService.CreateAndAttachChildAsync(dto);
-        return FromResult(result);
+        return FromResult(await _assetService.CreateAndAttachChildAsync(dto));
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("detach-child")]
     public async Task<IActionResult> DetachChild(DetachChildDto dto)
     {
-        var result = await _assetService.DetachChildAsync(dto);
-        return FromResult(result);
+        return FromResult(await _assetService.DetachChildAsync(dto));
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("filter")]
     public async Task<IActionResult> FilterAssets([FromBody] AssetFilterDto dto)
     {
-        var result = await _assetService.FilterAssetsAsync(dto);
-        return FromResult(result);
+        return FromResult(await _assetService.FilterAssetsAsync(dto));
     }
 
-    [Authorize(Roles = "Admin,Support Engineer")]
     [HttpPost("{id}/network")]
     public async Task<IActionResult> AddOrUpdateNetwork(int id, NetworkDetailsDto dto)
     {
@@ -137,8 +119,7 @@ public class AssetController : BaseController
         if (!userResult.IsSuccess)
             return FromResult(userResult);
 
-        var result = await _assetService.AddOrUpdateNetworkAsync(id, dto, userResult.Data);
-        return FromResult(result);
+        return FromResult(await _assetService.AddOrUpdateNetworkAsync(id, dto, userResult.Data));
     }
 
 }

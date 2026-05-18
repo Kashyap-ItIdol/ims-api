@@ -1,6 +1,5 @@
 using AutoMapper;
 using IMS_Application.DTOs;
-using IMS_Application.DTOs.SubCategory;
 using IMS_Domain.Entities;
 
 namespace IMS_Application.Mappings
@@ -275,7 +274,7 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
-                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore()) 
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.Brand, opt => opt.MapFrom(src => src.Brand.Trim()))
                 .ForMember(dest => dest.Model, opt => opt.MapFrom(src => src.Model.Trim()))
                 .ForMember(dest => dest.SerialNumber, opt => opt.MapFrom(src => src.SerialNumber.Trim()))
@@ -291,7 +290,7 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
-                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore()) 
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.AssetName, opt => opt.MapFrom(src => src.AssetName.Trim()))
                 .ForMember(dest => dest.SerialNumber, opt => opt.MapFrom(src => src.SerialNumber.Trim()));
 

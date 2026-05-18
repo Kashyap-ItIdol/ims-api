@@ -7,8 +7,6 @@ using IMS_Application.Services.Interfaces;
 using IMS_Domain.Constants;
 using IMS_Domain.Entities;
 using Microsoft.Extensions.Logging;
-using IMS_Application.DTOs;
-using System.Linq;
 
 namespace IMS_Application.Services
 {
@@ -259,11 +257,51 @@ namespace IMS_Application.Services
             }
         }
 
+        public async Task<Result<List<UserResponseDto>>> SearchUsersAsync(string query)
+        {
+            try
+            {
+                query ??= string.Empty;
+                query = query.Trim();
+
+                var users = await _unitOfWork.Users.GetAllWithRolesAsync();
+
+                var isNumeric = int.TryParse(query, out var userId);
+
+                var filtered = users.Where(u =>
+                    (isNumeric && u.Id == userId) ||
+                    (!string.IsNullOrEmpty(u.FullName) && u.FullName.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(u.Email) && u.Email.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (u.Department != null && !string.IsNullOrEmpty(u.Department.Name) &&
+                     u.Department.Name.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (u.Role != null && !string.IsNullOrEmpty(u.Role.Name) &&
+                     u.Role.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                ).ToList();
+
+                return Result<List<UserResponseDto>>.Success(filtered.Select((u, index) => new UserResponseDto
+                {
+                    Id = u.Id,
+                    EmpCode = $"EMP-{(index + 1).ToString("D3")}",
+                    FullName = u.FullName,
+                    Email = u.Email,
+                    Role = u.Role?.Name ?? string.Empty,
+                    Department = u.Department != null ? u.Department.Name : null,
+                    IsDeleted = u.IsDeleted
+                }).ToList());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching users");
+                return Result<List<UserResponseDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+        }
+
         public async Task<Result<List<UserResponseDto>>> FilterUsersAsync(UserFilterDto filter)
         {
             try
             {
                 filter ??= new UserFilterDto();
+
 
                 // Repository is intentionally kept simple; apply the filter logic in the service.
                 var users = await _unitOfWork.Users.FilterAsync(filter);
