@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin,Support Engineer")]
+//[Authorize(Roles = "Admin,Support Engineer")]
 public class AssetController : BaseController
 {
     private readonly IAssetService _assetService;
@@ -33,7 +33,8 @@ public class AssetController : BaseController
         if (!userResult.IsSuccess)
             return FromResult(userResult);
 
-        var result = await _assetService.GetAllAssetsAsync();
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        var result = await _assetService.GetAllAssetsAsync(userResult.Data, role ?? string.Empty);
 
         if (!result.IsSuccess)
             return StatusCode(result.StatusCode, result);

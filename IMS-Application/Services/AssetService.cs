@@ -71,16 +71,17 @@ namespace IMS_Application.Services
             }
         }
 
-        public async Task<Result<List<AssetResponseDto>>> GetAllAssetsAsync()
-        {
-            return await GetAll();
-        }
-
-        public async Task<Result<List<AssetResponseDto>>> GetAll()
+        public async Task<Result<List<AssetResponseDto>>> GetAllAssetsAsync(int currentUserId, string currentRole)
         {
             try
             {
                 var assets = await _unitOfWork.Assets.GetAllAsync();
+
+                if (string.Equals(currentRole, "Employee", StringComparison.OrdinalIgnoreCase))
+                {
+                    assets = assets.Where(a => a.AssignedTo == currentUserId).ToList();
+                }
+
                 var result = _mapper.Map<List<AssetResponseDto>>(assets);
 
                 foreach (var dto in result)
@@ -89,13 +90,19 @@ namespace IMS_Application.Services
                     dto.Children = _mapper.Map<List<AssetResponseDto>>(children);
                 }
 
-                return Result<List<AssetResponseDto>>.Success(result);
+return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetrieved);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching assets");
                 return Result<List<AssetResponseDto>>.Failure(ErrorMessages.UnexpectedError, 500);
             }
+        }
+
+        [Obsolete("Use GetAllAssetsAsync(currentUserId, currentRole) instead")]
+        public async Task<Result<List<AssetResponseDto>>> GetAll()
+        {
+            return await GetAllAssetsAsync(0, string.Empty);
         }
 
         public async Task<Result<AssetResponseDto>> GetById(int id)
@@ -610,7 +617,9 @@ namespace IMS_Application.Services
         {
             try
             {
-                var assetsResult = await GetAllAssetsAsync();
+                var currentRole = "";
+                var currentUserId = 0;
+                var assetsResult = await GetAllAssetsAsync(currentUserId, currentRole);
                 if (!assetsResult.IsSuccess)
                     return Result<byte[]>.Failure(ErrorMessages.UnexpectedError, assetsResult.StatusCode);
 

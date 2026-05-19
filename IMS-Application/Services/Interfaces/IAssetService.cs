@@ -6,7 +6,7 @@ namespace IMS_Application.Services.Interfaces
     public interface IAssetService
     {
         Task<Result<string>> AddAssetsAsync(AddAssetDto dto, int createdBy);
-        Task<Result<List<AssetResponseDto>>> GetAllAssetsAsync();
+        Task<Result<List<AssetResponseDto>>> GetAllAssetsAsync(int currentUserId, string currentRole);
         Task<Result<string>> UpdateAssetAsync(UpdateAssetDto dto, int updatedBy);
         Task<Result<string>> DeleteAssetAsync(int id, int deletedBy);
         Task<Result<List<UserDto>>> GetSuggestedUsersAsync();
