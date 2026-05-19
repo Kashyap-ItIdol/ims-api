@@ -1,3 +1,4 @@
+using AutoMapper;
 using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
@@ -7,6 +8,7 @@ namespace IMS_Infrastructure.Repositories
     public class UnitOfWork : IUnitOfWork, IDisposable
     {
         private readonly AppDbContext _context;
+        private readonly IMapper _mapper;
 
         public UnitOfWork(AppDbContext context)
         {
@@ -59,9 +61,19 @@ namespace IMS_Infrastructure.Repositories
         public IRepository<TicketAttachment> TicketAttachments =>
             _ticketAttachments ??= new Repository<TicketAttachment>(_context);
 
+        private INotificationRepository? _notifications;
+        public INotificationRepository Notifications =>
+            _notifications ??= new NotificationRepository(_context);
 
+
+        public UnitOfWork(AppDbContext context, IMapper mapper)
+        {
+            _context = context;
+            _mapper = mapper;
+        }
 
         public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+
         {
             return await _context.SaveChangesAsync(cancellationToken);
         }
