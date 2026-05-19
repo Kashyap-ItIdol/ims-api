@@ -308,7 +308,8 @@ namespace IMS_Application.Services
             try
             {
                 if (dto?.Assets == null || !dto.Assets.Any())
-                    return Result<string>.Failure("No assets provided", 400);
+                    return Result<string>.Failure(ErrorMessages.AssetsListEmpty, 400);
+
 
                 var assets = new List<Asset>();
                 var now = DateTime.UtcNow;
@@ -527,8 +528,9 @@ namespace IMS_Application.Services
                 {
                     AssetId = child.Id,
                     Action = LogicStrings.ActionDetached,
-                    Description = "Removed from parent asset"
+                    Description = LogicStrings.RemovedFromParentAsset
                 });
+
 
                 await _unitOfWork.SaveChangesAsync();
                 return Result<string>.Success(SuccessMessages.ChildDetachedSuccessfully);
@@ -615,7 +617,8 @@ namespace IMS_Application.Services
                 var assets = assetsResult.Data ?? new List<AssetResponseDto>();
 
                 var sb = new System.Text.StringBuilder();
-                sb.AppendLine("Item Name,Status,Category,Subcategory,Brand,Model,Serial Number,Condition,Vendor Name,Purchase Cost,Purchase Date,Invoice Number,Warranty Expiry Date,AMC Expiry Date");
+                sb.AppendLine(LogicStrings.AssetsCsvHeader);
+
 
                 foreach (var a in assets)
                 {
@@ -717,29 +720,27 @@ namespace IMS_Application.Services
                     return -1;
                 }
 
-                int idxItemName = GetIndex("Item Name");
-                int idxStatus = GetIndex("Status");
-                int idxCategory = GetIndex("Category");
-                int idxSubCategory = GetIndex("Subcategory");
-                int idxBrand = GetIndex("Brand");
-                int idxModel = GetIndex("Model");
-                int idxSerialNo = GetIndex("Serial Number");
-                int idxCondition = GetIndex("Condition");
-                int idxVendor = GetIndex("Vendor Name");
-                int idxPurchaseCost = GetIndex("Purchase Cost");
-                int idxPurchaseDate = GetIndex("Purchase Date");
-                int idxInvoiceNumber = GetIndex("Invoice Number");
-                int idxWarrantyExpiry = GetIndex("Warranty Expiry Date");
-                int idxAmcExpiry = GetIndex("AMC Expiry Date");
+                int idxItemName = GetIndex(LogicStrings.CsvHeaderItemName);
+                int idxStatus = GetIndex(LogicStrings.CsvHeaderStatus);
+                int idxCategory = GetIndex(LogicStrings.CsvHeaderCategory);
+                int idxSubCategory = GetIndex(LogicStrings.CsvHeaderSubCategory);
+                int idxBrand = GetIndex(LogicStrings.CsvHeaderBrand);
+                int idxModel = GetIndex(LogicStrings.CsvHeaderModel);
+                int idxSerialNo = GetIndex(LogicStrings.CsvHeaderSerialNumber);
+                int idxCondition = GetIndex(LogicStrings.CsvHeaderCondition);
+                int idxVendor = GetIndex(LogicStrings.CsvHeaderVendorName);
+                int idxPurchaseCost = GetIndex(LogicStrings.CsvHeaderPurchaseCost);
+                int idxPurchaseDate = GetIndex(LogicStrings.CsvHeaderPurchaseDate);
+                int idxInvoiceNumber = GetIndex(LogicStrings.CsvHeaderInvoiceNumber);
+                int idxWarrantyExpiry = GetIndex(LogicStrings.CsvHeaderWarrantyExpiryDate);
+                int idxAmcExpiry = GetIndex(LogicStrings.CsvHeaderAmcExpiryDate);
 
-                int idxAssignedTo = GetIndex("AssignedTo");
-                int idxAssignedDate = GetIndex("AssignedDate");
-                int idxNotes = GetIndex("Notes");
+                int idxAssignedTo = GetIndex(LogicStrings.CsvHeaderAssignedTo);
+                int idxAssignedDate = GetIndex(LogicStrings.CsvHeaderAssignedDate);
+                int idxNotes = GetIndex(LogicStrings.CsvHeaderNotes);
 
                 if (idxItemName < 0 || idxSerialNo < 0 || idxStatus < 0 || idxCategory < 0 || idxSubCategory < 0 || idxBrand < 0 || idxModel < 0 || idxCondition < 0 || idxVendor < 0 || idxPurchaseCost < 0 || idxPurchaseDate < 0 || idxInvoiceNumber < 0 || idxWarrantyExpiry < 0 || idxAmcExpiry < 0)
-                    return Result<ImportAssetsResultDto>.Failure("CSV header does not match expected format.", 400);
-
-
+                    return Result<ImportAssetsResultDto>.Failure(LogicStrings.CsvHeaderMismatchMessage, 400);
                 result.TotalRows = rows.Count - 1;
                 var now = DateTime.UtcNow;
                 var assetsToInsert = new List<Asset>();
@@ -774,49 +775,49 @@ namespace IMS_Application.Services
                     if (string.IsNullOrWhiteSpace(itemName) || string.IsNullOrWhiteSpace(serialNo))
                     {
                         result.Skipped++;
-                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "ItemName and SerialNo are required." });
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportItemNameAndSerialNoRequired });
                         continue;
                     }
 
                     if (!int.TryParse(categoryStr, out var categoryId) || categoryId <= 0)
                     {
                         result.Skipped++;
-                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "Category must be a valid numeric CategoryId." });
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportCategoryIdInvalid });
                         continue;
                     }
 
                     if (!int.TryParse(subCategoryStr, out var subCategoryId) || subCategoryId <= 0)
                     {
                         result.Skipped++;
-                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "SubCategory must be a valid numeric SubCategoryId." });
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportSubCategoryIdInvalid });
                         continue;
                     }
 
                     if (!int.TryParse(statusStr, out var statusId) || statusId <= 0)
                     {
                         result.Skipped++;
-                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "Status must be a valid numeric StatusId." });
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportStatusIdInvalid });
                         continue;
                     }
 
                     if (string.IsNullOrWhiteSpace(brand) || string.IsNullOrWhiteSpace(model) || string.IsNullOrWhiteSpace(vendor))
                     {
                         result.Skipped++;
-                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "Brand, Model and Vendor are required." });
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportBrandModelVendorRequired });
                         continue;
                     }
 
                     if (string.IsNullOrWhiteSpace(conditionStr) || !int.TryParse(conditionStr, out var conditionId))
                     {
                         result.Failed++;
-                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "ConditionId is required and must be numeric (expected column: Condition)." });
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportConditionIdInvalid });
                         continue;
                     }
 
                     if (string.IsNullOrWhiteSpace(purchaseCostStr))
                     {
                         result.Failed++;
-                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "PurchaseCost is required (expected column: PurchaseCost)." });
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportPurchaseCostRequired });
                         continue;
                     }
 
@@ -829,7 +830,7 @@ namespace IMS_Application.Services
                         if (!decimal.TryParse(purchaseCostStr, out purchaseCost))
                         {
                             result.Failed++;
-                            result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "PurchaseCost is required and must be decimal (expected column: PurchaseCost)." });
+                            result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportPurchaseCostInvalidDecimal });
                             continue;
                         }
                     }
@@ -837,7 +838,7 @@ namespace IMS_Application.Services
                     if (string.IsNullOrWhiteSpace(purchaseDateStr))
                     {
                         result.Failed++;
-                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "PurchaseDate is required (expected column: PurchaseDate)." });
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportPurchaseDateRequired });
                         continue;
                     }
 
@@ -846,7 +847,7 @@ namespace IMS_Application.Services
                         if (!DateTime.TryParse(purchaseDateStr.Trim(), out purchaseDate))
                         {
                             result.Failed++;
-                            result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "PurchaseDate is required and must be a valid date (expected column: PurchaseDate)." });
+                            result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportPurchaseDateInvalid });
                             continue;
                         }
                     }
@@ -854,9 +855,10 @@ namespace IMS_Application.Services
                     if (string.IsNullOrWhiteSpace(invoiceNumber))
                     {
                         result.Failed++;
-                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "InvoiceNumber is required (expected column: InvoiceNumber)." });
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportInvoiceNumberRequired });
                         continue;
                     }
+
 
                     if (await _unitOfWork.Assets.SerialExistsAsync(serialNo))
                     {
