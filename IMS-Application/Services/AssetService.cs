@@ -1,4 +1,4 @@
-﻿﻿using AutoMapper;
+﻿using AutoMapper;
 using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
@@ -9,19 +9,26 @@ using Microsoft.Extensions.Logging;
 
 namespace IMS_Application.Services
 {
-       public class AssetService : IAssetService
+    public class AssetService : IAssetService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<AssetService> _logger;
         private readonly ISettingRepository _settingRepository;
+        private readonly INotificationDispatcher _notificationDispatcher;
 
-        public AssetService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<AssetService> logger, ISettingRepository settingRepository)
+        public AssetService(
+            IUnitOfWork unitOfWork,
+            IMapper mapper,
+            ILogger<AssetService> logger,
+            ISettingRepository settingRepository,
+            INotificationDispatcher notificationDispatcher)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
             _settingRepository = settingRepository;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         public async Task<Result<AssetResponseDto>> Create(CreateAssetDto dto, int createdBy)
@@ -41,7 +48,6 @@ namespace IMS_Application.Services
 
                 await _unitOfWork.Assets.AddRangeAsync(new List<Asset> { asset });
                 await _unitOfWork.SaveChangesAsync();
-
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
                     AssetId = asset.Id,
@@ -60,7 +66,54 @@ namespace IMS_Application.Services
                     IsDeleted = false
                 });
 
+                var notificationTime = DateTime.UtcNow;
+
+                var allUsers = await _unitOfWork.Users.GetAllWithRolesAsync();
+                var adminUserIds = allUsers
+                    .Where(u => u?.Role?.Name == LogicStrings.AdminRole)
+                    .Select(u => u.Id)
+                    .ToHashSet();
+
+                var notifiedUserIds = new HashSet<int>(adminUserIds);
+                if (asset.AssignedTo.HasValue)
+                    notifiedUserIds.Add(asset.AssignedTo.Value);
+
+                foreach (var userId in notifiedUserIds)
+                {
+                    var notification = new Notification
+                    {
+                        UserId = userId,
+                        Title = LogicStrings.ActionCreated,
+                        Message = $"Asset {asset.ItemName} (AID-{asset.Id}) was created.",
+                        IsRead = false,
+                        CreatedAt = notificationTime
+                    };
+
+                    await _unitOfWork.Notifications.AddAsync(notification);
+                }
+
                 await _unitOfWork.SaveChangesAsync();
+
+                foreach (var userId in notifiedUserIds)
+                {
+                    try
+                    {
+                        await _notificationDispatcher.DispatchAsync(
+                            userId,
+                            new NewNotificationDto
+                            {
+                                Title = LogicStrings.ActionCreated,
+                                Message = $"Asset #{asset.Id} was created.",
+                                CreatedAt = notificationTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                            });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex,
+                            "Notification dispatch failed for user {UserId} (asset {AssetId}). Notifications were persisted; dispatch is best-effort.",
+                            userId, asset.Id);
+                    }
+                }
 
                 return Result<AssetResponseDto>.Success(_mapper.Map<AssetResponseDto>(asset));
             }
@@ -69,19 +122,15 @@ namespace IMS_Application.Services
                 _logger.LogError(ex, "Error creating asset");
                 return Result<AssetResponseDto>.Failure(ErrorMessages.UnexpectedError, 500);
             }
-        }
 
+        }
         public async Task<Result<List<AssetResponseDto>>> GetAllAssetsAsync()
         {
             return await GetAll();
         }
-        
-
 
         public async Task<Result<List<AssetResponseDto>>> GetAll()
         {
-
-
             try
             {
                 var assets = await _unitOfWork.Assets.GetAllAsync();
@@ -176,7 +225,7 @@ namespace IMS_Application.Services
             var result = await Delete(id, deletedBy);
             return result.IsSuccess
                 ? Result<string>.Success(SuccessMessages.AssetDeletedSuccessfully)
-                : Result<string>.Failure( ErrorMessages.AssetNotFound, 400);
+                : Result<string>.Failure(ErrorMessages.AssetNotFound, 400);
         }
 
         public async Task<Result<AssetResponseDto>> Delete(int id, int deletedBy)
@@ -290,11 +339,59 @@ namespace IMS_Application.Services
 
             await _unitOfWork.SaveChangesAsync();
 
+            var notificationTime = DateTime.UtcNow;
+
+            var allUsers = await _unitOfWork.Users.GetAllWithRolesAsync();
+            var adminUserIds = allUsers
+                .Where(u => u?.Role?.Name == LogicStrings.AdminRole)
+                .Select(u => u.Id)
+                .ToHashSet();
+
+            var notifiedUserIds = new HashSet<int>(adminUserIds);
+            if (asset.AssignedTo.HasValue)
+                notifiedUserIds.Add(asset.AssignedTo.Value);
+
+            foreach (var userId in notifiedUserIds)
+            {
+                var notification = new Notification
+                {
+                    UserId = userId,
+                    Title = LogicStrings.ActionAssigned,
+                    Message = $"Asset TID-{asset.Id} was assigned.",
+                    IsRead = false,
+                    CreatedAt = notificationTime
+                };
+
+                await _unitOfWork.Notifications.AddAsync(notification);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+
+            foreach (var userId in notifiedUserIds)
+            {
+                try
+                {
+                    await _notificationDispatcher.DispatchAsync(
+                        userId,
+                        new NewNotificationDto
+                        {
+                            Title = LogicStrings.ActionAssigned,
+                            Message = $"Asset #{asset.Id} was assigned to {asset.AssignedTo}.",
+                            CreatedAt = notificationTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                        });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "Notification dispatch failed for user {UserId} (asset {AssetId}). Notifications were persisted; dispatch is best-effort.",
+                        userId, asset.Id);
+                }
+            }
+
             return Result<string>.Success(SuccessMessages.AssetAssignedSuccessfully);
         }
 
         public async Task<Result<string>> AddAssetsAsync(AddAssetDto dto, int createdBy)
-
         {
             try
             {
@@ -316,15 +413,12 @@ namespace IMS_Application.Services
                     asset.UpdatedAt = now;
                     asset.UpdatedBy = createdBy;
                     asset.IsActive = true;
-
                     asset.AssignedTo = dto.AssignedTo;
                     asset.AssignDate = dto.AssignedDate ?? now;
                     asset.ExpectedReturnDate = dto.ExpectedReturnDate;
                     asset.Notes = dto.Location;
-
                     assets.Add(asset);
                 }
-
                 await _unitOfWork.Assets.AddRangeAsync(assets);
                 await _unitOfWork.SaveChangesAsync();
 
@@ -349,7 +443,6 @@ namespace IMS_Application.Services
                         DateTime = DateTime.UtcNow,
                         IsDeleted = false
                     });
-
                     if (dto.AssignedTo.HasValue)
                     {
                         await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
@@ -359,7 +452,6 @@ namespace IMS_Application.Services
                             Description = $"Asset {asset.ItemName} assigned",
                             CreatedBy = dto.AssignedTo.Value
                         });
-
                         await _settingRepository.AddRecentActivityAsync(new RecentActivity
                         {
                             ItemId = asset.Id,
@@ -373,17 +465,77 @@ namespace IMS_Application.Services
                     }
                 }
 
+                // Send notifications for asset creation
+                var notificationTime = DateTime.UtcNow;
+                var allUsers = await _unitOfWork.Users.GetAllWithRolesAsync();
+                var adminUserIds = allUsers
+                    .Where(u => u?.Role?.Name == LogicStrings.AdminRole)
+                    .Select(u => u.Id)
+                    .ToHashSet();
+
+                foreach (var asset in assets)
+                {
+                    var notifiedUserIds = new HashSet<int>(adminUserIds);
+                    if (asset.AssignedTo.HasValue)
+                        notifiedUserIds.Add(asset.AssignedTo.Value);
+
+                    foreach (var userId in notifiedUserIds)
+                    {
+                        var notification = new Notification
+                        {
+                            UserId = userId,
+                            Title = LogicStrings.ActionCreated,
+                            Message = $"Asset {asset.ItemName} (AID-{asset.Id}) was created.",
+                            IsRead = false,
+                            CreatedAt = notificationTime
+                        };
+
+                        await _unitOfWork.Notifications.AddAsync(notification);
+                    }
+                }
+
                 await _unitOfWork.SaveChangesAsync();
 
+                // Dispatch notifications
+                foreach (var asset in assets)
+                {
+                    var notifiedUserIds = new HashSet<int>(adminUserIds);
+                    if (asset.AssignedTo.HasValue)
+                        notifiedUserIds.Add(asset.AssignedTo.Value);
+
+                    foreach (var userId in notifiedUserIds)
+                    {
+                        try
+                        {
+                            await _notificationDispatcher.DispatchAsync(
+                                userId,
+                                new NewNotificationDto
+                                {
+                                    Title = LogicStrings.ActionCreated,
+                                    Message = $"Asset #{asset.Id} was created.",
+                                    CreatedAt = notificationTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                                });
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex,
+                                "Notification dispatch failed for user {UserId} (asset {AssetId}). Notifications were persisted; dispatch is best-effort.",
+                                userId, asset.Id);
+                        }
+                    }
+                }
+
+                await _unitOfWork.SaveChangesAsync();
                 return Result<string>.Success(SuccessMessages.AssetsAddedSuccessfully);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding assets");
                 return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
-            }
-        }
 
+            }
+
+        }
         public async Task<Result<GetAssetByIdResponseDto>> GetAssetByIdAsync(int id)
         {
             try

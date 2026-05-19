@@ -125,7 +125,7 @@ namespace IMS_Application.Mappings
 
             CreateMap<Category, GetCategoryDto>();
 
-            CreateMap<SubCategory,SubCategoryDto>();
+            CreateMap<SubCategory, SubCategoryDto>();
 
             CreateMap<TicketComment, TicketCommentResponseDto>()
                .ForMember(dest => dest.ticketId, opt => opt.MapFrom(src => src.TicketId.ToString()))
@@ -277,7 +277,7 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
-                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore()) 
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.Brand, opt => opt.MapFrom(src => src.Brand.Trim()))
                 .ForMember(dest => dest.Model, opt => opt.MapFrom(src => src.Model.Trim()))
                 .ForMember(dest => dest.SerialNumber, opt => opt.MapFrom(src => src.SerialNumber.Trim()))
@@ -293,7 +293,7 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
-                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore()) 
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.AssetName, opt => opt.MapFrom(src => src.AssetName.Trim()))
                 .ForMember(dest => dest.SerialNumber, opt => opt.MapFrom(src => src.SerialNumber.Trim()));
 
@@ -342,6 +342,9 @@ namespace IMS_Application.Mappings
                                     src.UserId > 0
                                         ? (src.User != null ? src.User.FullName : src.UserId.ToString())
                                         : "Unknown"));
+
+            CreateMap<Notification, NotificationDto>()
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")));
         }
     }
 }
