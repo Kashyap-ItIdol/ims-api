@@ -1,6 +1,5 @@
 ﻿using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
-using IMS_Domain.Entities;
 
 namespace IMS_Application.Services.Interfaces
 {
@@ -19,5 +18,7 @@ namespace IMS_Application.Services.Interfaces
         Task<Result<string>> DetachChildAsync(DetachChildDto dto);
         Task<Result<List<AssetListDto>>> FilterAssetsAsync(AssetFilterDto dto);
         Task<Result<string>> AddOrUpdateNetworkAsync(int assetId, NetworkDetailsDto dto, int userId);
-    }  
+        Task<Result<byte[]>> ExportAllAssetsCsvAsync();
+        Task<Result<ImportAssetsResultDto>> ImportAssetsCsvAsync(ImportAssetsRequestDto dto, int createdBy);
+    }
 }

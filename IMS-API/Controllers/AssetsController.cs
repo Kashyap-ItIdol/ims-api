@@ -41,6 +41,34 @@ public class AssetController : BaseController
         return FromResult(result);
     }
 
+    [Authorize(Roles = "Admin,Support Engineer,Employee")]
+    [HttpGet("get-all-Assets/export")]
+    public async Task<IActionResult> ExportAllAssetsCsv()
+    {
+        var userResult = GetCurrentUserId();
+        if (!userResult.IsSuccess)
+            return FromResult(userResult);
+
+        var result = await _assetService.ExportAllAssetsCsvAsync();
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, result);
+
+        var fileName = $"assets_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv";
+        return File(result.Data, "text/csv", fileName);
+    }
+
+    [Authorize(Roles = "Admin,Support Engineer")]
+    [HttpPost("import")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> ImportAssets([FromForm] ImportAssetsRequestDto dto)
+    {
+        var userResult = GetCurrentUserId();
+        if (!userResult.IsSuccess)
+            return FromResult(userResult);
+
+        return FromResult(await _assetService.ImportAssetsCsvAsync(dto, userResult.Data));
+    }
+
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateAsset(int id, UpdateAssetDto dto)
     {

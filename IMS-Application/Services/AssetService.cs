@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using AutoMapper;
+﻿using AutoMapper;
 using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace IMS_Application.Services
 {
-       public class AssetService : IAssetService
+    public class AssetService : IAssetService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
@@ -75,13 +75,9 @@ namespace IMS_Application.Services
         {
             return await GetAll();
         }
-        
-
 
         public async Task<Result<List<AssetResponseDto>>> GetAll()
         {
-
-
             try
             {
                 var assets = await _unitOfWork.Assets.GetAllAsync();
@@ -129,7 +125,6 @@ namespace IMS_Application.Services
 
         public async Task<Result<string>> Update(UpdateAssetDto dto, int updatedBy)
         {
-
             try
             {
                 var asset = await _unitOfWork.Assets.GetByIdAsync(dto.Id);
@@ -176,13 +171,11 @@ namespace IMS_Application.Services
             var result = await Delete(id, deletedBy);
             return result.IsSuccess
                 ? Result<string>.Success(SuccessMessages.AssetDeletedSuccessfully)
-                : Result<string>.Failure( ErrorMessages.AssetNotFound, 400);
+                : Result<string>.Failure(ErrorMessages.AssetNotFound, 400);
         }
 
         public async Task<Result<AssetResponseDto>> Delete(int id, int deletedBy)
         {
-
-
             try
             {
                 var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(id);
@@ -273,6 +266,7 @@ namespace IMS_Application.Services
         {
             if (dto == null)
                 return Result<string>.Failure(ErrorMessages.UnexpectedError, 400);
+
             var asset = await _unitOfWork.Assets.GetByIdAsync(dto.AssetId);
             if (asset == null)
                 return Result<string>.Failure(ErrorMessages.AssetNotFound, 404);
@@ -310,7 +304,6 @@ namespace IMS_Application.Services
         }
 
         public async Task<Result<string>> AddAssetsAsync(AddAssetDto dto, int createdBy)
-
         {
             try
             {
@@ -344,7 +337,6 @@ namespace IMS_Application.Services
                 await _unitOfWork.Assets.AddRangeAsync(assets);
                 await _unitOfWork.SaveChangesAsync();
 
-                // Add history + recent activities for each created asset (and optional assignment)
                 foreach (var asset in assets)
                 {
                     await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
@@ -610,6 +602,475 @@ namespace IMS_Application.Services
                 _logger.LogError(ex, "Unexpected error during adding/updating network for asset {AssetId}", assetId);
                 return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
             }
+        }
+
+        public async Task<Result<byte[]>> ExportAllAssetsCsvAsync()
+        {
+            try
+            {
+                var assetsResult = await GetAllAssetsAsync();
+                if (!assetsResult.IsSuccess)
+                    return Result<byte[]>.Failure(ErrorMessages.UnexpectedError, assetsResult.StatusCode);
+
+                var assets = assetsResult.Data ?? new List<AssetResponseDto>();
+
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("Item Name,Status,Category,Subcategory,Brand,Model,Serial Number,Condition,Vendor Name,Purchase Cost,Purchase Date,Invoice Number,Warranty Expiry Date,AMC Expiry Date");
+
+                foreach (var a in assets)
+                {
+                    sb.AppendLine(string.Join(",",
+                        EscapeCsv(a.ItemName),
+                        EscapeCsv(a.StatusId.ToString()),
+                        EscapeCsv(a.CategoryId.ToString()),
+                        EscapeCsv(a.SubCategoryId.ToString()),
+                        EscapeCsv(a.Brand),
+                        EscapeCsv(a.Model),
+                        EscapeCsv(a.SerialNo),
+                        EscapeCsv(a.ConditionId.ToString()),
+                        EscapeCsv(a.Vendor),
+                        EscapeCsv(a.PurchaseCost.ToString()),
+                        EscapeCsv(a.PurchaseDate?.ToString("yyyy-MM-dd") ?? string.Empty),
+                        EscapeCsv(a.InvoiceNumber ?? string.Empty),
+                        EscapeCsv(a.WarrantyExpiry?.ToString("yyyy-MM-dd") ?? string.Empty),
+                        EscapeCsv(a.AmcExpiry?.ToString("yyyy-MM-dd") ?? string.Empty)
+                    ));
+                }
+
+                var bytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+                return Result<byte[]>.Success(bytes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting assets to CSV");
+                return Result<byte[]>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+        }
+
+        public async Task<Result<ImportAssetsResultDto>> ImportAssetsCsvAsync(ImportAssetsRequestDto dto, int createdBy)
+        {
+
+            try
+            {
+                var result = new ImportAssetsResultDto();
+
+                using var stream = dto.CsvFile.OpenReadStream();
+                using var reader = new System.IO.StreamReader(stream);
+                var csvText = await reader.ReadToEndAsync();
+                if (string.IsNullOrWhiteSpace(csvText))
+                {
+                    return Result<ImportAssetsResultDto>.Success(result);
+                }
+
+                List<string[]> rows;
+                try
+                {
+                    rows = ParseCsv(csvText);
+                }
+                catch (Exception parseEx)
+                {
+                    _logger.LogError(parseEx, "Failed to parse import CSV");
+                    return Result<ImportAssetsResultDto>.Failure(ErrorMessages.UnexpectedError, 400);
+                }
+
+                if (rows.Count < 2)
+                    return Result<ImportAssetsResultDto>.Success(result);
+
+                var header = rows[0];
+                var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                for (var i = 0; i < header.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(header[i]))
+                        headerMap[header[i].Trim()] = i;
+                }
+
+                static string NormalizeHeader(string value)
+                {
+                    if (value == null) return string.Empty;
+
+                    var trimmed = value.Trim();
+                    var noSpaces = System.Text.RegularExpressions.Regex.Replace(trimmed, @"\s+", "");
+                    var noSeparators = noSpaces.Replace("_", "", StringComparison.OrdinalIgnoreCase)
+                                             .Replace("-", "");
+                    return noSeparators;
+                }
+
+
+                var normalizedHeaderMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                for (var i = 0; i < header.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(header[i]))
+
+                    {
+                        var key = NormalizeHeader(header[i]);
+                        if (!string.IsNullOrWhiteSpace(key))
+                            normalizedHeaderMap[key] = i;
+                    }
+                }
+
+                int GetIndex(string expectedHeader)
+                {
+                    var directKey = NormalizeHeader(expectedHeader);
+                    if (normalizedHeaderMap.TryGetValue(directKey, out var directIdx))
+                        return directIdx;
+
+                    return -1;
+                }
+
+                int idxItemName = GetIndex("Item Name");
+                int idxStatus = GetIndex("Status");
+                int idxCategory = GetIndex("Category");
+                int idxSubCategory = GetIndex("Subcategory");
+                int idxBrand = GetIndex("Brand");
+                int idxModel = GetIndex("Model");
+                int idxSerialNo = GetIndex("Serial Number");
+                int idxCondition = GetIndex("Condition");
+                int idxVendor = GetIndex("Vendor Name");
+                int idxPurchaseCost = GetIndex("Purchase Cost");
+                int idxPurchaseDate = GetIndex("Purchase Date");
+                int idxInvoiceNumber = GetIndex("Invoice Number");
+                int idxWarrantyExpiry = GetIndex("Warranty Expiry Date");
+                int idxAmcExpiry = GetIndex("AMC Expiry Date");
+
+                int idxAssignedTo = GetIndex("AssignedTo");
+                int idxAssignedDate = GetIndex("AssignedDate");
+                int idxNotes = GetIndex("Notes");
+
+                if (idxItemName < 0 || idxSerialNo < 0 || idxStatus < 0 || idxCategory < 0 || idxSubCategory < 0 || idxBrand < 0 || idxModel < 0 || idxCondition < 0 || idxVendor < 0 || idxPurchaseCost < 0 || idxPurchaseDate < 0 || idxInvoiceNumber < 0 || idxWarrantyExpiry < 0 || idxAmcExpiry < 0)
+                    return Result<ImportAssetsResultDto>.Failure("CSV header does not match expected format.", 400);
+
+
+                result.TotalRows = rows.Count - 1;
+                var now = DateTime.UtcNow;
+                var assetsToInsert = new List<Asset>();
+
+                for (var rowNumber = 1; rowNumber < rows.Count; rowNumber++)
+                {
+                    var row = rows[rowNumber];
+                    string Get(string col, int idx)
+                    {
+                        if (idx < 0) return string.Empty;
+                        if (idx >= row.Length) return string.Empty;
+                        return row[idx]?.Trim() ?? string.Empty;
+                    }
+
+                    string itemName = Get("Item Name", idxItemName);
+                    string serialNo = Get("Serial Number", idxSerialNo);
+                    string categoryStr = Get("Category", idxCategory);
+                    string subCategoryStr = Get("Subcategory", idxSubCategory);
+                    string statusStr = Get("Status", idxStatus);
+                    string brand = Get("Brand", idxBrand);
+                    string model = Get("Model", idxModel);
+                    string vendor = Get("Vendor Name", idxVendor);
+                    string conditionStr = Get("Condition", idxCondition);
+                    string purchaseCostStr = Get("Purchase Cost", idxPurchaseCost);
+                    string purchaseDateStr = Get("Purchase Date", idxPurchaseDate);
+                    string invoiceNumber = Get("Invoice Number", idxInvoiceNumber);
+
+                    var assignedToId = (int?)null;
+                    var notes = (string?)null;
+                    var assignedDateStr = (string?)null;
+
+                    if (string.IsNullOrWhiteSpace(itemName) || string.IsNullOrWhiteSpace(serialNo))
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "ItemName and SerialNo are required." });
+                        continue;
+                    }
+
+                    if (!int.TryParse(categoryStr, out var categoryId) || categoryId <= 0)
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "Category must be a valid numeric CategoryId." });
+                        continue;
+                    }
+
+                    if (!int.TryParse(subCategoryStr, out var subCategoryId) || subCategoryId <= 0)
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "SubCategory must be a valid numeric SubCategoryId." });
+                        continue;
+                    }
+
+                    if (!int.TryParse(statusStr, out var statusId) || statusId <= 0)
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "Status must be a valid numeric StatusId." });
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(brand) || string.IsNullOrWhiteSpace(model) || string.IsNullOrWhiteSpace(vendor))
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "Brand, Model and Vendor are required." });
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(conditionStr) || !int.TryParse(conditionStr, out var conditionId))
+                    {
+                        result.Failed++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "ConditionId is required and must be numeric (expected column: Condition)." });
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(purchaseCostStr))
+                    {
+                        result.Failed++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "PurchaseCost is required (expected column: PurchaseCost)." });
+                        continue;
+                    }
+
+                    if (!decimal.TryParse(
+                            purchaseCostStr,
+                            System.Globalization.NumberStyles.Any,
+                            System.Globalization.CultureInfo.InvariantCulture,
+                            out var purchaseCost))
+                    {
+                        if (!decimal.TryParse(purchaseCostStr, out purchaseCost))
+                        {
+                            result.Failed++;
+                            result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "PurchaseCost is required and must be decimal (expected column: PurchaseCost)." });
+                            continue;
+                        }
+                    }
+
+                    if (string.IsNullOrWhiteSpace(purchaseDateStr))
+                    {
+                        result.Failed++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "PurchaseDate is required (expected column: PurchaseDate)." });
+                        continue;
+                    }
+
+                    if (!DateTime.TryParse(purchaseDateStr.Trim(), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var purchaseDate))
+                    {
+                        if (!DateTime.TryParse(purchaseDateStr.Trim(), out purchaseDate))
+                        {
+                            result.Failed++;
+                            result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "PurchaseDate is required and must be a valid date (expected column: PurchaseDate)." });
+                            continue;
+                        }
+                    }
+
+                    if (string.IsNullOrWhiteSpace(invoiceNumber))
+                    {
+                        result.Failed++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "InvoiceNumber is required (expected column: InvoiceNumber)." });
+                        continue;
+                    }
+
+                    if (await _unitOfWork.Assets.SerialExistsAsync(serialNo))
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = $"SerialNo '{serialNo}' already exists." });
+                        continue;
+                    }
+
+                    if (await _unitOfWork.Categories.GetByIdAsync(categoryId) == null)
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = $"CategoryId {categoryId} does not exist." });
+                        continue;
+                    }
+
+                    if (await _unitOfWork.SubCategories.GetByIdAsync(subCategoryId) == null)
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = $"SubCategoryId {subCategoryId} does not exist." });
+                        continue;
+                    }
+
+                    if (await _unitOfWork.Assets.GetAssetStatusByIdAsync(statusId) == null)
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = $"StatusId {statusId} does not exist." });
+                        continue;
+                    }
+
+                    if (await _unitOfWork.Assets.GetAssetConditionByIdAsync(conditionId) == null)
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = $"ConditionId {conditionId} does not exist." });
+                        continue;
+                    }
+
+                    if (false)
+                    {
+                    }
+
+                    var asset = new Asset
+                    {
+                        ItemName = itemName,
+                        SerialNo = serialNo,
+                        CategoryId = categoryId,
+                        SubCategoryId = subCategoryId,
+                        StatusId = statusId,
+                        ConditionId = conditionId,
+                        Brand = brand,
+                        Model = model,
+                        Vendor = vendor,
+                        Notes = string.IsNullOrWhiteSpace(notes) ? null : notes,
+                        PurchaseCost = purchaseCost,
+                        PurchaseDate = purchaseDate,
+                        InvoiceNumber = invoiceNumber,
+                        WarrantyExpiry = TryParseNullableDate(Get("Warranty Expiry Date", idxWarrantyExpiry)),
+                        AmcExpiry = TryParseNullableDate(Get("AMC Expiry Date", idxAmcExpiry)),
+                        IsActive = true,
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                        CreatedBy = createdBy,
+                        UpdatedBy = createdBy,
+                        AssignedTo = assignedToId,
+                        AssignDate = ParseNullableDate(assignedDateStr),
+                        ExpectedReturnDate = null
+                    };
+
+
+                    assetsToInsert.Add(asset);
+                }
+
+                if (assetsToInsert.Any())
+                {
+                    try
+                    {
+                        await _unitOfWork.Assets.AddRangeAsync(assetsToInsert);
+                        await _unitOfWork.SaveChangesAsync();
+
+                        foreach (var asset in assetsToInsert)
+                        {
+                            await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
+                            {
+                                AssetId = asset.Id,
+                                Action = LogicStrings.ActionCreated,
+                                Description = $"Asset {asset.ItemName} created",
+                                CreatedBy = createdBy
+                            });
+
+                            await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                            {
+                                ItemId = asset.Id,
+                                ItemName = LogicStrings.AssetItemName,
+                                Action = LogicStrings.ActionCreated,
+                                UserId = createdBy,
+                                Details = $"Asset {asset.ItemName} created",
+                                DateTime = DateTime.UtcNow,
+                                IsDeleted = false
+                            });
+                        }
+
+                        await _unitOfWork.SaveChangesAsync();
+                    }
+                    catch (Exception dbEx)
+                    {
+                        _logger.LogError(dbEx, "Error saving imported assets CSV");
+
+                        result.Failed += assetsToInsert.Count;
+                        result.Errors.Add(new ImportAssetRowErrorDto
+                        {
+                            RowNumber = 0,
+                            Message = $"Database error while inserting assets: {dbEx.InnerException?.Message ?? dbEx.Message}"
+                        });
+
+                        result.Inserted = 0;
+                        return Result<ImportAssetsResultDto>.Success(result);
+                    }
+                }
+
+                result.Inserted = assetsToInsert.Count;
+                return Result<ImportAssetsResultDto>.Success(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error importing assets CSV");
+                return Result<ImportAssetsResultDto>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+
+            static int? ParseNullableInt(string value)
+            {
+                if (string.IsNullOrWhiteSpace(value)) return null;
+                return int.TryParse(value.Trim(), out var i) ? i : null;
+            }
+
+            static DateTime? ParseNullableDate(string value)
+            {
+                if (string.IsNullOrWhiteSpace(value)) return null;
+                if (DateTime.TryParse(value.Trim(), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var dt))
+                    return dt;
+                return DateTime.TryParse(value.Trim(), out dt) ? dt : null;
+            }
+
+            static DateTime? TryParseNullableDate(string value)
+            {
+                if (string.IsNullOrWhiteSpace(value)) return null;
+                if (DateTime.TryParse(value.Trim(), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var dt))
+                    return dt;
+                return DateTime.TryParse(value.Trim(), out dt) ? dt : null;
+            }
+        }
+
+        private static List<string[]> ParseCsv(string csvText)
+        {
+            var rows = new List<string[]>();
+            var row = new List<string>();
+            var current = new System.Text.StringBuilder();
+            bool inQuotes = false;
+
+            for (int i = 0; i < csvText.Length; i++)
+            {
+                char c = csvText[i];
+
+                if (c == '"')
+                {
+                    if (inQuotes && i + 1 < csvText.Length && csvText[i + 1] == '"')
+                    {
+                        current.Append('"');
+                        i++;
+                        continue;
+                    }
+
+                    inQuotes = !inQuotes;
+                    continue;
+                }
+
+                if (!inQuotes)
+                {
+                    if (c == ',')
+                    {
+                        row.Add(current.ToString());
+                        current.Clear();
+                        continue;
+                    }
+
+                    if (c == '\r')
+                        continue;
+
+                    if (c == '\n')
+                    {
+                        row.Add(current.ToString());
+                        current.Clear();
+                        rows.Add(row.ToArray());
+                        row = new List<string>();
+                        continue;
+                    }
+                }
+
+                current.Append(c);
+            }
+
+            if (current.Length > 0 || row.Count > 0)
+            {
+                row.Add(current.ToString());
+                rows.Add(row.ToArray());
+            }
+
+            return rows;
+        }
+
+        private static string EscapeCsv(string? value)
+        {
+            value ??= string.Empty;
+            var needsQuotes = value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r');
+            value = value.Replace('"', '"');
+            return needsQuotes ? $"\"{value}\"" : value;
         }
     }
 }
