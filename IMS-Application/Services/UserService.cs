@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
@@ -78,15 +78,7 @@ namespace IMS_Application.Services
                 if (user == null)
                     return Result<string>.Failure(ErrorMessages.UserNotFound, 404);
 
-                if (user.RoleId != RoleConstants.Employee &&
-                    user.RoleId != RoleConstants.SupportEngineer)
-                {
-                    return Result<string>.Failure(ErrorMessages.OnlyEmployeeOrSupportCanUpdate, 400);
-                }
-
-                if (dto.RoleId == RoleConstants.Admin)
-                    return Result<string>.Failure(ErrorMessages.CannotAssignAdminRole, 400);
-
+                
                 var email = dto.Email?.Trim().ToLower();
                 if (!string.IsNullOrEmpty(email) && email != user.Email)
                 {
@@ -149,10 +141,9 @@ namespace IMS_Application.Services
                 if (user == null)
                     return Result<string>.Failure(ErrorMessages.UserNotFound, 404);
 
-                if (user.RoleId != RoleConstants.Employee &&
-                    user.RoleId != RoleConstants.SupportEngineer)
+                if (id == currentUserId)
                 {
-                    return Result<string>.Failure(ErrorMessages.OnlyEmployeeOrSupportCanDelete, 400);
+                    return Result<string>.Failure("You cannot delete your own account", 400);
                 }
 
                 user.IsDeleted = true;

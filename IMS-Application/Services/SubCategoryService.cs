@@ -219,7 +219,12 @@ namespace IMS_Application.Services
                 }
 
                 var deletedName = existingSubCategory.Name;
-                _unitOfWork.SubCategories.Remove(existingSubCategory);
+    
+                existingSubCategory.IsActive = false;
+                existingSubCategory.UpdatedAt = DateTime.UtcNow;
+                existingSubCategory.UpdatedBy = deletedBy;
+                
+                _unitOfWork.SubCategories.Update(existingSubCategory);
                 await _unitOfWork.SaveChangesAsync();
 
                 await _settingRepository.AddRecentActivityAsync(new RecentActivity

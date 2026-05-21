@@ -57,6 +57,20 @@ try
 
     builder.Services.AddControllers();
 
+    // CORS (dev: React on http://localhost:5173)
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("DevCors", policy =>
+        {
+            policy
+                .WithOrigins("http://localhost:5173", "https://localhost:7165")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        });
+    });
+
+
     builder.Services.Configure<ApiBehaviorOptions>(options =>
     {
         options.InvalidModelStateResponseFactory = context =>
@@ -167,6 +181,9 @@ try
     });
 
     app.UseHttpsRedirection();
+
+    app.UseCors("DevCors");
+
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();

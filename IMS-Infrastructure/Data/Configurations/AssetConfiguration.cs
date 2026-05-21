@@ -31,6 +31,15 @@ namespace IMS_Infrastructure.Data.Configurations
                 .IsRequired()
                 .HasMaxLength(100);
 
+            builder.Property(x => x.Location)
+                .HasMaxLength(200)
+                .IsUnicode(true);
+
+            builder.Property(x => x.TableNo)
+                .HasMaxLength(50)
+                .IsUnicode(true);
+
+
             builder.Property(x => x.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
 

@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
@@ -281,7 +281,8 @@ return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetr
             asset.AssignedTo = dto.UserId;
             asset.AssignDate = dto.AssignedDate;
             asset.ExpectedReturnDate = dto.ExpectedReturnDate;
-            asset.Notes = dto.Location;
+            asset.Location = dto.Location;
+            asset.TableNo = dto.TableNo;
             asset.UpdatedAt = DateTime.UtcNow;
             asset.UpdatedBy = dto.UserId;
 
@@ -337,7 +338,9 @@ return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetr
                     asset.AssignedTo = dto.AssignedTo;
                     asset.AssignDate = dto.AssignedDate ?? now;
                     asset.ExpectedReturnDate = dto.ExpectedReturnDate;
-                    asset.Notes = dto.Location;
+                    asset.Location = dto.Location;
+                    asset.TableNo = dto.TableNo;
+
 
                     assets.Add(asset);
                 }
@@ -366,14 +369,14 @@ return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetr
                         IsDeleted = false
                     });
 
-                    if (dto.AssignedTo.HasValue)
+                    if (dto.AssignedTo.HasValue && dto.AssignedTo.Value > 0)
                     {
                         await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                         {
                             AssetId = asset.Id,
                             Action = LogicStrings.ActionAssigned,
                             Description = $"Asset {asset.ItemName} assigned",
-                            CreatedBy = dto.AssignedTo.Value
+                            CreatedBy = createdBy
                         });
 
                         await _settingRepository.AddRecentActivityAsync(new RecentActivity
@@ -381,8 +384,8 @@ return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetr
                             ItemId = asset.Id,
                             ItemName = LogicStrings.AssetItemName,
                             Action = LogicStrings.ActionAssigned,
-                            UserId = dto.AssignedTo.Value,
-                            Details = $"Asset {asset.ItemName} assigned",
+                            UserId = createdBy,
+                            Details = $"Asset {asset.ItemName} assigned to user with ID {dto.AssignedTo.Value}",
                             DateTime = DateTime.UtcNow,
                             IsDeleted = false
                         });
@@ -411,6 +414,17 @@ return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetr
                 var response = _mapper.Map<GetAssetByIdResponseDto>(asset);
                 response.Overview.Children = _mapper.Map<List<ChildAssetDto>>(asset.ChildAssets?.Where(c => c.IsActive).ToList() ?? new List<Asset>());
 
+                if (!string.IsNullOrEmpty(asset.Location))
+                    response.Assignment.OfficeNo = asset.Location;
+
+                if (!string.IsNullOrEmpty(asset.TableNo))
+                    response.Assignment.TableNo = asset.TableNo;
+
+
+                // Retrieve and populate history
+                var history = await _unitOfWork.Assets.GetHistoryByAssetIdAsync(asset.Id);
+                if (history != null && history.Any())
+                    response.Assignment.History = _mapper.Map<List<AssetHistoryDto>>(history);
 
                 var network = await _unitOfWork.NetworkDetails.GetByAssetIdAsync(asset.Id);
                 if (network != null)

@@ -47,11 +47,9 @@ namespace IMS_Infrastructure.Repositories
 
         public async Task<bool> TableAlreadyAssignedAsync(string tableNo)
         {
-            return await _dbSet
+            return await _context.AssetAssignments
                 .AsNoTracking()
-                .AnyAsync(u =>
-                    u.TableNo == tableNo &&
-                    !u.IsDeleted);
+                .AnyAsync(a => a.TableNo == tableNo && !a.IsDeleted);
         }
 
         public async Task<List<User>> GetAllWithRolesAsync()

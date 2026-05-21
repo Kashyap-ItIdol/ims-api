@@ -24,14 +24,16 @@ namespace IMS_Application.Services
             _mapper = mapper;
         }
 
-        public async Task<Result<PagedResult<RecentActivityItemDto>>> GetRecentActivitiesAsync(int pageNumber, int pageSize)
+        public async Task<Result<PagedResult<RecentActivityItemDto>>> GetRecentActivitiesAsync(int pageNumber, int pageSize, string? search)
+
         {
             if (pageNumber < 1 || pageSize < 1)
                 return Result<PagedResult<RecentActivityItemDto>>.Failure(ErrorMessages.InvalidPagination, 400);
 
             try
             {
-                var activities = await _settingRepository.GetRecentActivitiesAsync(pageNumber, pageSize);
+                var activities = await _settingRepository.GetRecentActivitiesAsync(pageNumber, pageSize, search);
+
                 var items = activities
                     .OrderByDescending(x => x.DateTime)
                     .ToList();
@@ -39,7 +41,7 @@ namespace IMS_Application.Services
                 var pagedResult = new PagedResult<RecentActivityItemDto>
                 {
                     Items = _mapper.Map<List<RecentActivityItemDto>>(items),
-                    TotalCount = await _settingRepository.GetRecentActivitiesTotalCountAsync(),
+                    TotalCount = await _settingRepository.GetRecentActivitiesTotalCountAsync(search),
                     PageNumber = pageNumber,
                     PageSize = pageSize
                 };
@@ -54,14 +56,15 @@ namespace IMS_Application.Services
             }
         }
 
-        public async Task<Result<PagedResult<RecentActivityItemDto>>> GetRecentDeletedActivitiesAsync(int pageNumber, int pageSize)
+        public async Task<Result<PagedResult<RecentActivityItemDto>>> GetRecentDeletedActivitiesAsync(int pageNumber, int pageSize, string? search)
+
         {
             if (pageNumber < 1 || pageSize < 1)
                 return Result<PagedResult<RecentActivityItemDto>>.Failure(ErrorMessages.InvalidPagination, 400);
 
             try
             {
-                var activities = await _settingRepository.GetDeletedRecentActivitiesAsync(pageNumber, pageSize);
+                var activities = await _settingRepository.GetDeletedRecentActivitiesAsync(pageNumber, pageSize, search);
 
                 var items = activities
                     .OrderByDescending(x => x.DateTime)
@@ -70,7 +73,7 @@ namespace IMS_Application.Services
                 var pagedResult = new PagedResult<RecentActivityItemDto>
                 {
                     Items = _mapper.Map<List<RecentActivityItemDto>>(items),
-                    TotalCount = await _settingRepository.GetDeletedRecentActivitiesTotalCountAsync(),
+                    TotalCount = await _settingRepository.GetDeletedRecentActivitiesTotalCountAsync(search),
                     PageNumber = pageNumber,
                     PageSize = pageSize
                 };

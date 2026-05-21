@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace IMS_API.Controllers
 {
-    [Route("api/settings/general/category/{categoryId}/[controller]")]
+    [Route("api/settings/general/category/{categoryId}/SubCategory")]
     [ApiController]
     [Authorize(Roles = "Admin,Support Engineer")]
     public class SubCategoryController : BaseController
@@ -19,7 +19,7 @@ namespace IMS_API.Controllers
         }
 
         [HttpPost("Create")]
-        public async Task<IActionResult> Create([FromQuery] string name, int categoryId)
+        public async Task<IActionResult> Create(int categoryId, [FromQuery] string name)
         {
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
@@ -37,7 +37,7 @@ namespace IMS_API.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateSubCategoryDto request)
+        public async Task<IActionResult> Update(int categoryId, int id, [FromBody] UpdateSubCategoryDto request)
         {
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
@@ -50,7 +50,7 @@ namespace IMS_API.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(int categoryId, int id)
         {
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
