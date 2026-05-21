@@ -41,13 +41,12 @@ public class AssetAssignmentRepository : Repository<AssetAssignment>, IAssetAssi
     public async Task DeleteAsync(int id)
     {
         var entity = await GetByIdAsync(id);
-        if (entity != null)
-        {
-            entity.IsDeleted = true;
-            entity.DeletedAt = DateTime.UtcNow;
-            entity.DeletedBy = 1; 
-            
-            await _context.SaveChangesAsync();
-        }
+        if (entity == null)
+            return;
+
+        entity.IsDeleted = true;
+        entity.DeletedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
     }
 }

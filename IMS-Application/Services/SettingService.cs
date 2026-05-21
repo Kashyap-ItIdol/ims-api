@@ -24,6 +24,19 @@ namespace IMS_Application.Services
             _mapper = mapper;
         }
 
+        private static Func<IMS_Domain.Entities.RecentActivity, bool> ApplySearchFilter(string? search, bool includeUser = true)
+        {
+            if (string.IsNullOrWhiteSpace(search))
+                return _ => true;
+
+            var q = search.Trim();
+            return x =>
+                (x.ItemName != null && x.ItemName.Contains(q)) ||
+                (x.Action != null && x.Action.Contains(q)) ||
+                (x.Details != null && x.Details.Contains(q)) ||
+                (includeUser && x.User != null && x.User.FullName != null && x.User.FullName.Contains(q));
+        }
+
         public async Task<Result<PagedResult<RecentActivityItemDto>>> GetRecentActivitiesAsync(int pageNumber, int pageSize, string? search)
 
         {
@@ -34,13 +47,15 @@ namespace IMS_Application.Services
             {
                 var activities = await _settingRepository.GetRecentActivitiesAsync(pageNumber, pageSize, search);
 
-                var items = activities
+                var filter = ApplySearchFilter(search, includeUser: true);
+                var filteredItems = activities
+                    .Where(filter)
                     .OrderByDescending(x => x.DateTime)
                     .ToList();
 
                 var pagedResult = new PagedResult<RecentActivityItemDto>
                 {
-                    Items = _mapper.Map<List<RecentActivityItemDto>>(items),
+                    Items = _mapper.Map<List<RecentActivityItemDto>>(filteredItems),
                     TotalCount = await _settingRepository.GetRecentActivitiesTotalCountAsync(search),
                     PageNumber = pageNumber,
                     PageSize = pageSize

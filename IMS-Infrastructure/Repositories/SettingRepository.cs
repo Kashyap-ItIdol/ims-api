@@ -23,16 +23,6 @@ namespace IMS_Infrastructure.Repositories
                 .Include(x => x.User)
                 .Where(x => !x.IsDeleted);
 
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var q = search.Trim();
-                query = query.Where(x =>
-                    (x.ItemName != null && x.ItemName.Contains(q)) ||
-                    (x.Action != null && x.Action.Contains(q)) ||
-                    (x.Details != null && x.Details.Contains(q)) ||
-                    (x.User != null && x.User.FullName != null && x.User.FullName.Contains(q)));
-            }
-
             return query
                 .OrderByDescending(x => x.DateTime)
                 .Skip((pageNumber - 1) * pageSize)
@@ -46,15 +36,6 @@ namespace IMS_Infrastructure.Repositories
                 .AsNoTracking()
                 .Where(x => !x.IsDeleted);
 
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var q = search.Trim();
-                query = query.Where(x =>
-                    (x.ItemName != null && x.ItemName.Contains(q)) ||
-                    (x.Action != null && x.Action.Contains(q)) ||
-                    (x.Details != null && x.Details.Contains(q)));
-            }
-
             return query.CountAsync();
         }
 
@@ -64,16 +45,6 @@ namespace IMS_Infrastructure.Repositories
                 .AsNoTracking()
                 .Include(x => x.User)
                 .Where(x => x.IsDeleted);
-
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var q = search.Trim();
-                query = query.Where(x =>
-                    (x.ItemName != null && x.ItemName.Contains(q)) ||
-                    (x.Action != null && x.Action.Contains(q)) ||
-                    (x.Details != null && x.Details.Contains(q)) ||
-                    (x.User != null && x.User.FullName != null && x.User.FullName.Contains(q)));
-            }
 
             return query
                 .OrderByDescending(x => x.DateTime)
@@ -87,15 +58,6 @@ namespace IMS_Infrastructure.Repositories
             var query = _dbSet
                 .AsNoTracking()
                 .Where(x => x.IsDeleted);
-
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var q = search.Trim();
-                query = query.Where(x =>
-                    (x.ItemName != null && x.ItemName.Contains(q)) ||
-                    (x.Action != null && x.Action.Contains(q)) ||
-                    (x.Details != null && x.Details.Contains(q)));
-            }
 
             return query.CountAsync();
         }
