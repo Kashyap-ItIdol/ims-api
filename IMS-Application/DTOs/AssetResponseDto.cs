@@ -1,4 +1,6 @@
-﻿﻿namespace IMS_Application.DTOs
+﻿﻿using System.Collections.Generic;
+using IMS_Application.DTOs;
+namespace IMS_Application.DTOs
 {
     public class AssetResponseDto
     {
@@ -23,6 +25,7 @@
         public DateTime? ExpectedReturnDate { get; set; }
         public string? Location { get; set; }
         public string? TableNo { get; set; }
+        public List<AssetHistoryDto> History { get; set; } = new();
         public List<AssetResponseDto> Children { get; set; } = new();
     }
 }

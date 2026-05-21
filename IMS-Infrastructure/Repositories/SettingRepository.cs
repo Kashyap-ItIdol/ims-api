@@ -53,5 +53,22 @@ namespace IMS_Infrastructure.Repositories
                 .AsNoTracking()
                 .CountAsync(x => x.IsDeleted);
         }
+        public Task<List<RecentActivity>> GetUserActivitiesAsync(int userId, DateTime? startDate, DateTime? endDate)
+        {
+            var query = _dbSet
+                .AsNoTracking()
+                .Include(x => x.User)
+                .Where(x => !x.IsDeleted && x.UserId == userId);
+
+            if (startDate.HasValue)
+                query = query.Where(x => x.DateTime >= startDate.Value);
+
+            if (endDate.HasValue)
+                query = query.Where(x => x.DateTime <= endDate.Value);
+
+            return query
+                .OrderByDescending(x => x.DateTime)
+                .ToListAsync();
+        }
     }
 }

@@ -52,6 +52,13 @@ namespace IMS_API.Controllers
             var data = await _userService.GetUserOverviewByIdAsync(id);
             return FromResult(data);
         }
+        
+        [HttpGet("{id}/activity")]
+        public async Task<IActionResult> GetActivityById([FromRoute] int id, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+        {
+            var data = await _userService.GetUserActivitiesByIdAsync(id, startDate, endDate);
+            return FromResult(data);
+        }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)

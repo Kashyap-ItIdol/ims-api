@@ -408,6 +408,31 @@ namespace IMS_Application.Services
                 return Result<UserFilterOptionsDto>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
+        public async Task<Result<List<UserActivityResponseDto>>> GetUserActivitiesByIdAsync(int id, DateTime? startDate, DateTime? endDate)
+        {
+            try
+            {
+                var activities = await _unitOfWork.Settings.GetUserActivitiesAsync(id, startDate, endDate);
+
+                var mapped = activities.Select(a => new UserActivityResponseDto
+                {
+                    Id = a.Id,
+                    Timestamp = a.DateTime,
+                    DateTime = a.DateTime,
+                    Description = a.Action,
+                    Type = a.ItemName,
+                    RelatedId = a.ItemId.ToString(),
+                    User = a.User != null ? a.User.FullName : a.UserId.ToString()
+                }).ToList();
+
+                return Result<List<UserActivityResponseDto>>.Success(mapped);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving user activities for id {UserId}", id);
+                return Result<List<UserActivityResponseDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+        }
     }
 }
 

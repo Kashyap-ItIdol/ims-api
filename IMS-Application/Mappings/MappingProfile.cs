@@ -63,7 +63,8 @@ namespace IMS_Application.Mappings
             CreateMap<Asset, AssetResponseDto>()
                 .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.AssignedUser != null ? src.AssignedUser.Location : null))
                 .ForMember(dest => dest.TableNo, opt => opt.MapFrom(src => src.AssignedUser != null ? src.AssignedUser.TableNo : null))
-                .ForMember(dest => dest.Children, opt => opt.MapFrom(src => src.ChildAssets));
+                .ForMember(dest => dest.Children, opt => opt.MapFrom(src => src.ChildAssets))
+                .ForMember(dest => dest.History, opt => opt.Ignore());
 
             CreateMap<Asset, AssetListDto>()
                 .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.Name))

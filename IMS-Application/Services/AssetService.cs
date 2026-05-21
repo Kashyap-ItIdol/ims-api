@@ -411,6 +411,7 @@ return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetr
                 var response = _mapper.Map<GetAssetByIdResponseDto>(asset);
                 response.Overview.Children = _mapper.Map<List<ChildAssetDto>>(asset.ChildAssets?.Where(c => c.IsActive).ToList() ?? new List<Asset>());
 
+
                 var network = await _unitOfWork.NetworkDetails.GetByAssetIdAsync(asset.Id);
                 if (network != null)
                     response.Assignment.Network = _mapper.Map<NetworkDetailsDto>(network);
