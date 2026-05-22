@@ -137,6 +137,17 @@ public async Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId)
 
             return await query.ToListAsync();
         }
+
+        public IQueryable<Asset> GetAllWithIncludesQueryable()
+        {
+            return _dbSet
+                .AsNoTracking()
+                .Include(a => a.Category)
+                .Include(a => a.SubCategory)
+                .Include(a => a.AssetStatus)
+                .Include(a => a.AssignedUser)
+                .Where(a => a.IsActive);
+        }
     }
 }
 

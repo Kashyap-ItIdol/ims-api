@@ -17,6 +17,7 @@ namespace IMS_Application.Services.Interfaces
         Task<Result<string>> CreateAndAttachChildAsync(CreateChildAssetDto dto);
         Task<Result<string>> DetachChildAsync(DetachChildDto dto);
         Task<Result<List<AssetListDto>>> FilterAssetsAsync(AssetFilterDto dto);
+        Task<Result<List<AssetListDto>>> SearchAssetsAsync(string searchTerm);
         Task<Result<string>> AddOrUpdateNetworkAsync(int assetId, NetworkDetailsDto dto, int userId);
         Task<Result<byte[]>> ExportAllAssetsCsvAsync();
         Task<Result<ImportAssetsResultDto>> ImportAssetsCsvAsync(ImportAssetsRequestDto dto, int createdBy);

@@ -19,6 +19,7 @@ namespace IMS_API.Controllers
         }
 
         [HttpGet("lookup")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAllDepartments()
         {
             var result = await _departmentService.GetAllDepartmentsAsync();

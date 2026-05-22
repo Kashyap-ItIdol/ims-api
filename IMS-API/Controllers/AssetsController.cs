@@ -141,6 +141,13 @@ public class AssetController : BaseController
         return FromResult(await _assetService.FilterAssetsAsync(dto));
     }
 
+    [Authorize(Roles = "Admin,Support Engineer,Employee")]
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchAssets([FromQuery] string query)
+    {
+        return FromResult(await _assetService.SearchAssetsAsync(query));
+    }
+
     [HttpPost("{id}/network")]
     public async Task<IActionResult> AddOrUpdateNetwork(int id, NetworkDetailsDto dto)
     {

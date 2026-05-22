@@ -30,10 +30,15 @@ namespace IMS_Application.Services
                 return _ => true;
 
             var q = search.Trim();
+
+            int? itemId = null;
+            if (int.TryParse(q, out var parsedId))
+                itemId = parsedId;
             return x =>
                 (x.ItemName != null && x.ItemName.Contains(q)) ||
                 (x.Action != null && x.Action.Contains(q)) ||
                 (x.Details != null && x.Details.Contains(q)) ||
+                (itemId.HasValue && x.ItemId == itemId.Value) ||
                 (includeUser && x.User != null && x.User.FullName != null && x.User.FullName.Contains(q));
         }
 
@@ -72,30 +77,36 @@ namespace IMS_Application.Services
         }
 
         public async Task<Result<PagedResult<RecentActivityItemDto>>> GetRecentDeletedActivitiesAsync(int pageNumber, int pageSize, string? search)
-
         {
             if (pageNumber < 1 || pageSize < 1)
                 return Result<PagedResult<RecentActivityItemDto>>.Failure(ErrorMessages.InvalidPagination, 400);
 
             try
             {
-                var activities = await _settingRepository.GetDeletedRecentActivitiesAsync(pageNumber, pageSize, search);
 
-                var items = activities
+                var allDeletedActivities = await _settingRepository.GetDeletedRecentActivitiesAsync(1, int.MaxValue, null);
+
+                var filter = ApplySearchFilter(search, includeUser: true);
+                var filteredItems = allDeletedActivities
+                    .Where(filter)
                     .OrderByDescending(x => x.DateTime)
+                    .ToList();
+
+                var paged = filteredItems
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
                     .ToList();
 
                 var pagedResult = new PagedResult<RecentActivityItemDto>
                 {
-                    Items = _mapper.Map<List<RecentActivityItemDto>>(items),
-                    TotalCount = await _settingRepository.GetDeletedRecentActivitiesTotalCountAsync(search),
+                    Items = _mapper.Map<List<RecentActivityItemDto>>(paged),
+                    TotalCount = filteredItems.Count,
                     PageNumber = pageNumber,
                     PageSize = pageSize
                 };
 
                 return Result<PagedResult<RecentActivityItemDto>>.Success(pagedResult, SuccessMessages.RetrievedSuccessfully);
             }
-
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving recent deleted activities. pageNumber={PageNumber} pageSize={PageSize}", pageNumber, pageSize);
@@ -103,7 +114,6 @@ namespace IMS_Application.Services
                 return Result<PagedResult<RecentActivityItemDto>>.Failure(ErrorMessages.ServerError, 500);
             }
         }
-
 
     }
 }
