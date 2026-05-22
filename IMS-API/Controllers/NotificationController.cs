@@ -3,7 +3,6 @@ using IMS_API.Controllers.Base;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace IMS_API.Controllers
 {
@@ -29,14 +28,14 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            // Extract role from JWT claims
-            var currentRole = User.FindFirst(ClaimTypes.Role)?.Value
-                ?? User.FindFirst("role")?.Value;
-
-            currentRole = string.IsNullOrWhiteSpace(currentRole) ? null : currentRole.Trim();
+            var roleResult = GetCurrentRole();
+            if (!roleResult.IsSuccess)
+            {
+                return FromResult(roleResult);
+            }
 
             // Admin can see all unread notifications, regular users see only their own
-            var result = await _notificationService.GetUnreadNotificationsAsync(userIdResult.Data, currentRole);
+            var result = await _notificationService.GetUnreadNotificationsAsync(userIdResult.Data, roleResult.Data);
             return FromResult(result);
         }
 
@@ -49,13 +48,13 @@ namespace IMS_API.Controllers
                 return FromResult(userIdResult);
             }
 
-            // Extract role from JWT claims
-            var currentRole = User.FindFirst(ClaimTypes.Role)?.Value
-                ?? User.FindFirst("role")?.Value;
+            var roleResult = GetCurrentRole();
+            if (!roleResult.IsSuccess)
+            {
+                return FromResult(roleResult);
+            }
 
-            currentRole = string.IsNullOrWhiteSpace(currentRole) ? null : currentRole.Trim();
-
-            var result = await _notificationService.MarkAsReadAsync(id, userIdResult.Data, currentRole);
+            var result = await _notificationService.MarkAsReadAsync(id, userIdResult.Data, roleResult.Data);
             return FromResult(result);
         }
 
