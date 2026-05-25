@@ -97,7 +97,6 @@ try
     builder.Services.AddValidation();
 
     builder.Services.AddProblemDetails();
-    builder.Services.AddApiServices();
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -189,7 +188,7 @@ try
         c.RoutePrefix = string.Empty;
     });
 
-    app.UseHttpsRedirection();
+   app.UseHttpsRedirection();
 
     app.UseAuthentication();
     app.UseAuthorization();
