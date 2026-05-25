@@ -17,8 +17,8 @@
 
         public int CreatedBy { get; set; }
         public bool IsDeleted { get; set; } = false;
-        public int DeletedBy {  get; set; }
-        public DateTime DeletedAt {  get; set; }
+        public int DeletedBy { get; set; }
+        public DateTime DeletedAt { get; set; }
 
         public int? AssetId { get; set; }
         public int? CategoryId { get; set; }

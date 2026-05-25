@@ -1,4 +1,4 @@
-﻿using IMS_Application.Common.Constants;
+﻿﻿using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -35,6 +35,17 @@ namespace IMS_API.Controllers.Base
                 return Result<int>.Failure(ErrorMessages.InvalidCredentials, 400);
             }
             return Result<int>.Success(userId);
+        }
+        protected Result<string> GetCurrentRole()
+        {
+            var currentRole = User.FindFirst(ClaimTypes.Role)?.Value
+                            ?? User.FindFirst("role")?.Value;
+            currentRole = string.IsNullOrWhiteSpace(currentRole) ? null : currentRole.Trim();
+            if (string.IsNullOrEmpty(currentRole))
+            {
+                return Result<string>.Failure(ErrorMessages.InvalidCredentials, 400);
+            }
+            return Result<string>.Success(currentRole);
         }
         protected void SetRefreshTokenCookie(string token, int? expireDays = null)
         {

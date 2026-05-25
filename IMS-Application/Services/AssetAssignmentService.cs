@@ -5,6 +5,7 @@ using IMS_Application.Common.Models;
 using IMS_Application.Common.Constants;
 using AutoMapper;
 using IMS_Application.Services.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace IMS_Application.Services;
 
@@ -12,13 +13,19 @@ public class AssetAssignmentService : IAssetAssignmentService
 {
     private readonly IAssetAssignmentRepository _repository;
     private readonly IAssetRepository _assetRepository;
-    private readonly IMapper _mapper;
+    private readonly IMapper _mapper; 
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly INotificationDispatcher _notificationDispatcher;
+    private readonly ILogger<AssetAssignmentService> _logger;
 
-    public AssetAssignmentService(IAssetAssignmentRepository repository, IAssetRepository assetRepository, IMapper mapper)
+    public AssetAssignmentService(IAssetAssignmentRepository repository, IAssetRepository assetRepository, IMapper mapper, IUnitOfWork unitOfWork, INotificationDispatcher notificationDispatcher, ILogger<AssetAssignmentService> logger)
     {
         _repository = repository;
         _assetRepository = assetRepository;
         _mapper = mapper;
+        _unitOfWork = unitOfWork;
+        _notificationDispatcher = notificationDispatcher;
+        _logger = logger;
     }
 
     private int GetStatusId(string status)
@@ -142,8 +149,7 @@ public class AssetAssignmentService : IAssetAssignmentService
 
         // Save the new asset
         await _assetRepository.AddRangeAsync(new List<Asset> { newAsset });
-        // If your repository/unit-of-work persists changes internally, no further Save call is needed.
-
+        await _unitOfWork.SaveChangesAsync();
 
         // Step 2: Create assignment for the newly created asset using AutoMapper
         var assignment = _mapper.Map<AssetAssignment>(dto);
@@ -151,8 +157,62 @@ public class AssetAssignmentService : IAssetAssignmentService
         assignment.CreatedBy = createdBy;
 
         var result = await _repository.AddAsync(assignment);
+        await _unitOfWork.SaveChangesAsync();
+
+        // Send notifications for asset creation
+        var notificationTime = DateTime.UtcNow;
+        var allUsers = await _unitOfWork.Users.GetAllWithRolesAsync();
+        var adminUserIds = allUsers
+            .Where(u => u?.Role?.Name == LogicStrings.AdminRole)
+            .Select(u => u.Id)
+            .ToHashSet();
+
+        var notifiedUserIds = new HashSet<int>(adminUserIds);
+        if (dto.EmployeeId > 0)
+            notifiedUserIds.Add(dto.EmployeeId);
+
+        foreach (var userId in notifiedUserIds)
+        {
+            var notification = new Notification
+            {
+                UserId = userId,
+                Title = LogicStrings.ActionCreated,
+                Message = $"Asset {newAsset.ItemName} (AID-{newAsset.Id}) was created.",
+                IsRead = false,
+                CreatedAt = notificationTime
+            };
+
+            await _unitOfWork.Notifications.AddAsync(notification);
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+
+        // Dispatch notifications
+        foreach (var userId in notifiedUserIds)
+        {
+            try
+            {
+                await _notificationDispatcher.DispatchAsync(
+                    userId,
+                    new NewNotificationDto
+                    {
+                        Title = LogicStrings.ActionCreated,
+                        Message = $"Asset #{newAsset.Id} was created.",
+                        CreatedAt = notificationTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                    });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Notification dispatch failed for user {UserId} (asset {AssetId}). Notifications were persisted; dispatch is best-effort.",
+                    userId, newAsset.Id);
+            }
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+
         var responseDto = _mapper.Map<AssetAssignmentResponseDto>(result);
-        
+
         return Result<AssetAssignmentResponseDto>.Success(responseDto, SuccessMessages.AssetCreatedAndAssigned);
     }
 }
