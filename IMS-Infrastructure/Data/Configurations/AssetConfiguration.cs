@@ -72,11 +72,6 @@ namespace IMS_Infrastructure.Data.Configurations
                 .HasForeignKey(a => a.UpdatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasOne<User>()
-                .WithMany()
-                .HasForeignKey(a => a.DeletedBy)
-                .OnDelete(DeleteBehavior.Restrict);
-
             builder.HasOne(a => a.AssignedUser)
                 .WithMany()
                 .HasForeignKey(a => a.AssignedTo)

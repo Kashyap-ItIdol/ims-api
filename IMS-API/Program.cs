@@ -57,6 +57,18 @@ try
         });
     });
 
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowFrontend",
+            policy =>
+            {
+                policy.WithOrigins("http://localhost:5173")
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials();
+            });
+    });
+
     builder.Services.AddControllers();
 
     builder.Services.Configure<ApiBehaviorOptions>(options =>
@@ -179,9 +191,17 @@ try
 
     app.UseSerilogRequestLogging();
 
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseDeveloperExceptionPage();
+    }
+
     app.UseExceptionHandler();
 
+
+
     app.UseSwagger();
+
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "IMS API V1");
@@ -190,6 +210,7 @@ try
 
    app.UseHttpsRedirection();
 
+    app.UseCors("AllowFrontend");
     app.UseAuthentication();
     app.UseAuthorization();
 

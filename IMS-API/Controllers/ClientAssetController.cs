@@ -5,6 +5,7 @@ using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using IMS_Domain.Entities;
 
 namespace IMS_API.Controllers
@@ -159,6 +160,30 @@ namespace IMS_API.Controllers
             
             (byte[] fileBytes, string contentType, string _) = result.Data;
             return File(fileBytes, contentType);
+        }
+
+        [HttpPost("import/csv")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> ImportCsv([FromForm] ClientAssetCsvImportRequestDto request)
+        {
+            var userResult = GetCurrentUserId();
+            if (!userResult.IsSuccess)
+                return FromResult(userResult);
+
+            var result = await _service.ImportCsvAsync(request, userResult.Data);
+            return FromResult(result);
+        }
+
+        [HttpGet("export/csv")]
+        public async Task<IActionResult> ExportCsv()
+        {
+            var result = await _service.ExportCsvAsync();
+
+            if (!result.IsSuccess)
+                return FromResult(result);
+
+            var (bytes, _, _) = result.Data;
+            return File(bytes, "text/csv", "ClientAssets.csv");
         }
     }
 }

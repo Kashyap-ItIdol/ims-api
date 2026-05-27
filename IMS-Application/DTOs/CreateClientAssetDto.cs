@@ -33,5 +33,9 @@
         public int? AssignedTo { get; set; }
 
         public DateTime? AssignedDate { get; set; }
+
+        public DateTime? ExpectedReturnDate { get; set; }
+
+        public DateTime? ActualReturnDate { get; set; }
     }
 }
