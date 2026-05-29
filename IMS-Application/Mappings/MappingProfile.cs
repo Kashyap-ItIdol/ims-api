@@ -22,7 +22,7 @@ namespace IMS_Application.Mappings
 
             CreateMap<CreateChildAssetDto, Asset>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
-                .ForMember(dest => dest.ParentAssetId, opt => opt.Ignore())
+                .ForMember(dest => dest.ParentAssetId, opt => opt.MapFrom(src => src.ParentId))
                 .ForMember(dest => dest.AssignedTo, opt => opt.Ignore())
                 .ForMember(dest => dest.AssignDate, opt => opt.Ignore())
                 .ForMember(dest => dest.ExpectedReturnDate, opt => opt.Ignore())
@@ -34,7 +34,13 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.Notes, opt => opt.Ignore())
                 .ForMember(dest => dest.AssignedUser, opt => opt.Ignore())
                 .ForMember(dest => dest.ParentAsset, opt => opt.Ignore())
-                .ForMember(dest => dest.ChildAssets, opt => opt.Ignore());
+                .ForMember(dest => dest.ChildAssets, opt => opt.Ignore())
+                .ForMember(dest => dest.Category, opt => opt.Ignore())
+                .ForMember(dest => dest.SubCategory, opt => opt.Ignore())
+                .ForMember(dest => dest.AssetCondition, opt => opt.Ignore())
+                .ForMember(dest => dest.AssetStatus, opt => opt.Ignore())
+                .ForMember(dest => dest.ConditionId, opt => opt.Ignore())
+                .ForMember(dest => dest.StatusId, opt => opt.Ignore());
 
             CreateMap<AssetItemDto, Asset>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
@@ -49,7 +55,13 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.Notes, opt => opt.Ignore())
                 .ForMember(dest => dest.AssignedUser, opt => opt.Ignore())
                 .ForMember(dest => dest.ParentAsset, opt => opt.Ignore())
-                .ForMember(dest => dest.ChildAssets, opt => opt.Ignore());
+                .ForMember(dest => dest.ChildAssets, opt => opt.Ignore())
+                .ForMember(dest => dest.Category, opt => opt.Ignore())
+                .ForMember(dest => dest.SubCategory, opt => opt.Ignore())
+                .ForMember(dest => dest.AssetCondition, opt => opt.Ignore())
+                .ForMember(dest => dest.AssetStatus, opt => opt.Ignore())
+                .ForMember(dest => dest.ConditionId, opt => opt.Ignore())
+                .ForMember(dest => dest.StatusId, opt => opt.Ignore());
             CreateMap<UpdateAssetDto, Asset>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.ParentAssetId, opt => opt.Ignore())
@@ -72,7 +84,10 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.Name))
                 .ForMember(dest => dest.SubCategory, opt => opt.MapFrom(src => src.SubCategory.Name))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.AssetStatus.Status))
-                .ForMember(dest => dest.AssignedTo, opt => opt.MapFrom(src => src.AssignedUser != null ? src.AssignedUser.FullName : null));
+                .ForMember(dest => dest.AssignedTo, opt => opt.MapFrom(src => 
+                    src.AssignedUser != null ? src.AssignedUser.FullName : 
+                    (src.AssignedTo.HasValue ? src.AssignedTo.Value.ToString() : null)
+                ));
 
             CreateMap<Asset, AssetOverviewDto>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.AssetStatus.Status))

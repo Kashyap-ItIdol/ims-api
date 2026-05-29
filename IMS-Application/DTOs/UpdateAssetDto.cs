@@ -1,4 +1,4 @@
-﻿namespace IMS_Application.DTOs
+namespace IMS_Application.DTOs
 {
     public class UpdateAssetDto
     {
@@ -23,6 +23,7 @@
         public DateTime? ExpectedReturnDate { get; set; }
         public string? Location { get; set; }
         public string? TableNo { get; set; }
+        public string? Notes { get; set; }
         public bool IsFromParentContext { get; set; }
         public bool IsManualUnlink { get; set; }
     }

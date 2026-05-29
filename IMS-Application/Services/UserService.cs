@@ -302,14 +302,13 @@ namespace IMS_Application.Services
 
                 if (filter.RoleKeys != null && filter.RoleKeys.Count > 0 && !filter.RoleKeys.Contains("all"))
                 {
-                    var wantEmployee = filter.RoleKeys.Contains("employee");
-                    var wantSupport = filter.RoleKeys.Contains("support-engineer");
+                    var roleIds = new List<int>();
+                    if (filter.RoleKeys.Contains("admin")) roleIds.Add(RoleConstants.Admin);
+                    if (filter.RoleKeys.Contains("employee")) roleIds.Add(RoleConstants.Employee);
+                    if (filter.RoleKeys.Contains("support-engineer")) roleIds.Add(RoleConstants.SupportEngineer);
 
-                    if (wantEmployee && !wantSupport)
-                        users = users.Where(u => u.RoleId == RoleConstants.Employee).ToList();
-                    else if (!wantEmployee && wantSupport)
-                        users = users.Where(u => u.RoleId == RoleConstants.SupportEngineer).ToList();
-                    // if both selected => no extra filter
+                    if (roleIds.Count > 0)
+                        users = users.Where(u => roleIds.Contains(u.RoleId)).ToList();
                 }
 
                 if (filter.DepartmentNames != null && filter.DepartmentNames.Count > 0 && !filter.DepartmentNames.Contains("all"))
@@ -325,7 +324,9 @@ namespace IMS_Application.Services
                         users = users.Where(u => !u.IsDeleted).ToList();
                     else if (!wantActive && wantInactive)
                         users = users.Where(u => u.IsDeleted).ToList();
-                    // if both selected => no extra filter
+                    else if (wantActive && wantInactive)
+                        // both selected - show all users (no filter)
+                        users = users.ToList();
                 }
 
                 // mapping should match GetAllUsersAsync

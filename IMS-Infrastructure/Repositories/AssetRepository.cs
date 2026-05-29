@@ -145,6 +145,7 @@ public async Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId)
                 .Include(a => a.Category)
                 .Include(a => a.SubCategory)
                 .Include(a => a.AssetStatus)
+                .Include(a => a.AssetCondition)
                 .Include(a => a.AssignedUser)
                 .Where(a => a.IsActive);
         }

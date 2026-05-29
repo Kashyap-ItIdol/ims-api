@@ -3,6 +3,7 @@
     public class AddAssetDto
     {
         public List<AssetItemDto> Assets { get; set; } = new();
+        public List<CreateChildAssetDto> ChildAssets { get; set; } = new();
         public int? AssignedTo { get; set; }
         public DateTime? AssignedDate { get; set; }
         public DateTime? ExpectedReturnDate { get; set; }

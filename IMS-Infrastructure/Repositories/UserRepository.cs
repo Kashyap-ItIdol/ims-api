@@ -58,12 +58,8 @@ namespace IMS_Infrastructure.Repositories
                 .AsNoTracking()
                 .Include(x => x.Role)
                 .Include(x => x.Department)
-                .Where(u => !u.IsDeleted)
                 .ToListAsync();
         }
-
-
-
 
         public async Task<List<User>> GetUsersWithOpenTicketsAsync()
         {
@@ -96,12 +92,12 @@ namespace IMS_Infrastructure.Repositories
 
         public async Task<List<User>> FilterAsync(UserFilterDto filter)
         {
-            return await _dbSet
+            var query = _dbSet
                 .AsNoTracking()
                 .Include(x => x.Role)
                 .Include(x => x.Department)
-                .Where(u => !u.IsDeleted)
-                .ToListAsync();
+                .AsQueryable();
+            return await query.ToListAsync();
         }
     }
 }

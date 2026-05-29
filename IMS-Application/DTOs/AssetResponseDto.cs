@@ -25,6 +25,8 @@ namespace IMS_Application.DTOs
         public DateTime? ExpectedReturnDate { get; set; }
         public string? Location { get; set; }
         public string? TableNo { get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
         public List<AssetHistoryDto> History { get; set; } = new();
         public List<AssetResponseDto> Children { get; set; } = new();
     }

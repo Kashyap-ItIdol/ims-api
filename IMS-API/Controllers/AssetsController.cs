@@ -135,6 +135,12 @@ public class AssetController : BaseController
         return FromResult(await _assetService.DetachChildAsync(dto));
     }
 
+    [HttpPost("{id}/detach-assignment")]
+    public async Task<IActionResult> DetachAssignment(int id)
+    {
+        return FromResult(await _assetService.DetachAssignmentAsync(id));
+    }
+
     [HttpPost("filter")]
     public async Task<IActionResult> FilterAssets([FromBody] AssetFilterDto dto)
     {
