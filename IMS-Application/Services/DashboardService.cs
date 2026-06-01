@@ -1,7 +1,9 @@
-﻿using IMS_Application.DTOs;
+﻿﻿﻿using System.Linq;
+using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
 using IMS_Application.Services.Interfaces;
 using IMS_Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace IMS_Application.Services
 {
@@ -18,6 +20,8 @@ namespace IMS_Application.Services
             DateTime? startDate = null,
             DateTime? endDate = null)
         {
+
+            Console.WriteLine($"[Dashboard] GetStatsAsync called (startDate={startDate}, endDate={endDate})");
             var now = DateTime.UtcNow;
 
             var rangeEnd = endDate ?? now;
@@ -32,26 +36,35 @@ namespace IMS_Application.Services
             var prevStart = rangeStart - (rangeEnd - rangeStart);
 
             var assets = await _unitOfWork.Assets.GetAllAsync();
+            var assetsForDashboard = await _unitOfWork.Assets.GetAllForDashboardAsync();
             var tickets = await _unitOfWork.Tickets.GetAllAsync();
 
-            var availableStatus =
-                await _unitOfWork.AssetStatuses.GetByStatusNameAsync("Available");
+            Console.WriteLine($"[Dashboard] GetStatsAsync assets from GetAllAsync count={assets.Count}");
+            foreach (var a in assets)
+            {
+                Console.WriteLine($"[Dashboard] GetStatsAsync Asset Id={a.Id} SerialNo={a.SerialNo} IsActive={a.IsActive} IsDeleted={a.IsDeleted} StatusId={a.StatusId} AssetStatus={(a.AssetStatus?.Status ?? "null")}");
+            }
 
-            int totalCurrent = assets.Count(a =>
-                a.CreatedAt >= rangeStart &&
-                a.CreatedAt <= rangeEnd);
+            int totalCurrent = assets.Count;
+            int availableCurrent = assetsForDashboard.Count(a =>
+                string.Equals((a.AssetStatus?.Status ?? string.Empty).Trim(), "Available", StringComparison.OrdinalIgnoreCase));
 
-            int availableCurrent = availableStatus == null
-                ? 0
-                : assets.Count(a =>
-                    a.CreatedAt >= rangeStart &&
-                    a.CreatedAt <= rangeEnd &&
-                    a.StatusId == availableStatus.Id);
+
+            Console.WriteLine($"[Dashboard] GetStatsAsync ticket totals: totalTickets={tickets.Count()}");
+            Console.WriteLine($"[Dashboard] GetStatsAsync ticket date window (current): rangeStart={rangeStart:o}, rangeEnd={rangeEnd:o}");
+            var openAll = tickets.Count(t => t.Status == Status.Open);
+            var inProgressAll = tickets.Count(t => t.Status == Status.InProgress);
+            var solvedAll = tickets.Count(t => t.Status == Status.Solved);
+            Console.WriteLine($"[Dashboard] GetStatsAsync ticket status totals (all time): open={openAll}, inProgress={inProgressAll}, solved={solvedAll}");
+
+            Console.WriteLine($"[Dashboard] GetStatsAsync tickets within current date window: {tickets.Count(t => t.CreatedAt >= rangeStart && t.CreatedAt <= rangeEnd)}");
+
 
             int openCurrent = tickets.Count(t =>
                 t.CreatedAt >= rangeStart &&
                 t.CreatedAt <= rangeEnd &&
                 t.Status == Status.Open);
+
 
             int inProgressCurrent = tickets.Count(t =>
                 t.CreatedAt >= rangeStart &&
@@ -63,16 +76,16 @@ namespace IMS_Application.Services
                 t.CreatedAt <= rangeEnd &&
                 t.Status == Status.Solved);
 
+            Console.WriteLine($"[Dashboard] GetStatsAsync ticket KPIs (current): open={openCurrent}, inProgress={inProgressCurrent}, resolved={resolvedCurrent}");
+
+            Console.WriteLine($"[Dashboard] GetStatsAsync ticket date window (previous): prevStart={prevStart:o}, prevEnd={prevEnd:o}");
+
             int totalPrevious = assets.Count(a =>
                 a.CreatedAt >= prevStart &&
                 a.CreatedAt <= prevEnd);
 
-            int availablePrevious = availableStatus == null
-                ? 0
-                : assets.Count(a =>
-                    a.CreatedAt >= prevStart &&
-                    a.CreatedAt <= prevEnd &&
-                    a.StatusId == availableStatus.Id);
+            int availablePrevious = assetsForDashboard.Count(a =>
+                string.Equals((a.AssetStatus?.Status ?? string.Empty).Trim(), "Available", StringComparison.OrdinalIgnoreCase));
 
             int openPrevious = tickets.Count(t =>
                 t.CreatedAt >= prevStart &&
@@ -88,6 +101,9 @@ namespace IMS_Application.Services
                 t.CreatedAt >= prevStart &&
                 t.CreatedAt <= prevEnd &&
                 t.Status == Status.Solved);
+
+            Console.WriteLine($"[Dashboard] GetStatsAsync ticket KPIs (previous): open={openPrevious}, inProgress={inProgressPrevious}, resolved={resolvedPrevious}");
+
 
             (double percentageAbs, string trend, double changePercentageSigned, string comparisonText) Calc(int current, int previous)
             {
@@ -246,8 +262,6 @@ namespace IMS_Application.Services
             };
         }
 
-
-
         private string GetUserName(int userId)
         {
             var user = _unitOfWork.Users
@@ -312,6 +326,12 @@ namespace IMS_Application.Services
         {
             var assets = await _unitOfWork.Assets.GetAllForDashboardAsync();
 
+            Console.WriteLine($"[Dashboard] GetAssetDistributionAsync assets from GetAllForDashboardAsync count={assets.Count}");
+            foreach (var a in assets)
+            {
+                Console.WriteLine($"[Dashboard] GetAssetDistributionAsync Asset Id={a.Id} SerialNo={a.SerialNo} IsActive={a.IsActive} IsDeleted={a.IsDeleted} StatusId={a.StatusId} AssetStatus={(a.AssetStatus?.Status ?? "null")}");
+            }
+
             string? GetStatus(Asset a) => a.AssetStatus?.Status;
 
             int CountBy(params string[] statusNames)
@@ -336,8 +356,7 @@ namespace IMS_Application.Services
                 new AssetDistributionItemDto { Label = "Returned", Value = returned },
             };
         }
-
-
+        
         private static string ToRelativeTime(DateTime? utc)
         {
             if (utc == null)
@@ -505,7 +524,6 @@ namespace IMS_Application.Services
 
                 return user?.FullName ?? "Unassigned";
             }
-
             return "Unassigned";
         }
 

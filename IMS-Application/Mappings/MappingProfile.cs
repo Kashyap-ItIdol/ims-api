@@ -358,6 +358,31 @@ namespace IMS_Application.Mappings
 
             CreateMap<Notification, NotificationDto>()
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")));
+
+            CreateMap<CreateClientAssignedAssetDto, AssignedAsset>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.ClientAsset, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.MapFrom(_ => false));
+
+            CreateMap<UpdateClientAssignedAssetDto, AssignedAsset>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.ClientAsset, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
+
+            CreateMap<AssignedAsset, ClientAssignedAssetDto>()
+                .ForMember(dest => dest.ClientAssetName, opt => opt.MapFrom(src => src.ClientAsset != null ? src.ClientAsset.AssetName : null));
         }
     }
 }

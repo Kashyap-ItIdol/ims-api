@@ -139,20 +139,53 @@ try
                     var path = context.HttpContext.Request.Path;
 
                     if (!string.IsNullOrEmpty(accessToken) &&
-                        path.StartsWithSegments("/notifications"))
+                        (path.StartsWithSegments("/notifications") ||
+                         path.StartsWithSegments("/api/client-assets/attachments")))
                     {
                         context.Token = accessToken;
+                        Log.Information("JWT OnMessageReceived: Token extracted from query string for path {Path}", path);
+                    }
+                    else if (!string.IsNullOrEmpty(accessToken))
+                    {
+                        Log.Information("JWT OnMessageReceived: Found access_token in query but path {Path} not in allowed list", path);
+                    }
+
+                    // Log Authorization header presence
+                    var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
+                    if (!string.IsNullOrEmpty(authHeader))
+                    {
+                        Log.Information("JWT OnMessageReceived: Authorization header present: {AuthHeader}", authHeader.Substring(0, Math.Min(authHeader.Length, 50)) + "...");
+                    }
+                    else
+                    {
+                        Log.Warning("JWT OnMessageReceived: No Authorization header found for path {Path}", path);
                     }
 
                     return Task.CompletedTask;
                 },
 
+                OnTokenValidated = context =>
+                {
+                    Log.Information("JWT OnTokenValidated: Token validated successfully for {User}", context.Principal?.Identity?.Name ?? "unknown");
+                    return Task.CompletedTask;
+                },
+
+                OnAuthenticationFailed = context =>
+                {
+                    Log.Error("JWT OnAuthenticationFailed: {Exception} for path {Path}", context.Exception?.Message, context.HttpContext.Request.Path);
+                    return Task.CompletedTask;
+                },
+
                 OnChallenge = async context =>
                 {
+                    Log.Warning("JWT OnChallenge triggered for path {Path}. Error: {Error}, ErrorDescription: {ErrorDesc}",
+                        context.HttpContext.Request.Path,
+                        context.Error,
+                        context.ErrorDescription);
+
                     context.HandleResponse();
                     context.Response.StatusCode = 401;
                     context.Response.ContentType = "application/json";
-
 
                     var result = JsonSerializer.Serialize(new
                     {

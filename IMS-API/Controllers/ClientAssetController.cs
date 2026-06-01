@@ -153,12 +153,35 @@ namespace IMS_API.Controllers
         [HttpGet("attachments/{attachmentId}/view")]
         public async Task<IActionResult> ViewAttachment(int attachmentId)
         {
+            var logger = HttpContext.RequestServices.GetRequiredService<ILogger<ClientAssetController>>();
+            
+            logger.LogInformation("=== ViewAttachment CALLED for attachmentId={AttachmentId} ===", attachmentId);
+            logger.LogInformation("User.Identity.IsAuthenticated: {IsAuthenticated}", User.Identity?.IsAuthenticated);
+            logger.LogInformation("User.Identity.Name: {Name}", User.Identity?.Name);
+            
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            logger.LogInformation("Authorization Header present: {HasAuthHeader}", !string.IsNullOrEmpty(authHeader));
+            if (!string.IsNullOrEmpty(authHeader))
+            {
+                logger.LogInformation("Authorization Header (first 60 chars): {AuthHeader}", authHeader[..Math.Min(authHeader.Length, 60)]);
+            }
+            
+            // Log all headers for debugging
+            foreach (var header in Request.Headers)
+            {
+                logger.LogInformation("Header: {Key} = {Value}", header.Key, header.Value);
+            }
+
             var result = await _service.ViewAttachmentAsync(attachmentId);
             
             if (!result.IsSuccess)
+            {
+                logger.LogWarning("ViewAttachment FAILED: {Message}", result.Message);
                 return FromResult(result);
+            }
             
             (byte[] fileBytes, string contentType, string _) = result.Data;
+            logger.LogInformation("ViewAttachment SUCCESS: returning {Bytes} bytes with content-type {ContentType}", fileBytes.Length, contentType);
             return File(fileBytes, contentType);
         }
 

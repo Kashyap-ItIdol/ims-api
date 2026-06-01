@@ -56,6 +56,11 @@ namespace IMS_Infrastructure.Repositories
         public IClientAssetRepository ClientAssets =>
             _clientAssets ??= new ClientAssetRepository(_context);
 
+        private IAssignedAssetRepository? _assignedAssets;
+        public IAssignedAssetRepository AssignedAssets =>
+            _assignedAssets ??= new AssignedAssetRepository(_context);
+
+
         private IAssetAssignmentRepository? _assetAssignments;
         public IAssetAssignmentRepository AssetAssignments =>
             _assetAssignments ??= new AssetAssignmentRepository(_context);
