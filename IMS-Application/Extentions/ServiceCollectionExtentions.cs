@@ -16,9 +16,12 @@ namespace IMS_Application.Extentions
             services.AddScoped<ISubCategoryService, SubCategoryService>();
             services.AddScoped<ISettingService, SettingService>();
             services.AddScoped<IClientAssetService, ClientAssetService>();
+            services.AddScoped<IAssignedAssetService, AssignedAssetService>();
             services.AddScoped<IAssetAssignmentService, AssetAssignmentService>();
             services.AddScoped<IAssetService, AssetService>();
+
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IDashboardService, DashboardService>();
 
 
             return services;

@@ -162,7 +162,7 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Title))
                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
                 .ForMember(dest => dest.TicketType, opt => opt.Ignore())
-                .ForMember(dest => dest.TicketPriority, opt => opt.MapFrom(src => (TicketPriority)Enum.Parse(typeof(TicketPriority), src.Priority)))
+                .ForMember(dest => dest.TicketPriority, opt => opt.MapFrom(src => (TicketPriority)Enum.Parse(typeof(TicketPriority),src.Priority)))
                 .ForMember(dest => dest.AssetId, opt => opt.MapFrom(src => src.AssetId))
                 .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.CategoryId))
                 .ForMember(dest => dest.SubCategoryId, opt => opt.MapFrom(src => src.SubCategoryId));
@@ -328,9 +328,22 @@ namespace IMS_Application.Mappings
             CreateMap<ClientAsset, ClientAssetResponseDto>()
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : string.Empty))
                 .ForMember(dest => dest.SubCategoryName, opt => opt.MapFrom(src => src.SubCategory != null ? src.SubCategory.Name : string.Empty))
+                .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.AssignedTo))
+                .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.AssignedUser != null && src.AssignedUser.Department != null ? src.AssignedUser.Department.Name : string.Empty))
+                .ForMember(dest => dest.ExpectedReturnDate, opt => opt.Ignore())
+                .ForMember(dest => dest.ActualReturnDate, opt => opt.Ignore())
                 .ForMember(dest => dest.AssignedUserName, opt => opt.MapFrom(src => src.AssignedUser != null ? src.AssignedUser.FullName : string.Empty))
+                .ForMember(dest => dest.ClientPOC, opt => opt.MapFrom(src => src.ClientPOC))
+                .ForMember(dest => dest.SalesPOC, opt => opt.MapFrom(src => src.SalesPOC))
+                .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.Location))
+                .ForMember(dest => dest.DeskNumber, opt => opt.MapFrom(src => src.DeskNumber))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt))
-                .ForMember(dest => dest.UpdatedBy, opt => opt.MapFrom(src => src.UpdatedBy));
+                .ForMember(dest => dest.UpdatedBy, opt => opt.MapFrom(src => src.UpdatedBy))
+                .ForMember(dest => dest.AssignedDate, opt => opt.MapFrom(src => src.AssignedDate))
+                .ForMember(dest => dest.DeletedBy, opt => opt.MapFrom(src => src.DeletedBy))
+                .ForMember(dest => dest.DeletedAt, opt => opt.MapFrom(src => src.DeletedAt))
+                .ForMember(dest => dest.IsDeleted, opt => opt.MapFrom(src => src.IsDeleted));
+
 
             CreateMap<Ticket, UpdateTicketStatusResponseDto>()
                 .ForMember(dest => dest.updatedStatus, opt => opt.MapFrom(src => src.Status.ToString()))
@@ -345,6 +358,31 @@ namespace IMS_Application.Mappings
 
             CreateMap<Notification, NotificationDto>()
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")));
+
+            CreateMap<CreateClientAssignedAssetDto, AssignedAsset>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.ClientAsset, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.MapFrom(_ => false));
+
+            CreateMap<UpdateClientAssignedAssetDto, AssignedAsset>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.ClientAsset, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
+
+            CreateMap<AssignedAsset, ClientAssignedAssetDto>()
+                .ForMember(dest => dest.ClientAssetName, opt => opt.MapFrom(src => src.ClientAsset != null ? src.ClientAsset.AssetName : null));
         }
     }
 }

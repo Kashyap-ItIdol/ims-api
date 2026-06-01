@@ -1,4 +1,4 @@
-﻿using IMS_Application.Interfaces;
+﻿﻿using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +17,9 @@ namespace IMS_Infrastructure.Repositories
                 .Include(x => x.Category)
                 .Include(x => x.SubCategory)
                 .Include(x => x.AssignedUser)
+                    .ThenInclude(u => u.Department)
                 .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
         }
 
         public async Task<ClientAsset?> GetWithAttachmentsAsync(int id)
@@ -26,8 +28,10 @@ namespace IMS_Infrastructure.Repositories
                 .Include(x => x.Category)
                 .Include(x => x.SubCategory)
                 .Include(x => x.AssignedUser)
+                    .ThenInclude(u => u.Department)
                 .Include(x => x.Attachments)
                 .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
         }
 
         public async Task<bool> ExistsAsync(int id)
@@ -52,16 +56,32 @@ namespace IMS_Infrastructure.Repositories
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var asset = await GetByIdAsync(id);
+            var asset = await _context.ClientAssets
+                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
             if (asset == null)
                 return false;
 
             asset.IsDeleted = true;
             asset.DeletedAt = DateTime.UtcNow;
-            
+            _context.ClientAssets.Update(asset);
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<IEnumerable<ClientAsset>> GetAllAsync()
+        {
+            return await _context.ClientAssets
+                .Include(x => x.Category)
+                .Include(x => x.SubCategory)
+                .Include(x => x.AssignedUser)
+                    .ThenInclude(u => u.Department)
+                .Where(x => !x.IsDeleted)
+                .AsNoTracking()
+                .ToListAsync();
+
+        }
+
 
         public async Task<IEnumerable<ClientAsset>> FilterAsync(ClientAssetFilterDto filter)
         {

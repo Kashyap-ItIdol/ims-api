@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+﻿﻿﻿﻿using AutoMapper;
 using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
@@ -239,8 +239,6 @@ namespace IMS_Application.Services
                     return Result<AssetResponseDto>.Failure(ErrorMessages.AssetNotFound, 404);
 
                 asset.IsActive = false;
-                asset.DeletedAt = DateTime.UtcNow;
-                asset.DeletedBy = deletedBy;
 
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
@@ -473,6 +471,7 @@ namespace IMS_Application.Services
                     .Select(u => u.Id)
                     .ToHashSet();
 
+                // Persist notifications
                 foreach (var asset in assets)
                 {
                     var notifiedUserIds = new HashSet<int>(adminUserIds);
@@ -496,7 +495,7 @@ namespace IMS_Application.Services
 
                 await _unitOfWork.SaveChangesAsync();
 
-                // Dispatch notifications
+                // Dispatch best-effort
                 foreach (var asset in assets)
                 {
                     var notifiedUserIds = new HashSet<int>(adminUserIds);
@@ -525,17 +524,18 @@ namespace IMS_Application.Services
                     }
                 }
 
-                await _unitOfWork.SaveChangesAsync();
                 return Result<string>.Success(SuccessMessages.AssetsAddedSuccessfully);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding assets");
                 return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
-
             }
 
         }
+
+
+
         public async Task<Result<GetAssetByIdResponseDto>> GetAssetByIdAsync(int id)
         {
             try

@@ -11,10 +11,12 @@ namespace IMS_Application.Interfaces
         ISubCategoryRepository SubCategories { get; }
         ITicketRepository Tickets { get; }
         IAssetRepository Assets { get; }
+        IAssetStatusRepository AssetStatuses { get; }
         INetworkDetailsRepository NetworkDetails { get; }
         IClientAssetRepository ClientAssets { get; }
         IAssetAssignmentRepository AssetAssignments { get; }
         INotificationRepository Notifications { get; }
+
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
     }

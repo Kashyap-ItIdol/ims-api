@@ -28,6 +28,7 @@ namespace IMS_Infrastructure.Extentions
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IAssetRepository, AssetRepository>();
             services.AddScoped<IClientAssetRepository, ClientAssetRepository>();
+            services.AddScoped<IAssignedAssetRepository, AssignedAssetRepository>();
             services.AddScoped<IAssetAssignmentRepository, AssetAssignmentRepository>();
             services.AddMemoryCache();
             return services;

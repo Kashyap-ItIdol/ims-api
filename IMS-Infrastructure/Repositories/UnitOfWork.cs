@@ -1,4 +1,3 @@
-using AutoMapper;
 using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
@@ -8,7 +7,6 @@ namespace IMS_Infrastructure.Repositories
     public class UnitOfWork : IUnitOfWork, IDisposable
     {
         private readonly AppDbContext _context;
-        private readonly IMapper _mapper;
 
         public UnitOfWork(AppDbContext context)
         {
@@ -45,13 +43,23 @@ namespace IMS_Infrastructure.Repositories
         public IAssetRepository Assets =>
             _assets ??= new AssetRepository(_context);
 
+        private IAssetStatusRepository? _assetStatuses;
+        public IAssetStatusRepository AssetStatuses =>
+            _assetStatuses ??= new AssetStatusRepository(_context);
+
         private INetworkDetailsRepository? _networkDetails;
         public INetworkDetailsRepository NetworkDetails =>
             _networkDetails ??= new NetworkDetailsRepository(_context);
 
+
         private IClientAssetRepository? _clientAssets;
         public IClientAssetRepository ClientAssets =>
             _clientAssets ??= new ClientAssetRepository(_context);
+
+        private IAssignedAssetRepository? _assignedAssets;
+        public IAssignedAssetRepository AssignedAssets =>
+            _assignedAssets ??= new AssignedAssetRepository(_context);
+
 
         private IAssetAssignmentRepository? _assetAssignments;
         public IAssetAssignmentRepository AssetAssignments =>
@@ -64,13 +72,6 @@ namespace IMS_Infrastructure.Repositories
         private INotificationRepository? _notifications;
         public INotificationRepository Notifications =>
             _notifications ??= new NotificationRepository(_context);
-
-
-        public UnitOfWork(AppDbContext context, IMapper mapper)
-        {
-            _context = context;
-            _mapper = mapper;
-        }
 
         public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
 

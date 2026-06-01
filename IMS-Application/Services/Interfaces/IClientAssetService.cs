@@ -21,6 +21,9 @@ namespace IMS_Application.Services.Interfaces
         Task<Result<bool>> DeleteAttachmentAsync(int id, int deletedBy);
         Task<Result<(byte[] FileBytes, string ContentType, string FileName)>> DownloadAttachmentAsync(int attachmentId);
         Task<Result<(byte[] FileBytes, string ContentType, string FileName)>> ViewAttachmentAsync(int attachmentId);
-    }
 
+        Task<Result<ClientAssetCsvImportResultDto>> ImportCsvAsync(ClientAssetCsvImportRequestDto dto, int userId);
+        Task<Result<(byte[] FileBytes, string ContentType, string FileName)>> ExportCsvAsync();
+    }
 }
+

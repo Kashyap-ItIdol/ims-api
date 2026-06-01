@@ -14,6 +14,8 @@ namespace IMS_Infrastructure.Data
         public DbSet<ClientAsset> ClientAssets { get; set; }
         public DbSet<ClientAssetAttachment> ClientAssetAttachments { get; set; }
 
+        public DbSet<AssignedAsset> AssignedAssets { get; set; }
+
         public DbSet<Category> Categories { get; set; }
         public DbSet<SubCategory> SubCategories { get; set; }
         public DbSet<AssetHistory> AssetHistories { get; set; }
