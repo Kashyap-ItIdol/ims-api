@@ -97,7 +97,6 @@ try
     builder.Services.AddValidation();
 
     builder.Services.AddProblemDetails();
-    builder.Services.AddApiServices();
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
