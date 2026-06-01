@@ -26,5 +26,6 @@ namespace IMS_Application.Services.Interfaces
         
         Task<Result<List<TicketAttachmentResponseDto>>> UploadFilesAsync(TicketAttachmentRequestDto dto, int userId, int ticketId);
         Task<Result<TicketAttachmentResponseDto>> GetAttachmentAsync(int attachmentId);
+        Task<Result<List<TicketAttachmentResponseDto>>> GetAttachmentsByTicketIdAsync(int ticketId);
     }
 }

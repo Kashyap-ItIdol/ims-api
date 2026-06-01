@@ -1094,9 +1094,11 @@ namespace IMS_Application.Services
 
                 var tickets = await _unitOfWork.Tickets.FilterTicketsAsync(filter);
 
+                // If no tickets match the filter, return an empty success list with a friendly message.
                 if (!tickets.Any())
-                    return Result<List<TicketResponseDto>>.Success(new List<TicketResponseDto>(), ErrorMessages.InvalidMatch);
+                    return Result<List<TicketResponseDto>>.Success(new List<TicketResponseDto>(), SuccessMessages.NoResultsFound);
 
+                // Gather user IDs involved in the tickets for later mapping.
                 var allUserIds = new HashSet<int>();
                 foreach (var ticket in tickets)
                 {
@@ -1111,10 +1113,21 @@ namespace IMS_Application.Services
 
                 var allUsersDict = await _unitOfWork.Users.GetUsersByIdsAsync(allUserIds);
 
-                var visibleTickets = tickets
-                    .Where(t => IsTicketVisibleToUser(t, currentUserId))
-                    .OrderByDescending(t => t.UpdatedAt)
-                    .ToList();
+                // Apply visibility rules based on the current user.
+                // Apply visibility rules based on the current user.
+                List<Ticket> visibleTickets;
+                if (user.Role != null && user.Role.Name == LogicStrings.AdminRole)
+                {
+                    // Admin can see all filtered tickets.
+                    visibleTickets = tickets.ToList();
+                }
+                else
+                {
+                    visibleTickets = tickets
+                        .Where(t => IsTicketVisibleToUser(t, currentUserId))
+                        .OrderByDescending(t => t.UpdatedAt)
+                        .ToList();
+                }
 
                 var dtos = visibleTickets.Select(t => MapToTicketResponseDto(t, allUsersDict)).ToList();
 
@@ -1123,10 +1136,9 @@ namespace IMS_Application.Services
 
                 return Result<List<TicketResponseDto>>.Success(dtos, SuccessMessages.TicketFetched);
             }
-
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving support engineers");
+                _logger.LogError(ex, "Error filtering tickets for user {UserId}", currentUserId);
                 return Result<List<TicketResponseDto>>.Failure(ErrorMessages.ServerError, 500);
             }
         }
@@ -1328,6 +1340,33 @@ namespace IMS_Application.Services
             {
                 _logger.LogError(ex, "Error retrieving attachment {AttachmentId}", attachmentId);
                 return Result<TicketAttachmentResponseDto>.Failure(ErrorMessages.ServerError, 500);
+            }
+        }
+
+        public async Task<Result<List<TicketAttachmentResponseDto>>> GetAttachmentsByTicketIdAsync(int ticketId)
+        {
+            try
+            {
+                var ticket = await _unitOfWork.Tickets.GetTicketByIdAsync(ticketId);
+                if (ticket == null)
+                {
+                    _logger.LogWarning("Ticket {TicketId} not found for fetching attachments", ticketId);
+                    return Result<List<TicketAttachmentResponseDto>>.Failure(ErrorMessages.TicketNotFound, 404);
+                }
+
+                var allAttachments = await _unitOfWork.TicketAttachments.GetAllAsync();
+                var ticketAttachments = allAttachments
+                    .Where(a => a.TicketId == ticketId)
+                    .OrderByDescending(a => a.UploadedAt)
+                    .ToList();
+
+                var dtos = _mapper.Map<List<TicketAttachmentResponseDto>>(ticketAttachments);
+                return Result<List<TicketAttachmentResponseDto>>.Success(dtos, SuccessMessages.RetrievedSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving attachments for ticket {TicketId}", ticketId);
+                return Result<List<TicketAttachmentResponseDto>>.Failure(ErrorMessages.ServerError, 500);
             }
         }
     }

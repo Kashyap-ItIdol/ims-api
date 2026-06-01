@@ -170,6 +170,17 @@ try
             };
         });
 
+        builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowReactApp",
+            policy => policy
+                .WithOrigins("http://localhost:5173")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials()
+        );
+    });
+
     var app = builder.Build();
 
     using (var scope = app.Services.CreateScope())
@@ -189,14 +200,19 @@ try
         c.RoutePrefix = string.Empty;
     });
 
-    app.UseHttpsRedirection();
+    //app.UseHttpsRedirection();
+
+    app.UseCors("AllowReactApp");
 
     app.UseAuthentication();
     app.UseAuthorization();
 
+
+
     app.UseStaticFiles();
 
-    app.MapControllers();
+    app.MapControllers().RequireCors("AllowReactApp");
+
 
     app.MapHub<NotificationHub>($"/notifications");
 

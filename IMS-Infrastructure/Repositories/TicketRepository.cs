@@ -1,4 +1,4 @@
-﻿using IMS_Application.DTOs;
+using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
@@ -105,7 +105,7 @@ namespace IMS_Infrastructure.Repositories
                 .Include(t => t.TicketAssignments.OrderByDescending(a => a.assigned_at))
                 .Include(t => t.TicketStatusHistories.OrderByDescending(h => h.ChangedAt))
                 .Include(t => t.Attachments.OrderByDescending(a => a.UploadedAt))
-                .FirstOrDefaultAsync(t => t.Id == ticketId);
+                .FirstOrDefaultAsync(t => t.Id == ticketId && !t.IsDeleted);
         }
 
         public async Task<List<Ticket>> GetTicketsForUserAsync(int userId, string roleName)
@@ -127,12 +127,13 @@ namespace IMS_Infrastructure.Repositories
 
             query = roleName switch
             {
-                LogicStrings.AdminRole => query,
+                LogicStrings.AdminRole => query.Where(t => !t.IsDeleted),
 
                 LogicStrings.SupportEngineerRole => query.Where(t =>
+                    !t.IsDeleted &&
                     t.TicketAssignments.Any(a => a.assignedTo == userId && a.status == LogicStrings.Active)),
 
-                _ => query.Where(t => t.CreatedBy == userId)
+                _ => query.Where(t => !t.IsDeleted && t.CreatedBy == userId)
             };
 
             query = query.OrderByDescending(t => t.CreatedAt);
@@ -204,15 +205,34 @@ namespace IMS_Infrastructure.Repositories
         public async Task<List<Ticket>> FilterTicketsAsync(TicketFilterDto filter)
         {
             var query = _dbSet
+                .Include(t => t.TicketAssignments)
                 .Include(t => t.Attachments)
                 .AsNoTracking().Where(x => !x.IsDeleted);
 
+            if (filter.AssignTo != null && filter.AssignTo.Any())
+            {
+                var assignTo = filter.AssignTo.Distinct().ToList();
+                query = query.Where(t => t.TicketAssignments.Any(a => assignTo.Contains(a.assignedTo) && a.status == LogicStrings.Active));
+            }
+
+
             if (filter.Status != null && filter.Status.Any())
             {
-                var statuses = filter.Status
-                    .Where(s => Enum.TryParse<Status>(s, true, out _))
-                    .Select(s => Enum.Parse<Status>(s, true))
-                    .ToList();
+                var statuses = new List<Status>();
+                
+                foreach (var s in filter.Status)
+                {
+                    // Try to parse as enum name first (e.g., "Open", "InProgress")
+                    if (Enum.TryParse<Status>(s, true, out var statusEnum))
+                    {
+                        statuses.Add(statusEnum);
+                    }
+                    // Try to parse as numeric ID and map to enum
+                    else if (int.TryParse(s, out var statusId) && statusId >= 0 && statusId < Enum.GetValues<Status>().Length)
+                    {
+                        statuses.Add((Status)statusId);
+                    }
+                }
 
                 if (statuses.Any())
                     query = query.Where(x => statuses.Contains(x.Status));
@@ -240,7 +260,6 @@ namespace IMS_Infrastructure.Repositories
                     query = query.Where(x => types.Contains(x.TicketType));
             }
 
-            return await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
             if (filter.FromDate.HasValue)
                 query = query.Where(t => t.CreatedAt.Date >= filter.FromDate.Value.Date);
 

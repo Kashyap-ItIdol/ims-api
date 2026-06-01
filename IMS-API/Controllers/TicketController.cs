@@ -241,12 +241,11 @@ namespace IMS_API.Controllers
             return FromResult(result);
         }
 
-
-        [HttpGet("attachments/{attachmentId}")]
+        [HttpGet("{ticketId}/attachments")]
         [Authorize(Roles = "Admin,Employee")]
-        public async Task<IActionResult> GetAttachment(int attachmentId)
+        public async Task<IActionResult> GetAttachmentsByTicketId(int ticketId)
         {
-            var result = await _ticketService.GetAttachmentAsync(attachmentId);
+            var result = await _ticketService.GetAttachmentsByTicketIdAsync(ticketId);
             return FromResult(result);
         }
 
