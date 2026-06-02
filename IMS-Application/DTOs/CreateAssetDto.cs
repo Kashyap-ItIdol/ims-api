@@ -28,14 +28,4 @@
 
         public int CreatedBy { get; set; }
     }
-
-    //public class AssetResponseDto
-    //{
-    //    public int Id { get; set; }
-    //    public string AssetName { get; set; } = string.Empty;
-    //    public string Status { get; set; } = string.Empty;
-    //    public string CategoryName { get; set; } = string.Empty;
-    //    public string SubCategoryName { get; set; } = string.Empty;
-    //    public string SerialNumber { get; set; } = string.Empty;
-    //}
 }

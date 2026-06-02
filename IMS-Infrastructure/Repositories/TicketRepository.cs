@@ -243,15 +243,17 @@ namespace IMS_Infrastructure.Repositories
             }
 
             return await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
-            if (filter.FromDate.HasValue)
-                query = query.Where(t => t.CreatedAt.Date >= filter.FromDate.Value.Date);
-
-            if (filter.ToDate.HasValue)
-                query = query.Where(t => t.CreatedAt.Date <= filter.ToDate.Value.Date);
-
-            query = query.OrderByDescending(x => x.UpdatedAt);
-            return await query.ToListAsync();
         }
+
+        public async Task<List<Ticket>> GetAllWithAssignmentsAsync()
+        {
+            return await _dbSet
+                .AsNoTracking()
+                .Include(t => t.TicketAssignments)
+                .Where(t => !t.IsDeleted)
+                .ToListAsync();
+        }
+
         public async Task AddAttachmentAsync(TicketAttachment attachment)
         {
             await _context.TicketAttachments.AddAsync(attachment);

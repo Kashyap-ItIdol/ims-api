@@ -1,6 +1,4 @@
-﻿﻿using System.Collections.Generic;
-using IMS_Application.DTOs;
-namespace IMS_Application.DTOs
+﻿namespace IMS_Application.DTOs
 {
     public class AssetResponseDto
     {
@@ -11,6 +9,7 @@ namespace IMS_Application.DTOs
         public int CategoryId { get; set; }
         public int SubCategoryId { get; set; }
         public int ConditionId { get; set; }
+        public string? ConditionName { get; set; }
         public string Brand { get; set; } = default!;
         public string Model { get; set; } = default!;
         public string SerialNo { get; set; } = default!;

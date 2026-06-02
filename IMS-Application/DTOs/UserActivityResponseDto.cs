@@ -17,4 +17,3 @@ namespace IMS_Application.DTOs
         public DateTime DateTime { get; set; }
     }
 }
-

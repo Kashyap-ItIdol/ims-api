@@ -90,7 +90,7 @@ namespace IMS_Application.Services
                     dto.Children = _mapper.Map<List<AssetResponseDto>>(children);
                 }
 
-return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetrieved);
+                return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetrieved);
             }
             catch (Exception ex)
             {
@@ -312,12 +312,12 @@ return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetr
             return Result<string>.Success(SuccessMessages.AssetAssignedSuccessfully);
         }
 
-        public async Task<Result<string>> AddAssetsAsync(AddAssetDto dto, int createdBy)
+        public async Task<Result<int>> AddAssetsAsync(AddAssetDto dto, int createdBy)
         {
             try
             {
                 if (dto?.Assets == null || !dto.Assets.Any())
-                    return Result<string>.Failure(ErrorMessages.AssetsListEmpty, 400);
+                    return Result<int>.Failure(ErrorMessages.AssetsListEmpty, 400);
 
 
                 var assets = new List<Asset>();
@@ -327,27 +327,29 @@ return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetr
                 {
                     var assetCondition = await _unitOfWork.Assets.GetAssetConditionByIdAsync(assetItem.ConditionId);
                     if (assetCondition == null)
-                        return Result<string>.Failure($"Asset condition with ID {assetItem.ConditionId} does not exist for asset {assetItem.ItemName}", 400);
+                        return Result<int>.Failure($"Asset condition with ID {assetItem.ConditionId} does not exist for asset {assetItem.ItemName}", 400);
 
                     var category = await _unitOfWork.Categories.GetByIdAsync(assetItem.CategoryId);
                     if (category == null)
-                        return Result<string>.Failure($"Category with ID {assetItem.CategoryId} does not exist for asset {assetItem.ItemName}", 400);
+                        return Result<int>.Failure($"Category with ID {assetItem.CategoryId} does not exist for asset {assetItem.ItemName}", 400);
 
                     var subCategory = await _unitOfWork.SubCategories.GetByIdAsync(assetItem.SubCategoryId);
                     if (subCategory == null)
-                        return Result<string>.Failure($"SubCategory with ID {assetItem.SubCategoryId} does not exist for asset {assetItem.ItemName}", 400);
+                        return Result<int>.Failure($"SubCategory with ID {assetItem.SubCategoryId} does not exist for asset {assetItem.ItemName}", 400);
 
                     var status = await _unitOfWork.Assets.GetAssetStatusByIdAsync(assetItem.StatusId);
                     if (status == null)
-                        return Result<string>.Failure($"Status with ID {assetItem.StatusId} does not exist for asset {assetItem.ItemName}", 400);
+                        return Result<int>.Failure($"Status with ID {assetItem.StatusId} does not exist for asset {assetItem.ItemName}", 400);
 
                     var asset = _mapper.Map<Asset>(assetItem);
+
                     asset.Category = category;
                     asset.SubCategory = subCategory;
-                    asset.AssetCondition = assetCondition;
-                    asset.AssetStatus = status;
                     asset.ConditionId = assetCondition.Id;
                     asset.StatusId = status.Id;
+
+                    asset.AssetCondition = null!;
+                    asset.AssetStatus = null!;
                     asset.CreatedBy = createdBy;
                     asset.CreatedAt = now;
                     asset.UpdatedBy = createdBy;
@@ -394,21 +396,21 @@ return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetr
                         var status = await _unitOfWork.Assets.GetAssetStatusByIdAsync(childAssetDto.StatusId);
 
                         if (category == null)
-                            return Result<string>.Failure($"Category with ID {childAssetDto.CategoryId} does not exist", 400);
+                            return Result<int>.Failure($"Category with ID {childAssetDto.CategoryId} does not exist", 400);
                         if (subCategory == null)
-                            return Result<string>.Failure($"SubCategory with ID {childAssetDto.SubCategoryId} does not exist", 400);
+                            return Result<int>.Failure($"SubCategory with ID {childAssetDto.SubCategoryId} does not exist", 400);
                         if (category == null)
-                            return Result<string>.Failure($"Category with ID {childAssetDto.CategoryId} does not exist", 400);
+                            return Result<int>.Failure($"Category with ID {childAssetDto.CategoryId} does not exist", 400);
                         if (subCategory == null)
-                            return Result<string>.Failure($"SubCategory with ID {childAssetDto.SubCategoryId} does not exist", 400);
+                            return Result<int>.Failure($"SubCategory with ID {childAssetDto.SubCategoryId} does not exist", 400);
                         if (condition == null)
-                            return Result<string>.Failure($"Condition with ID {childAssetDto.ConditionId} does not exist", 400);
+                            return Result<int>.Failure($"Condition with ID {childAssetDto.ConditionId} does not exist", 400);
                         if (status == null)
-                            return Result<string>.Failure($"Status with ID {childAssetDto.StatusId} does not exist", 400);
+                            return Result<int>.Failure($"Status with ID {childAssetDto.StatusId} does not exist", 400);
 
                         // Check for duplicate serial number
                         if (await _unitOfWork.Assets.SerialExistsAsync(childAssetDto.SerialNo))
-                            return Result<string>.Failure($"An asset with serial number '{childAssetDto.SerialNo}' already exists", 400);
+                            return Result<int>.Failure($"An asset with serial number '{childAssetDto.SerialNo}' already exists", 400);
 
                         // Set FK IDs directly - EF will handle relationships through these
                         childAsset.CategoryId = category.Id;
@@ -483,7 +485,9 @@ return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetr
 
                 await _unitOfWork.SaveChangesAsync();
 
-                return Result<string>.Success(SuccessMessages.AssetsAddedSuccessfully);
+                // Return the created asset ID so frontend can attach child assets
+                var createdAssetId = assets[0].Id;
+                return Result<int>.Success(createdAssetId);
             }
             catch (Exception ex)
             {
@@ -495,7 +499,7 @@ return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetr
                         detailedError += $" | Inner2: {ex.InnerException.InnerException.Message}";
                 }
                 _logger.LogError(ex, "Error adding assets. {DetailedError}", detailedError);
-                return Result<string>.Failure($"{ErrorMessages.UnexpectedError}: {detailedError}", 500);
+                return Result<int>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
@@ -737,7 +741,38 @@ return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetr
         {
             try
             {
-                var assets = await _unitOfWork.Assets.FilterAsync(dto);
+                var query = _unitOfWork.Assets.GetAllWithIncludesQueryable();
+
+                if (dto.CategoryIds?.Any() == true)
+                    query = query.Where(a => dto.CategoryIds.Contains(a.CategoryId));
+
+                if (dto.SubCategoryIds?.Any() == true)
+                    query = query.Where(a => dto.SubCategoryIds.Contains(a.SubCategoryId));
+
+                if (dto.StatusIds?.Any() == true)
+                    query = query.Where(a => dto.StatusIds.Contains(a.StatusId));
+
+                if (!string.IsNullOrWhiteSpace(dto.Search) && !string.IsNullOrWhiteSpace(dto.SearchType))
+                {
+                    var search = dto.Search.ToLower();
+
+                    switch (dto.SearchType.ToLower())
+                    {
+                        case "category":
+                            query = query.Where(a => a.Category.Name.ToLower().Contains(search));
+                            break;
+
+                        case "subcategory":
+                            query = query.Where(a => a.SubCategory.Name.ToLower().Contains(search));
+                            break;
+
+                        case "status":
+                            query = query.Where(a => a.AssetStatus.Status.ToLower().Contains(search));
+                            break;
+                    }
+                }
+
+                var assets = query.ToList();
                 return Result<List<AssetListDto>>.Success(_mapper.Map<List<AssetListDto>>(assets));
             }
             catch (Exception ex)
@@ -867,7 +902,7 @@ return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetr
                         EscapeCsv(a.Brand),
                         EscapeCsv(a.Model),
                         EscapeCsv(a.SerialNo),
-                        EscapeCsv(a.ConditionId.ToString()),
+                        EscapeCsv(a.ConditionName ?? string.Empty),
                         EscapeCsv(a.Vendor),
                         EscapeCsv(a.PurchaseCost.ToString()),
                         EscapeCsv(a.PurchaseDate?.ToString("yyyy-MM-dd") ?? string.Empty),

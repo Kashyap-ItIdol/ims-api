@@ -91,6 +91,5 @@ namespace IMS_API.Controllers
             var data = await _userService.SearchUsersAsync(query);
             return FromResult(data);
         }
-
     }
 }

@@ -87,11 +87,37 @@ namespace IMS_Application.Services
 
             var comments = _mapper.Map<List<TicketCommentInfo>>(orderedDomainComments);
 
+            // Map assignments with user names
+            var assignments = ticket.TicketAssignments?
+                .OrderByDescending(a => a.assigned_at)
+                .Select(a =>
+                {
+                    var assignmentInfo = _mapper.Map<TicketAssignmentInfo>(a);
+                    if (usersDict.TryGetValue(a.assignedTo, out var assignedUser))
+                        assignmentInfo.assignedToName = assignedUser.FullName;
+                    return assignmentInfo;
+                })
+                .ToList() ?? new List<TicketAssignmentInfo>();
+
+            // Map status histories with user names
+            var statusHistories = ticket.TicketStatusHistories?
+                .OrderByDescending(h => h.ChangedAt)
+                .Select(h =>
+                {
+                    var historyInfo = _mapper.Map<TicketStatusHistoryInfo>(h);
+                    if (usersDict.TryGetValue(h.ChangedBy, out var changedByUser))
+                        historyInfo.ChangedByName = changedByUser.FullName;
+                    return historyInfo;
+                })
+                .ToList() ?? new List<TicketStatusHistoryInfo>();
+
             return new TicketResponseDto
             {
                 ticket = ticketInfo,
                 comments = comments,
-                attachments = attachments
+                attachments = attachments,
+                assignments = assignments,
+                statusHistories = statusHistories
             };
         }
 
@@ -610,6 +636,44 @@ namespace IMS_Application.Services
             {
                 _logger.LogError(ex, "Error retrieving tickets for user {UserId}", currentUserId);
                 return Result<PagedResult<TicketResponseDto>>.Failure(ErrorMessages.ServerError, 500);
+            }
+        }
+
+        public async Task<Result<List<TicketResponseDto>>> GetAllTicketsForReportAsync(int currentUserId)
+        {
+            try
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(currentUserId);
+                if (user == null)
+                    return Result<List<TicketResponseDto>>.Failure(ErrorMessages.UserNotFoundError, 404);
+
+                if (user.Role == null)
+                    return Result<List<TicketResponseDto>>.Failure(ErrorMessages.RoleNotFoundError, 400);
+
+                var tickets = await _unitOfWork.Tickets.GetTicketsForUserAsync(currentUserId, user.Role.Name);
+
+                var allUsersDict = new Dictionary<int, User>();
+                foreach (var ticket in tickets)
+                {
+                    var users = await GetUsersForTicketAsync(ticket, currentUserId);
+                    foreach (var kvp in users)
+                    {
+                        if (!allUsersDict.ContainsKey(kvp.Key))
+                            allUsersDict[kvp.Key] = kvp.Value;
+                    }
+                }
+
+                var dtos = tickets
+                    .OrderByDescending(t => t.CreatedAt)
+                    .Select(t => MapToTicketResponseDto(t, allUsersDict))
+                    .ToList();
+
+                return Result<List<TicketResponseDto>>.Success(dtos, SuccessMessages.AllTickets);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving tickets for report for user {UserId}", currentUserId);
+                return Result<List<TicketResponseDto>>.Failure(ErrorMessages.ServerError, 500);
             }
         }
 

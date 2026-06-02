@@ -1,6 +1,6 @@
-﻿namespace IMS_Application.DTOs.SubCategory
+namespace IMS_Application.DTOs
 {
-    public class SubCategoryDto
+    public class SubCategoryResponseDto
     {
         public int Id { get; set; }
         public int CategoryId { get; set; }

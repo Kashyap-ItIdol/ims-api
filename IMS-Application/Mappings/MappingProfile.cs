@@ -75,10 +75,11 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.TableNo, opt => opt.MapFrom(src => src.TableNo));
 
             CreateMap<Asset, AssetResponseDto>()
-.ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.Location))
+                .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.Location))
                 .ForMember(dest => dest.TableNo, opt => opt.MapFrom(src => src.TableNo))
                 .ForMember(dest => dest.Children, opt => opt.MapFrom(src => src.ChildAssets))
-                .ForMember(dest => dest.History, opt => opt.Ignore());
+                .ForMember(dest => dest.History, opt => opt.Ignore())
+                .ForMember(dest => dest.ConditionName, opt => opt.MapFrom(src => src.AssetCondition != null ? src.AssetCondition.Condition : string.Empty));
 
             CreateMap<Asset, AssetListDto>()
                 .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.Name))
@@ -233,6 +234,13 @@ namespace IMS_Application.Mappings
             CreateMap<TicketCommentReaction, CommentReactionResponseDto>()
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")));
 
+            CreateMap<TicketAssignment, TicketAssignmentInfo>()
+                .ForMember(dest => dest.assignedToName, opt => opt.Ignore());
+
+            CreateMap<TicketStatusHistory, TicketStatusHistoryInfo>()
+                .ForMember(dest => dest.OldStatus, opt => opt.MapFrom(src => ((Status)src.OldStatusId).ToString()))
+                .ForMember(dest => dest.NewStatus, opt => opt.MapFrom(src => ((Status)src.NewStatusId).ToString()))
+                .ForMember(dest => dest.ChangedByName, opt => opt.Ignore());
 
             CreateMap<CreateAssetDto, Asset>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())

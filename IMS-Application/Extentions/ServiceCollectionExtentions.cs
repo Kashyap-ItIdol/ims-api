@@ -19,6 +19,7 @@ namespace IMS_Application.Extentions
             services.AddScoped<IAssetAssignmentService, AssetAssignmentService>();
             services.AddScoped<IAssetService, AssetService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IReportService, ReportService>();
 
 
             return services;

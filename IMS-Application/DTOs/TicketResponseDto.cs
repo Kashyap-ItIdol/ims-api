@@ -5,7 +5,30 @@ namespace IMS_Application.DTOs
         public TicketInfo ticket { get; set; } = new();
         public List<TicketCommentInfo> comments { get; set; } = new();
         public List<TicketAttachmentInfo> attachments { get; set; } = new();
+        public List<TicketAssignmentInfo> assignments { get; set; } = new();
+        public List<TicketStatusHistoryInfo> statusHistories { get; set; } = new();
+    }
 
+    public class TicketAssignmentInfo
+    {
+        public int Id { get; set; }
+        public int assignedTo { get; set; }
+        public string assignedToName { get; set; } = string.Empty;
+        public int assignedBy { get; set; }
+        public DateTime assignedAt { get; set; }
+        public string status { get; set; } = string.Empty;
+    }
+
+    public class TicketStatusHistoryInfo
+    {
+        public int Id { get; set; }
+        public int OldStatusId { get; set; }
+        public string OldStatus { get; set; } = string.Empty;
+        public int NewStatusId { get; set; }
+        public string NewStatus { get; set; } = string.Empty;
+        public int ChangedBy { get; set; }
+        public string ChangedByName { get; set; } = string.Empty;
+        public DateTime ChangedAt { get; set; }
     }
 
     public class TicketInfo

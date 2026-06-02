@@ -43,7 +43,6 @@ namespace IMS_Application.Services
         }
 
         public async Task<Result<PagedResult<RecentActivityItemDto>>> GetRecentActivitiesAsync(int pageNumber, int pageSize, string? search)
-
         {
             if (pageNumber < 1 || pageSize < 1)
                 return Result<PagedResult<RecentActivityItemDto>>.Failure(ErrorMessages.InvalidPagination, 400);
@@ -83,7 +82,6 @@ namespace IMS_Application.Services
 
             try
             {
-
                 var allDeletedActivities = await _settingRepository.GetDeletedRecentActivitiesAsync(1, int.MaxValue, null);
 
                 var filter = ApplySearchFilter(search, includeUser: true);
@@ -114,9 +112,5 @@ namespace IMS_Application.Services
                 return Result<PagedResult<RecentActivityItemDto>>.Failure(ErrorMessages.ServerError, 500);
             }
         }
-
     }
 }
-
-
-

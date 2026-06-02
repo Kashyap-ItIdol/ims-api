@@ -1,5 +1,3 @@
-using System;
-using System.Text.Json.Serialization;
 
 namespace IMS_Application.DTOs
 {
@@ -23,6 +21,4 @@ namespace IMS_Application.DTOs
             };
         }
     }
-    
 }
-

@@ -97,65 +97,65 @@ namespace IMS_Application.Services
             }
         }
 
-        public async Task<Result<List<DTOs.SubCategory.SubCategoryDto>>> GetAllSubCategoriesAsync()
+        public async Task<Result<List<SubCategoryDto>>> GetAllSubCategoriesAsync()
         {
             try
             {
                 var subCategories = await _unitOfWork.SubCategories.GetAllAsync();
-                var subCategoryDtos = _mapper.Map<List<DTOs.SubCategory.SubCategoryDto>>(subCategories);
-                return Result<List<DTOs.SubCategory.SubCategoryDto>>.Success(subCategoryDtos, "Sub-categories retrieved successfully");
+                var subCategoryDtos = _mapper.Map<List<SubCategoryDto>>(subCategories);
+                return Result<List<SubCategoryDto>>.Success(subCategoryDtos, "Sub-categories retrieved successfully");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving all sub categories");
-                return Result<List<DTOs.SubCategory.SubCategoryDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+                return Result<List<SubCategoryDto>>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
-        public async Task<Result<List<DTOs.SubCategory.SubCategoryDto>>> GetSubCategoriesByCategoryIdAsync(int categoryId)
+        public async Task<Result<List<SubCategoryDto>>> GetSubCategoriesByCategoryIdAsync(int categoryId)
         {
             try
             {
                 if (categoryId <= 0)
                 {
-                    return Result<List<DTOs.SubCategory.SubCategoryDto>>.Failure("Invalid category ID", 400);
+                    return Result<List<SubCategoryDto>>.Failure("Invalid category ID", 400);
                 }
 
                 var subCategories = await _unitOfWork.SubCategories.GetByCategoryIdAsync(categoryId);
-                var subCategoryDtos = _mapper.Map<List<DTOs.SubCategory.SubCategoryDto>>(subCategories);
-                return Result<List<DTOs.SubCategory.SubCategoryDto>>.Success(subCategoryDtos, "Sub-categories retrieved successfully");
+                var subCategoryDtos = _mapper.Map<List<SubCategoryDto>>(subCategories);
+                return Result<List<SubCategoryDto>>.Success(subCategoryDtos, "Sub-categories retrieved successfully");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving sub categories for category {CategoryId}", categoryId);
-                return Result<List<DTOs.SubCategory.SubCategoryDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+                return Result<List<SubCategoryDto>>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
-        public async Task<Result<DTOs.SubCategory.SubCategoryDto>> UpdateSubCategoryAsync(int id, UpdateSubCategoryDto request, int updatedBy)
+        public async Task<Result<SubCategoryDto>> UpdateSubCategoryAsync(int id, UpdateSubCategoryDto request, int updatedBy)
         {
             try
             {
                 if (id <= 0)
                 {
-                    return Result<DTOs.SubCategory.SubCategoryDto>.Failure("Invalid sub-category ID", 400);
+                    return Result<SubCategoryDto>.Failure("Invalid sub-category ID", 400);
                 }
 
                 if (updatedBy <= 0)
                 {
-                    return Result<DTOs.SubCategory.SubCategoryDto>.Failure(ErrorMessages.InvalidCredentials, 401);
+                    return Result<SubCategoryDto>.Failure(ErrorMessages.InvalidCredentials, 401);
                 }
 
                 var existingSubCategory = await _unitOfWork.SubCategories.GetByIdAsync(id);
                 if (existingSubCategory == null)
                 {
-                    return Result<DTOs.SubCategory.SubCategoryDto>.Failure("Sub-category not found", 404);
+                    return Result<SubCategoryDto>.Failure("Sub-category not found", 404);
                 }
 
                 var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId);
                 if (category == null || !category.IsActive)
                 {
-                    return Result<DTOs.SubCategory.SubCategoryDto>.Failure("Category not found or inactive", 404);
+                    return Result<SubCategoryDto>.Failure("Category not found or inactive", 404);
                 }
 
                 if (existingSubCategory.Name != request.Name.Trim())
@@ -163,7 +163,7 @@ namespace IMS_Application.Services
                     var duplicate = await _unitOfWork.SubCategories.GetByCategoryIdAndNameAsync(request.CategoryId, request.Name.Trim());
                     if (duplicate != null && duplicate.Id != id)
                     {
-                        return Result<DTOs.SubCategory.SubCategoryDto>.Failure("Sub-category with this name already exists in the category", 400);
+                        return Result<SubCategoryDto>.Failure("Sub-category with this name already exists in the category", 400);
                     }
                 }
 
@@ -188,13 +188,13 @@ namespace IMS_Application.Services
                 });
                 await _unitOfWork.SaveChangesAsync();
 
-                var updatedDto = _mapper.Map<DTOs.SubCategory.SubCategoryDto>(existingSubCategory);
-                return Result<DTOs.SubCategory.SubCategoryDto>.Success(updatedDto, "Sub-category updated successfully");
+                var updatedDto = _mapper.Map<SubCategoryDto>(existingSubCategory);
+                return Result<SubCategoryDto>.Success(updatedDto, "Sub-category updated successfully");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating sub category with ID: {SubCategoryId}", id);
-                return Result<DTOs.SubCategory.SubCategoryDto>.Failure(ErrorMessages.UnexpectedError, 500);
+                return Result<SubCategoryDto>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 

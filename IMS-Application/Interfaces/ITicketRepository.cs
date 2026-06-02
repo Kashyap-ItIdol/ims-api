@@ -23,6 +23,7 @@ namespace IMS_Application.Interfaces
         Task<bool> DeleteTicketAsync(int ticketId, int deletedBy);
         Task<Ticket> UpdateTicketAsync(int ticketId, UpdateTicketDto dto);
         Task<List<Ticket>> FilterTicketsAsync(TicketFilterDto filter);
+        Task<List<Ticket>> GetAllWithAssignmentsAsync();
         Task AddAttachmentAsync(TicketAttachment attachment);
         Task<TicketAttachment?> GetAttachmentByIdAsync(int attachmentId);
     }
