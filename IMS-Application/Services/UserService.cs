@@ -236,9 +236,9 @@ namespace IMS_Application.Services
 
                 return Result<UserOverviewResponseDto>.Success(new UserOverviewResponseDto
                 {
-                    user = userDto,
-                    assignedAssets = assetDtos,
-                    createdTickets = ticketDtos
+                    User = userDto,
+                    AssignedAssets = assetDtos,
+                    CreatedTickets = ticketDtos
                 });
             }
             catch (Exception ex)
