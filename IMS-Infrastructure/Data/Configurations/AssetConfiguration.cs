@@ -8,13 +8,9 @@ namespace IMS_Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<Asset> builder)
         {
-            // Table name
             builder.ToTable("Assets");
-
-            // Primary key
             builder.HasKey(x => x.Id);
 
-            // Properties
             builder.Property(x => x.ItemName)
                 .IsRequired()
                 .HasMaxLength(200);
@@ -39,17 +35,14 @@ namespace IMS_Infrastructure.Data.Configurations
                 .HasMaxLength(50)
                 .IsUnicode(true);
 
-
             builder.Property(x => x.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
 
-            // Indexes
             builder.HasIndex(x => x.SerialNo)
                 .IsUnique();
 
             builder.HasIndex(x => new { x.CategoryId, x.SubCategoryId });
 
-            // Relationships
             builder.HasOne(a => a.Category)
                 .WithMany(c => c.Assets)
                 .HasForeignKey(a => a.CategoryId)
@@ -70,7 +63,6 @@ namespace IMS_Infrastructure.Data.Configurations
                 .HasForeignKey(a => a.ConditionId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Audit relationships
             builder.HasOne<User>()
                 .WithMany()
                 .HasForeignKey(a => a.CreatedBy)
@@ -96,7 +88,6 @@ namespace IMS_Infrastructure.Data.Configurations
                 .HasForeignKey(a => a.ParentAssetId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Soft delete filter
             builder.HasQueryFilter(x => x.IsActive);
         }
     }

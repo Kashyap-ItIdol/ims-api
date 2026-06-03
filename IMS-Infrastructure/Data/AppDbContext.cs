@@ -7,7 +7,6 @@ namespace IMS_Infrastructure.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
-
         }
         public DbSet<Asset> Assets { get; set; }
         public DbSet<AssetAssignment> AssetAssignments { get; set; }
@@ -38,6 +37,5 @@ namespace IMS_Infrastructure.Data
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         }
-
     }
 }

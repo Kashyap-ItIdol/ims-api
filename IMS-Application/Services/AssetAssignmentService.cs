@@ -1,10 +1,10 @@
+using AutoMapper;
+using IMS_Application.Common.Constants;
+using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
-using IMS_Domain.Entities;
-using IMS_Application.Common.Models;
-using IMS_Application.Common.Constants;
-using AutoMapper;
 using IMS_Application.Services.Interfaces;
+using IMS_Domain.Entities;
 
 namespace IMS_Application.Services;
 
@@ -37,7 +37,6 @@ public class AssetAssignmentService : IAssetAssignmentService
         if (dto == null)
             return Result<AssetAssignmentResponseDto>.Failure(ErrorMessages.AssetAssignmentRequired, 400);
 
-        // Use AutoMapper to map DTO to entity
         var entity = _mapper.Map<AssetAssignment>(dto);
         entity.CreatedBy = createdBy;
 
@@ -59,7 +58,7 @@ public class AssetAssignmentService : IAssetAssignmentService
         var entity = await _repository.GetByIdAsync(id);
         if (entity == null)
             return Result<AssetAssignmentResponseDto>.Failure(ErrorMessages.AssetAssignmentNotFound, 404);
-        
+
         var responseDto = _mapper.Map<AssetAssignmentResponseDto>(entity);
         return Result<AssetAssignmentResponseDto>.Success(responseDto, SuccessMessages.AssetAssignmentRetrieved);
     }
@@ -73,14 +72,13 @@ public class AssetAssignmentService : IAssetAssignmentService
         if (entity == null)
             return Result<AssetAssignmentResponseDto>.Failure(ErrorMessages.AssetAssignmentNotFound, 404);
 
-        // Use AutoMapper to map DTO to existing entity
         _mapper.Map(dto, entity);
         entity.UpdatedBy = updatedBy;
         entity.UpdatedAt = DateTime.UtcNow;
 
         await _repository.UpdateAsync(entity);
         var responseDto = _mapper.Map<AssetAssignmentResponseDto>(entity);
-        
+
         return Result<AssetAssignmentResponseDto>.Success(responseDto, SuccessMessages.AssetAssignmentUpdated);
     }
 
@@ -96,7 +94,7 @@ public class AssetAssignmentService : IAssetAssignmentService
 
         await _repository.UpdateAsync(entity);
         var responseDto = _mapper.Map<AssetAssignmentResponseDto>(entity);
-        
+
         return Result<AssetAssignmentResponseDto>.Success(responseDto, SuccessMessages.AssetAssignmentReturned);
     }
 
@@ -106,7 +104,6 @@ public class AssetAssignmentService : IAssetAssignmentService
         if (entity == null)
             return Result<AssetAssignmentResponseDto>.Failure(ErrorMessages.AssetAssignmentNotFound, 404);
 
-        // Soft delete implementation
         entity.IsDeleted = true;
         entity.DeletedBy = updatedBy;
         entity.DeletedAt = DateTime.UtcNow;
@@ -115,7 +112,7 @@ public class AssetAssignmentService : IAssetAssignmentService
 
         await _repository.UpdateAsync(entity);
         var responseDto = _mapper.Map<AssetAssignmentResponseDto>(entity);
-        
+
         return Result<AssetAssignmentResponseDto>.Success(responseDto, SuccessMessages.AssetAssignmentDeleted);
     }
 
@@ -124,35 +121,28 @@ public class AssetAssignmentService : IAssetAssignmentService
         if (dto == null)
             return Result<AssetAssignmentResponseDto>.Failure(ErrorMessages.AssetAssignmentRequired, 400);
 
-        // Step 1: Validate that ConditionId exists in AssetConditions table
         var assetCondition = await _assetRepository.GetAssetConditionByIdAsync(dto.ConditionId);
         if (assetCondition == null)
             return Result<AssetAssignmentResponseDto>.Failure($"Asset condition with ID {dto.ConditionId} does not exist", 400);
 
-        // Step 2: Validate that StatusId exists in AssetStatuses table
         var statusId = GetStatusId(dto.Status);
         var assetStatus = await _assetRepository.GetAssetStatusByIdAsync(statusId);
         if (assetStatus == null)
             return Result<AssetAssignmentResponseDto>.Failure($"Asset status '{dto.Status}' is not valid", 400);
 
-        // Step 3: Create new asset using AutoMapper
         var newAsset = _mapper.Map<Asset>(dto);
         newAsset.CreatedBy = createdBy;
-        newAsset.StatusId = statusId; // Ensure correct StatusId is set
+        newAsset.StatusId = statusId;
 
-        // Save the new asset
         await _assetRepository.AddRangeAsync(new List<Asset> { newAsset });
-        // If your repository/unit-of-work persists changes internally, no further Save call is needed.
 
-
-        // Step 2: Create assignment for the newly created asset using AutoMapper
         var assignment = _mapper.Map<AssetAssignment>(dto);
         assignment.AssetId = newAsset.Id;
         assignment.CreatedBy = createdBy;
 
         var result = await _repository.AddAsync(assignment);
         var responseDto = _mapper.Map<AssetAssignmentResponseDto>(result);
-        
+
         return Result<AssetAssignmentResponseDto>.Success(responseDto, SuccessMessages.AssetCreatedAndAssigned);
     }
 }

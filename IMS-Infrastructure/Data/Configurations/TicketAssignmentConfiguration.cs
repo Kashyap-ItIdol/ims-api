@@ -8,7 +8,6 @@ namespace IMS_Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<TicketAssignment> builder)
         {
-
             builder.HasIndex(x => x.TicketId);
             builder.HasIndex(x => x.assignedTo);
             builder.HasIndex(x => x.assigned_by);

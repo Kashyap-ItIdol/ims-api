@@ -1,10 +1,9 @@
-﻿using IMS_API.Controllers.Base;
+using IMS_API.Controllers.Base;
 using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
 using IMS_Domain.Entities;
 
 namespace IMS_API.Controllers
@@ -24,60 +23,43 @@ namespace IMS_API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateClientAssetDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
-            {
                 return FromResult(userResult);
-            }
-            var result = await _service.Add(dto, userResult.Data);
-            return FromResult(result);
+
+            return FromResult(await _service.Add(dto, userResult.Data));
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var result = await _service.GetAll();
-            return FromResult(result);
+            return FromResult(await _service.GetAll());
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var result = await _service.GetById(id);
-            return FromResult(result);
+            return FromResult(await _service.GetById(id));
         }
 
         [HttpPatch("quick/{id}")]
         public async Task<IActionResult> QuickUpdate(int id, [FromBody] EditClientAssetQuickDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
-            {
                 return FromResult(userResult);
-            }
-            var result = await _service.QuickUpdate(id, dto, userResult.Data);
-            return FromResult(result);
+
+            return FromResult(await _service.QuickUpdate(id, dto, userResult.Data));
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] EditClientAssetFullDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
-            {
                 return FromResult(userResult);
-            }
-            var result = await _service.FullUpdate(id, dto, userResult.Data);
-            return FromResult(result);
+
+            return FromResult(await _service.FullUpdate(id, dto, userResult.Data));
         }
 
         [HttpDelete("{id}")]
@@ -85,11 +67,9 @@ namespace IMS_API.Controllers
         {
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
-            {
                 return FromResult(userResult);
-            }
-            var result = await _service.Delete(id);
-            return FromResult(result);
+
+            return FromResult(await _service.Delete(id));
         }
 
         [HttpPost("filter")]
@@ -105,24 +85,18 @@ namespace IMS_API.Controllers
         {
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
-            {
                 return FromResult(userResult);
-            }
-            
+
             if (request.File == null || request.File.Length == 0)
-            {
                 return BadRequest("No file uploaded or file is empty.");
-            }
-            
-            var result = await _service.UploadAttachmentAsync(id, request.File, userResult.Data);
-            return FromResult(result);
+
+            return FromResult(await _service.UploadAttachmentAsync(id, request.File, userResult.Data));
         }
 
         [HttpGet("{id}/attachments")]
         public async Task<IActionResult> GetAttachments(int id)
         {
-            var result = await _service.GetAttachmentsByAssetAsync(id);
-            return FromResult(result);
+            return FromResult(await _service.GetAttachmentsByAssetAsync(id));
         }
 
         [HttpDelete("attachments/{attachmentId}")]
@@ -130,22 +104,20 @@ namespace IMS_API.Controllers
         {
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
-            {
                 return FromResult(userResult);
-            }
-            var result = await _service.DeleteAttachmentAsync(attachmentId, userResult.Data);
-            return FromResult(result);
+
+            return FromResult(await _service.DeleteAttachmentAsync(attachmentId, userResult.Data));
         }
 
         [HttpGet("attachments/{attachmentId}/download")]
         public async Task<IActionResult> DownloadAttachment(int attachmentId)
         {
             var result = await _service.DownloadAttachmentAsync(attachmentId);
-            
+
             if (!result.IsSuccess)
                 return FromResult(result);
-            
-            (byte[] fileBytes, string _, string fileName) = result.Data;
+
+            (byte[] fileBytes, _, string fileName) = result.Data;
             return File(fileBytes, "application/octet-stream", fileName);
         }
 
@@ -153,11 +125,11 @@ namespace IMS_API.Controllers
         public async Task<IActionResult> ViewAttachment(int attachmentId)
         {
             var result = await _service.ViewAttachmentAsync(attachmentId);
-            
+
             if (!result.IsSuccess)
                 return FromResult(result);
-            
-            (byte[] fileBytes, string contentType, string _) = result.Data;
+
+            (byte[] fileBytes, string contentType, _) = result.Data;
             return File(fileBytes, contentType);
         }
     }

@@ -25,9 +25,7 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
 
             return FromResult(await _ticketService.CreateTicketAsync(dto, userIdResult.Data));
         }
@@ -37,9 +35,7 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
 
             return FromResult(await _ticketService.AddCommentAsync(ticketId, commentText, userIdResult.Data));
         }
@@ -49,9 +45,8 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
+
             return FromResult(await _ticketService.AddReplyAsync(ticketId, parentCommentId, commentText, userIdResult.Data));
         }
 
@@ -60,9 +55,8 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
+
             return FromResult(await _ticketService.EditCommentAsync(commentId, commentText, userIdResult.Data));
         }
 
@@ -71,9 +65,8 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
+
             return FromResult(await _ticketService.DeleteCommentAsync(commentId, userIdResult.Data));
         }
 
@@ -82,9 +75,8 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
+
             return FromResult(await _ticketService.LikeCommentAsync(commentId, userIdResult.Data));
         }
 
@@ -93,9 +85,8 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
+
             return FromResult(await _ticketService.UnlikeCommentAsync(commentId, userIdResult.Data));
         }
 
@@ -104,9 +95,8 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
+
             return FromResult(await _ticketService.AddReactionAsync(commentId, reactionType, userIdResult.Data));
         }
 
@@ -115,9 +105,8 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
+
             return FromResult(await _ticketService.RemoveReactionAsync(commentId, userIdResult.Data));
         }
 
@@ -126,9 +115,8 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
+
             return FromResult(await _ticketService.UpdateStatusAsync(ticketId, status, userIdResult.Data));
         }
 
@@ -137,9 +125,8 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
+
             return FromResult(await _ticketService.GetAllTicketsAsync(userIdResult.Data, pageNumber, pageSize));
         }
 
@@ -148,9 +135,8 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
+
             return FromResult(await _ticketService.GetTicketByIdAsync(ticketId, userIdResult.Data));
         }
 
@@ -159,45 +145,47 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
+
             return FromResult(await _ticketService.SearchTicketsGroupedAsync(q, userIdResult.Data));
         }
 
         [HttpGet("thismonth")]
-        public async Task<IActionResult> GetCalendarFilteredTickets([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? dateFilter = null, [FromQuery] DateOnly? startDate = null, [FromQuery] DateOnly? endDate = null)
-
+        public async Task<IActionResult> GetCalendarFilteredTickets(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? dateFilter = null,
+            [FromQuery] DateOnly? startDate = null,
+            [FromQuery] DateOnly? endDate = null)
         {
-
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
-            return FromResult(await _ticketService.GetCalendarFilteredTicketsAsync(userIdResult.Data, pageNumber, pageSize, dateFilter, startDate, endDate));
+
+            return FromResult(await _ticketService.GetCalendarFilteredTicketsAsync(
+                userIdResult.Data, pageNumber, pageSize, dateFilter, startDate, endDate));
         }
+
         [HttpGet("support-engineers")]
-        public async Task<IActionResult> GetSupportEngineers([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetSupportEngineers(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
+
             return FromResult(await _ticketService.GetSupportEngineersAsync(pageNumber, pageSize));
         }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTicket(int id)
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
 
-            var result = await _ticketService.DeleteTicketAsync(id, userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.DeleteTicketAsync(id, userIdResult.Data));
         }
 
         [HttpPatch("{id}")]
@@ -205,26 +193,19 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
 
-            var result = await _ticketService.UpdateTicketAsync(id, dto, userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.UpdateTicketAsync(id, dto, userIdResult.Data));
         }
 
-        [Authorize]
         [HttpPost("FilterTickets")]
         public async Task<IActionResult> FilterTickets([FromBody] TicketFilterDto filter)
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
 
-            var result = await _ticketService.FilterTicketsAsync(filter ?? new TicketFilterDto(), userIdResult.Data);
-            return FromResult(result);
+            return FromResult(await _ticketService.FilterTicketsAsync(filter ?? new TicketFilterDto(), userIdResult.Data));
         }
 
         [HttpPost("{ticketId}/attachments")]
@@ -233,21 +214,16 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
 
-            var result = await _ticketService.UploadFilesAsync(dto, userIdResult.Data, ticketId);
-            return FromResult(result);
+            return FromResult(await _ticketService.UploadFilesAsync(dto, userIdResult.Data, ticketId));
         }
-
 
         [HttpGet("attachments/{attachmentId}")]
         [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> GetAttachment(int attachmentId)
         {
-            var result = await _ticketService.GetAttachmentAsync(attachmentId);
-            return FromResult(result);
+            return FromResult(await _ticketService.GetAttachmentAsync(attachmentId));
         }
 
         [HttpGet("attachments/{attachmentId}/download")]
@@ -256,18 +232,10 @@ namespace IMS_API.Controllers
         {
             var result = await _ticketService.GetAttachmentAsync(attachmentId);
             if (!result.IsSuccess)
-            {
                 return FromResult(result);
-            }
-            var fullPath = Path.Combine(_env.WebRootPath, result.Data!.FilePath.TrimStart('/'));
-            var fileName = Path.GetFileName(fullPath);
-            var provider = new FileExtensionContentTypeProvider();
-            provider.TryGetContentType(fullPath, out var contentType);
-            if (string.IsNullOrEmpty(contentType))
-            {
-                contentType = "application/octet-stream";
-            }
-            return File(System.IO.File.OpenRead(fullPath), contentType, fileName, enableRangeProcessing: true);
+
+            return File(GetFileStream(result.Data!.FilePath), GetContentType(result.Data.FilePath),
+                Path.GetFileName(result.Data.FilePath), enableRangeProcessing: true);
         }
 
         [HttpGet("attachments/{attachmentId}/view")]
@@ -276,17 +244,23 @@ namespace IMS_API.Controllers
         {
             var result = await _ticketService.GetAttachmentAsync(attachmentId);
             if (!result.IsSuccess)
-            {
                 return FromResult(result);
-            }
-            var fullPath = Path.Combine(_env.WebRootPath, result.Data!.FilePath.TrimStart('/'));
+
+            return PhysicalFile(GetFullPath(result.Data!.FilePath), GetContentType(result.Data.FilePath),
+                enableRangeProcessing: false);
+        }
+
+        private string GetFullPath(string filePath)
+            => Path.Combine(_env.WebRootPath, filePath.TrimStart('/'));
+
+        private Stream GetFileStream(string filePath)
+            => System.IO.File.OpenRead(GetFullPath(filePath));
+
+        private string GetContentType(string filePath)
+        {
             var provider = new FileExtensionContentTypeProvider();
-            provider.TryGetContentType(fullPath, out var contentType);
-            if (string.IsNullOrEmpty(contentType))
-            {
-                contentType = "application/octet-stream";
-            }
-            return PhysicalFile(fullPath, contentType, enableRangeProcessing: false);
+            provider.TryGetContentType(filePath, out var contentType);
+            return string.IsNullOrEmpty(contentType) ? "application/octet-stream" : contentType;
         }
     }
 }

@@ -105,6 +105,9 @@ namespace IMS_Application.Services
                 var allAssignments = repoTickets.SelectMany(t => t.TicketAssignments).ToList();
                 var ticketPerEngineer = CalculateTicketPerSupportEngineer(filteredTickets, allAssignments, supportEngineers);
 
+                // Calculate metrics
+                var metrics = CalculateMetrics(filteredTickets, activityOverview);
+
                 var result = new TicketReportDto
                 {
                     TotalTicketsAssignmentKpi = new ReportKpiDto
@@ -180,7 +183,8 @@ namespace IMS_Application.Services
                         }
                     },
                     TicketTypeAnalysis = ticketTypeAnalysis,
-                    TicketPerSupportEngineer = ticketPerEngineer
+                    TicketPerSupportEngineer = ticketPerEngineer,
+                    Metrics = metrics
                 };
 
                 return Result<TicketReportDto>.Success(result);
@@ -245,6 +249,66 @@ namespace IMS_Application.Services
             }
 
             return result;
+        }
+
+        private ReportMetricsDto CalculateMetrics(List<Ticket> filteredTickets, Dictionary<string, DayActivityDto> activityOverview)
+        {
+            var totalDays = activityOverview.Count > 0 ? activityOverview.Count : 1;
+            var totalSolved = activityOverview.Values.Sum(v => v.Solved);
+            var avgResolutionPerDay = totalDays > 0 ? Math.Round((double)totalSolved / totalDays, 2) : 0;
+            var ticketsResolvedPerDay = totalDays > 0 ? (int)Math.Ceiling((double)totalSolved / totalDays) : 0;
+
+            // Calculate average first response time from ticket comments/assignments
+            var avgFirstResponseTime = "N/A";
+            var ticketsWithFirstResponse = filteredTickets
+                .Where(t => t.TicketAssignments != null && t.TicketAssignments.Any())
+                .ToList();
+
+            if (ticketsWithFirstResponse.Any())
+            {
+                var responseTimes = new List<TimeSpan>();
+                foreach (var ticket in ticketsWithFirstResponse)
+                {
+                    var firstAssignment = ticket.TicketAssignments
+                        .OrderBy(a => a.assigned_at)
+                        .FirstOrDefault();
+
+                    if (firstAssignment != null && ticket.CreatedAt != default)
+                    {
+                        var responseTime = firstAssignment.assigned_at - ticket.CreatedAt;
+                        if (responseTime.TotalSeconds > 0)
+                        {
+                            responseTimes.Add(responseTime);
+                        }
+                    }
+                }
+
+                if (responseTimes.Any())
+                {
+                    var avgTicks = (long)responseTimes.Average(t => t.Ticks);
+                    var avgTimeSpan = TimeSpan.FromTicks(avgTicks);
+
+                    if (avgTimeSpan.TotalMinutes < 60)
+                    {
+                        avgFirstResponseTime = $"{(int)avgTimeSpan.TotalMinutes} min";
+                    }
+                    else if (avgTimeSpan.TotalHours < 24)
+                    {
+                        avgFirstResponseTime = $"{(int)avgTimeSpan.TotalHours}h {avgTimeSpan.Minutes}m";
+                    }
+                    else
+                    {
+                        avgFirstResponseTime = $"{(int)avgTimeSpan.TotalDays}d {avgTimeSpan.Hours}h";
+                    }
+                }
+            }
+
+            return new ReportMetricsDto
+            {
+                AvgResolutionPerDay = avgResolutionPerDay,
+                TicketsResolvedPerDay = ticketsResolvedPerDay,
+                AvgFirstResponseTime = avgFirstResponseTime
+            };
         }
     }
 }

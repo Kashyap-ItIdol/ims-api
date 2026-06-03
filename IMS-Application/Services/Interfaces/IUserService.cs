@@ -14,5 +14,6 @@ namespace IMS_Application.Services.Interfaces
         Task<Result<List<UserResponseDto>>> SearchUsersAsync(string query);
         Task<Result<UserFilterOptionsDto>> GetUserFilterOptionsAsync();
         Task<Result<List<UserActivityResponseDto>>> GetUserActivitiesByIdAsync(int id, DateTime? startDate, DateTime? endDate);
+        Task<Result<UserOverviewResponseDto>> GetMyProfileAsync(int currentUserId);
     }
 }

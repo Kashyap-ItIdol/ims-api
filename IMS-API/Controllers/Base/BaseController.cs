@@ -1,4 +1,4 @@
-﻿using IMS_Application.Common.Constants;
+using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -27,6 +27,7 @@ namespace IMS_API.Controllers.Base
                 data = result.Data
             });
         }
+
         protected Result<int> GetCurrentUserId()
         {
             var claimValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -36,6 +37,7 @@ namespace IMS_API.Controllers.Base
             }
             return Result<int>.Success(userId);
         }
+
         protected void SetRefreshTokenCookie(string token, int? expireDays = null)
         {
             var cookieOptions = new CookieOptions
@@ -46,12 +48,11 @@ namespace IMS_API.Controllers.Base
             };
 
             if (expireDays.HasValue)
-            {
                 cookieOptions.Expires = DateTime.UtcNow.AddDays(expireDays.Value);
-            }
 
             Response.Cookies.Append("refreshToken", token, cookieOptions);
         }
+
         protected void DeleteRefreshTokenCookie()
         {
             var cookieOptions = new CookieOptions

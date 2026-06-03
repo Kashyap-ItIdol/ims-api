@@ -10,6 +10,7 @@ namespace IMS_Application.DTOs
         public PriorityDistributionDto PriorityDistribution { get; set; }
         public TicketTypeAnalysisDto TicketTypeAnalysis { get; set; }
         public Dictionary<string, EngineerStageDto> TicketPerSupportEngineer { get; set; }
+        public ReportMetricsDto Metrics { get; set; }
     }
 
     public class ReportKpiDto
@@ -60,5 +61,12 @@ namespace IMS_Application.DTOs
         public int PercentageChange { get; set; }
         public string Trend { get; set; }
         public string Message { get; set; }
+    }
+
+    public class ReportMetricsDto
+    {
+        public double AvgResolutionPerDay { get; set; }
+        public int TicketsResolvedPerDay { get; set; }
+        public string AvgFirstResponseTime { get; set; }
     }
 }

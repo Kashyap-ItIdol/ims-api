@@ -14,8 +14,7 @@ namespace IMS_API.Controllers
     {
         private readonly IAuthService _authService;
 
-        public AuthController(
-            IAuthService authService)
+        public AuthController(IAuthService authService)
         {
             _authService = authService;
         }
@@ -28,9 +27,7 @@ namespace IMS_API.Controllers
 
             if (result.IsSuccess)
             {
-                // 30 days for "Remember Me"
                 int? expireDays = dto.RememberMe ? 30 : null;
-
                 SetRefreshTokenCookie(result.Data!.RefreshToken, expireDays);
             }
 
@@ -47,53 +44,48 @@ namespace IMS_API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> RefreshToken()
         {
-            // Extract the token from the secure cookie rather than the DTO
             var refreshToken = Request.Cookies["refreshToken"];
 
             if (string.IsNullOrEmpty(refreshToken))
                 return Unauthorized(new { success = false, message = ErrorMessages.NoRefreshToken });
 
-            // 3. Service handles the heavy database and token logic
             var result = await _authService.RefreshTokenAsync(refreshToken);
 
-            // 4. Controller handles the HTTP response injection
             if (result.IsSuccess)
-            {
                 SetRefreshTokenCookie(result.Data!.RefreshToken);
-            }
 
             return FromResult(result);
         }
 
         [HttpPost("logout")]
-        [AllowAnonymous] // Allow anonymous so even if their access token expired, they can still clear their cookie
+        [AllowAnonymous]
         public async Task<IActionResult> Logout()
         {
             var refreshToken = Request.Cookies["refreshToken"];
 
             if (!string.IsNullOrEmpty(refreshToken))
             {
-                //  Revoke in the database
                 await _authService.LogoutAsync(refreshToken);
-
-                // Delete the HTTP-only cookie from the user's browser
                 DeleteRefreshTokenCookie();
             }
 
             return FromResult(Result<bool>.Success(true, SuccessMessages.LogoutSuccess));
         }
+
         [HttpPost("forgot-password")]
         [AllowAnonymous]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordRequestDto dto)
         {
             return FromResult(await _authService.RequestForgotPasswordAsync(dto));
         }
+
         [HttpPost("verify-otp")]
         [AllowAnonymous]
         public async Task<IActionResult> VerifyOtp(OtpVerificationRequestDto dto)
         {
             return FromResult(await _authService.VerifyOtpAsync(dto));
         }
+
         [HttpPost("reset-password")]
         [AllowAnonymous]
         public async Task<IActionResult> ResetPassword(ResetPasswordRequestDto dto)

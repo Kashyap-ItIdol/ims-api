@@ -79,7 +79,10 @@ namespace IMS_Application.Mappings
                 .ForMember(dest => dest.TableNo, opt => opt.MapFrom(src => src.TableNo))
                 .ForMember(dest => dest.Children, opt => opt.MapFrom(src => src.ChildAssets))
                 .ForMember(dest => dest.History, opt => opt.Ignore())
-                .ForMember(dest => dest.ConditionName, opt => opt.MapFrom(src => src.AssetCondition != null ? src.AssetCondition.Condition : string.Empty));
+                .ForMember(dest => dest.ConditionName, opt => opt.MapFrom(src => src.AssetCondition != null ? src.AssetCondition.Condition : string.Empty))
+                .ForMember(dest => dest.AssignedTo, opt => opt.MapFrom(src => src.AssignedTo))
+                .ForMember(dest => dest.AssignedDate, opt => opt.MapFrom(src => src.AssignDate));
+
 
             CreateMap<Asset, AssetListDto>()
                 .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.Name))

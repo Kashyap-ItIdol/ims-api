@@ -17,7 +17,6 @@ namespace IMS_Application.Services
         private readonly ISettingRepository _settingRepository;
 
         public CategoryService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<CategoryService> logger, ISettingRepository settingRepository)
-
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -30,24 +29,18 @@ namespace IMS_Application.Services
             try
             {
                 if (string.IsNullOrWhiteSpace(name))
-                {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryNameRequired, 400);
-                }
+
                 var cleanName = name.Trim();
                 if (cleanName.Length < 2)
-                {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryNameTooShort, 400);
-                }
+
                 if (!System.Text.RegularExpressions.Regex.IsMatch(cleanName, @"^[a-zA-Z0-9 &-_]*$"))
-                {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryNameInvalidChars, 400);
-                }
 
                 var existingCategory = await _unitOfWork.Categories.GetByNameAsync(cleanName);
                 if (existingCategory != null)
-                {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryalreadyExist, 400);
-                }
 
                 var category = new Category
                 {
@@ -86,7 +79,6 @@ namespace IMS_Application.Services
             try
             {
                 var categories = await _unitOfWork.Categories.GetAllActiveCategoriesAsync();
-
                 return Result<List<ListCategoriesDto>>.Success(_mapper.Map<List<ListCategoriesDto>>(categories), SuccessMessages.AllCategories);
             }
             catch (Exception ex)
@@ -101,26 +93,20 @@ namespace IMS_Application.Services
             try
             {
                 if (id <= 0 || updatedBy <= 0)
-                {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.InvalidInput, 400);
-                }
+
                 if (string.IsNullOrWhiteSpace(name))
-                {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryNameRequired, 400);
-                }
 
                 var category = await _unitOfWork.Categories.GetByIdAsync(id);
                 if (category == null)
-                {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryNotFound, 404);
-                }
 
                 var cleanName = name.Trim();
                 var existingWithSameName = await _unitOfWork.Categories.GetByNameAsync(cleanName);
                 if (existingWithSameName != null && existingWithSameName.Id != id)
-                {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.DuplicateCategoryName, 400);
-                }
+
                 category.Name = cleanName;
                 category.IsActive = true;
                 category.UpdatedAt = DateTime.UtcNow;
@@ -155,20 +141,14 @@ namespace IMS_Application.Services
             try
             {
                 if (categoryId <= 0 || updatedBy <= 0)
-                {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.InvalidInput, 400);
-                }
 
                 var category = await _unitOfWork.Categories.GetByIdAsync(categoryId);
                 if (category == null)
-                {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryNotFound, 404);
-                }
 
                 if (!category.IsActive)
-                {
                     return Result<ListCategoriesDto>.Failure(ErrorMessages.CategoryAlreadyDeleted, 400);
-                }
 
                 category.IsActive = false;
                 category.DeletedAt = DateTime.UtcNow;
@@ -203,15 +183,11 @@ namespace IMS_Application.Services
             try
             {
                 if (id <= 0)
-                {
                     return Result<GetCategoryDto>.Failure(ErrorMessages.CategoryNotFound, 400);
-                }
 
                 var category = await _unitOfWork.Categories.GetByIdWithSubCategoriesAsync(id);
                 if (category == null)
-                {
                     return Result<GetCategoryDto>.Failure(ErrorMessages.CategoryNotFound, 404);
-                }
 
                 return Result<GetCategoryDto>.Success(_mapper.Map<GetCategoryDto>(category), SuccessMessages.CategoryById);
             }

@@ -8,7 +8,6 @@ using IMS_Application.Services.Interfaces;
 using IMS_Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using System.Linq;
 
 namespace IMS_Application.Services
 {
@@ -31,12 +30,12 @@ namespace IMS_Application.Services
                 return Result<object>.Failure(ErrorMessages.ClientAssetRequired, 400);
 
             try
-            {                
+            {
                 var entity = _mapper.Map<ClientAsset>(dto);
                 entity.CreatedBy = userId;
                 await _repository.AddAsync(entity);
                 await _repository.SaveChangesAsync();
-                
+
                 var response = new { id = entity.Id, message = SuccessMessages.ClientAssetCreated };
                 return Result<object>.Success(response, SuccessMessages.ClientAssetCreated);
             }
@@ -104,11 +103,10 @@ namespace IMS_Application.Services
                 asset.UpdatedBy = userId;
 
                 var result = await _repository.UpdateAsync(asset);
-
                 if (result)
                     return Result<bool>.Success(true, SuccessMessages.ClientAssetQuickUpdated);
-                else
-                    return Result<bool>.Failure(ErrorMessages.UnexpectedError, 500);
+
+                return Result<bool>.Failure(ErrorMessages.UnexpectedError, 500);
             }
             catch (Exception ex)
             {
@@ -133,11 +131,10 @@ namespace IMS_Application.Services
                 asset.UpdatedBy = userId;
 
                 var result = await _repository.UpdateAsync(asset);
-                
                 if (result)
                     return Result<bool>.Success(true, SuccessMessages.ClientAssetUpdated);
-                else
-                    return Result<bool>.Failure(ErrorMessages.UnexpectedError, 500);
+
+                return Result<bool>.Failure(ErrorMessages.UnexpectedError, 500);
             }
             catch (Exception ex)
             {
@@ -157,16 +154,14 @@ namespace IMS_Application.Services
                 if (asset == null)
                     return Result<bool>.Failure(ErrorMessages.ClientAssetNotFound, 404);
 
-               
                 asset.IsDeleted = true;
                 asset.DeletedAt = DateTime.UtcNow;
 
                 var result = await _repository.UpdateAsync(asset);
-                
                 if (result)
                     return Result<bool>.Success(true, SuccessMessages.ClientAssetDeleted);
-                else
-                    return Result<bool>.Failure(ErrorMessages.UnexpectedError, 500);
+
+                return Result<bool>.Failure(ErrorMessages.UnexpectedError, 500);
             }
             catch (Exception ex)
             {
@@ -183,15 +178,14 @@ namespace IMS_Application.Services
                 if (clientAsset == null)
                     return Result<AttachmentResponseDto>.Failure(ErrorMessages.ClientAssetNotFound, 404);
 
-                // Generate unique file name and save file
                 var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
                 var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-                
+
                 if (!Directory.Exists(uploadsFolder))
                     Directory.CreateDirectory(uploadsFolder);
 
                 var filePath = Path.Combine(uploadsFolder, fileName);
-                
+
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);
@@ -207,7 +201,7 @@ namespace IMS_Application.Services
                 await _repository.AddAttachmentAsync(attachment);
                 await _repository.SaveChangesAsync();
                 var responseDto = _mapper.Map<AttachmentResponseDto>(attachment);
-                
+
                 return Result<AttachmentResponseDto>.Success(responseDto, SuccessMessages.AttachmentUploaded);
             }
             catch (Exception ex)
@@ -260,7 +254,7 @@ namespace IMS_Application.Services
 
                 var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
                 var filePath = Path.Combine(uploadsFolder, attachment.FilePath);
-                
+
                 if (!System.IO.File.Exists(filePath))
                     return Result<(byte[], string, string)>.Failure(ErrorMessages.FileNotFound, 404);
 
@@ -289,7 +283,6 @@ namespace IMS_Application.Services
                 if (attachment == null)
                     return Result<bool>.Failure(ErrorMessages.AttachmentNotFound, 404);
 
-                // Soft delete
                 attachment.IsDeleted = true;
                 attachment.DeletedBy = deletedBy;
                 attachment.DeletedAt = DateTime.UtcNow;
@@ -310,54 +303,38 @@ namespace IMS_Application.Services
             var query = allAssets.Where(x => !x.IsDeleted).AsQueryable();
 
             if (filter.Status != null && filter.Status.Count > 0)
-            {
                 query = query.Where(x => filter.Status.Contains(x.Status));
-            }
-            
+
             if (filter.Brand != null && filter.Brand.Count > 0)
-            {
                 query = query.Where(x => filter.Brand.Contains(x.Brand));
-            }
-            
+
             if (filter.ClientProject != null && filter.ClientProject.Count > 0)
-            {
                 query = query.Where(x => filter.ClientProject.Contains(x.ClientName));
-            }
-            
+
             if (filter.AssignedTo != null && filter.AssignedTo.Count > 0)
             {
                 if (filter.AssignedTo.Contains(0))
-                {
                     query = query.Where(x => x.AssignedTo == null);
-                }
                 else
-                {
-                    query = query.Where(x => x.AssignedTo.HasValue && 
-                                          filter.AssignedTo.Contains(x.AssignedTo.Value));
-                }
+                    query = query.Where(x => x.AssignedTo.HasValue && filter.AssignedTo.Contains(x.AssignedTo.Value));
             }
-            
+
             if (filter.AssignedFrom.HasValue)
-            {
-                query = query.Where(x => x.AssignedDate.HasValue && 
-                                      x.AssignedDate.Value >= filter.AssignedFrom.Value);
-            }
+                query = query.Where(x => x.AssignedDate.HasValue && x.AssignedDate.Value >= filter.AssignedFrom.Value);
+
             if (filter.AssignedToDate.HasValue)
-            {
-                query = query.Where(x => x.AssignedDate.HasValue && 
-                                      x.AssignedDate.Value <= filter.AssignedToDate.Value);
-            }
+                query = query.Where(x => x.AssignedDate.HasValue && x.AssignedDate.Value <= filter.AssignedToDate.Value);
 
             if (!string.IsNullOrEmpty(filter.Search))
             {
                 var searchLower = filter.Search.ToLower();
-                query = query.Where(x => 
+                query = query.Where(x =>
                     x.AssetName.ToLower().Contains(searchLower) ||
                     x.SerialNumber.ToLower().Contains(searchLower) ||
                     x.Model.ToLower().Contains(searchLower) ||
                     x.Brand.ToLower().Contains(searchLower));
             }
-            
+
             return query.ToList();
         }
     }

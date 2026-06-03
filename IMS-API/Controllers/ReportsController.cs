@@ -25,11 +25,10 @@ namespace IMS_API.Controllers
         {
             var userIdResult = GetCurrentUserId();
             if (!userIdResult.IsSuccess)
-            {
                 return FromResult(userIdResult);
-            }
 
-            return FromResult(await _reportService.GetTicketReportsAsync(userIdResult.Data, start_date, end_date, support_engineer_id));
+            return FromResult(await _reportService.GetTicketReportsAsync(
+                userIdResult.Data, start_date, end_date, support_engineer_id));
         }
     }
 }

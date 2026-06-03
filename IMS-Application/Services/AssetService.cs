@@ -499,7 +499,7 @@ namespace IMS_Application.Services
                         detailedError += $" | Inner2: {ex.InnerException.InnerException.Message}";
                 }
                 _logger.LogError(ex, "Error adding assets. {DetailedError}", detailedError);
-                return Result<int>.Failure(ErrorMessages.UnexpectedError, 500);
+                return Result<int>.Failure(detailedError, 500);
             }
         }
 
@@ -583,6 +583,8 @@ namespace IMS_Application.Services
                     Action = LogicStrings.ActionAttached,
                     Description = $"Attached to parent asset {parent.ItemName}"
                 });
+
+                child.AssignedUser = parent.AssignedUser;
 
                 await _unitOfWork.SaveChangesAsync();
                 return Result<string>.Success(SuccessMessages.ChildAttachedSuccessfully);
