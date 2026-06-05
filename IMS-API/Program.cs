@@ -1,4 +1,6 @@
 using IMS_API.ExceptionHandlers;
+using IMS_API.Extensions;
+using IMS_API.Hubs;
 using IMS_Application.Extentions;
 using IMS_Application.Interfaces;
 using IMS_Infrastructure.Data.Configurations;
@@ -101,7 +103,13 @@ try
 
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddApiServices();
+
+    // SignalR for NotificationDispatcher/NotificationHub
+    builder.Services.AddSignalR();
+
     builder.Services.AddValidation();
+
     builder.Services.AddProblemDetails();
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
@@ -127,12 +135,26 @@ try
 
             options.Events = new JwtBearerEvents
             {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    var path = context.HttpContext.Request.Path;
+
+                    if (!string.IsNullOrEmpty(accessToken) &&
+                        path.StartsWithSegments("/notifications"))
+                    {
+                        context.Token = accessToken;
+                    }
+
+                    return Task.CompletedTask;
+                },
 
                 OnChallenge = async context =>
                 {
                     context.HandleResponse();
                     context.Response.StatusCode = 401;
                     context.Response.ContentType = "application/json";
+
 
                     var result = JsonSerializer.Serialize(new
                     {
@@ -169,6 +191,10 @@ try
         await EmailTemplateSeeder.SeedAsync(emailTemplateRepository);
     }
 
+    ConfigureMiddleware(app);
+
+static void ConfigureMiddleware(WebApplication app)
+{
     app.UseSerilogRequestLogging();
 
     app.UseExceptionHandler();
@@ -180,16 +206,23 @@ try
         c.RoutePrefix = string.Empty;
     });
 
-    app.UseHttpsRedirection();
+   app.UseHttpsRedirection();
 
     app.UseCors("DevCors");
 
     app.UseAuthentication();
     app.UseAuthorization();
+
+    app.UseStaticFiles();
+
     app.MapControllers();
+
+    app.MapHub<NotificationHub>($"/notifications");
 
     app.Run();
 }
+}
+
 catch (Exception ex)
 {
     Log.Fatal(ex, "IMS API terminated unexpectedly during startup");

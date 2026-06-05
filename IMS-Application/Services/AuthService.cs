@@ -183,6 +183,7 @@ namespace IMS_Application.Services
                 _cache.Set(key, otp, TimeSpan.FromMinutes(10));
 
                 var emailResult = await _emailService.SendOtpAsync(email, otp);
+
                 if (!emailResult.IsSuccess)
                     return Result<bool>.Failure(ErrorMessages.OtpSendFailed, 500);
 
@@ -206,11 +207,13 @@ namespace IMS_Application.Services
                     return Result<string>.Failure(ErrorMessages.ResetPasswordUserNotFound, 404);
 
                 var key = $"{OTP_KEY_PREFIX}{email}";
+
                 if (!_cache.TryGetValue(key, out int storedOtp) || storedOtp != dto.Otp)
                     return Result<string>.Failure(ErrorMessages.InvalidOrExpiredOtp, 400);
 
                 _cache.Remove(key);
                 var resetToken = _tokenService.GenerateResetToken(user.Id);
+
                 return Result<string>.Success(resetToken, SuccessMessages.OtpVerifiedSuccessfully);
             }
             catch (Exception ex)
@@ -225,15 +228,18 @@ namespace IMS_Application.Services
             try
             {
                 var userId = _tokenService.ValidateResetToken(dto.ResetToken);
+
                 if (userId == null)
                     return Result<bool>.Failure(ErrorMessages.InvalidResetToken, 400);
 
                 var user = await _unitOfWork.Users.GetByIdAsync(userId.Value);
+
                 if (user == null)
                     return Result<bool>.Failure(ErrorMessages.ResetPasswordUserNotFound, 404);
 
                 user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
                 await _unitOfWork.SaveChangesAsync();
+
                 return Result<bool>.Success(true, SuccessMessages.PasswordResetSuccessfully);
             }
             catch (Exception ex)

@@ -1,3 +1,6 @@
+using IMS_Application.DTOs;
+using System.Collections.Generic;
+
 namespace IMS_Application.DTOs
 {
     public class UserOverviewResponseDto

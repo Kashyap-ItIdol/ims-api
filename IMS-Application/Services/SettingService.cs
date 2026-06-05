@@ -105,6 +105,7 @@ namespace IMS_Application.Services
 
                 return Result<PagedResult<RecentActivityItemDto>>.Success(pagedResult, SuccessMessages.RetrievedSuccessfully);
             }
+
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving recent deleted activities. pageNumber={PageNumber} pageSize={PageSize}", pageNumber, pageSize);
@@ -112,5 +113,10 @@ namespace IMS_Application.Services
                 return Result<PagedResult<RecentActivityItemDto>>.Failure(ErrorMessages.ServerError, 500);
             }
         }
+
+
     }
 }
+
+
+

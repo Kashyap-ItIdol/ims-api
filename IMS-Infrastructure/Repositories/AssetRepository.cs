@@ -33,8 +33,7 @@ namespace IMS_Infrastructure.Repositories
                 .Include(a => a.ChildAssets.Where(c => c.IsActive))
                 .ToListAsync();
         }
-
-        public async Task<Asset?> GetByIdAsync(int id)
+public async Task<Asset?> GetByIdAsync(int id)
         {
             return await _dbSet
                 .IgnoreQueryFilters()
@@ -55,26 +54,23 @@ namespace IMS_Infrastructure.Repositories
                 .FirstOrDefaultAsync(a => a.Id == id);
         }
 
-        public async Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId)
+public async Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId)
         {
             return await _dbSet
                 .AsNoTracking()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(x => x.AssignedTo == userId && x.ParentAssetId == null && x.IsActive);
         }
-
         public async Task<bool> SerialExistsAsync(string serialNo, int excludeId)
         {
             return await _dbSet
                 .AsNoTracking()
                 .AnyAsync(x => x.SerialNo == serialNo && x.Id != excludeId && x.IsActive);
         }
-
         public async Task AddHistoryAsync(AssetHistory history)
         {
             await _context.Set<AssetHistory>().AddAsync(history);
         }
-
         public async Task<List<AssetHistory>> GetHistoryByAssetIdAsync(int assetId)
         {
             return await _context.Set<AssetHistory>()

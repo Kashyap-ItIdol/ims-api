@@ -15,13 +15,20 @@ namespace IMS_Application.Services
         private readonly IMapper _mapper;
         private readonly ILogger<AssetService> _logger;
         private readonly ISettingRepository _settingRepository;
+        private readonly INotificationDispatcher _notificationDispatcher;
 
-        public AssetService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<AssetService> logger, ISettingRepository settingRepository)
+        public AssetService(
+            IUnitOfWork unitOfWork,
+            IMapper mapper,
+            ILogger<AssetService> logger,
+            ISettingRepository settingRepository,
+            INotificationDispatcher notificationDispatcher)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
             _settingRepository = settingRepository;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         public async Task<Result<AssetResponseDto>> Create(CreateAssetDto dto, int createdBy)
@@ -41,7 +48,6 @@ namespace IMS_Application.Services
 
                 await _unitOfWork.Assets.AddRangeAsync(new List<Asset> { asset });
                 await _unitOfWork.SaveChangesAsync();
-
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
                     AssetId = asset.Id,
@@ -60,7 +66,54 @@ namespace IMS_Application.Services
                     IsDeleted = false
                 });
 
+                var notificationTime = DateTime.UtcNow;
+
+                var allUsers = await _unitOfWork.Users.GetAllWithRolesAsync();
+                var adminUserIds = allUsers
+                    .Where(u => u?.Role?.Name == LogicStrings.AdminRole)
+                    .Select(u => u.Id)
+                    .ToHashSet();
+
+                var notifiedUserIds = new HashSet<int>(adminUserIds);
+                if (asset.AssignedTo.HasValue)
+                    notifiedUserIds.Add(asset.AssignedTo.Value);
+
+                foreach (var userId in notifiedUserIds)
+                {
+                    var notification = new Notification
+                    {
+                        UserId = userId,
+                        Title = LogicStrings.ActionCreated,
+                        Message = $"Asset {asset.ItemName} (AID-{asset.Id}) was created.",
+                        IsRead = false,
+                        CreatedAt = notificationTime
+                    };
+
+                    await _unitOfWork.Notifications.AddAsync(notification);
+                }
+
                 await _unitOfWork.SaveChangesAsync();
+
+                foreach (var userId in notifiedUserIds)
+                {
+                    try
+                    {
+                        await _notificationDispatcher.DispatchAsync(
+                            userId,
+                            new NewNotificationDto
+                            {
+                                Title = LogicStrings.ActionCreated,
+                                Message = $"Asset #{asset.Id} was created.",
+                                CreatedAt = notificationTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                            });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex,
+                            "Notification dispatch failed for user {UserId} (asset {AssetId}). Notifications were persisted; dispatch is best-effort.",
+                            userId, asset.Id);
+                    }
+                }
 
                 return Result<AssetResponseDto>.Success(_mapper.Map<AssetResponseDto>(asset));
             }
@@ -76,13 +129,13 @@ namespace IMS_Application.Services
             try
             {
                 var assets = await _unitOfWork.Assets.GetAllAsync();
+                var result = _mapper.Map<List<AssetResponseDto>>(assets);
 
                 if (string.Equals(currentRole, "Employee", StringComparison.OrdinalIgnoreCase))
                 {
                     assets = assets.Where(a => a.AssignedTo == currentUserId).ToList();
+                    result = _mapper.Map<List<AssetResponseDto>>(assets);
                 }
-
-                var result = _mapper.Map<List<AssetResponseDto>>(assets);
 
                 foreach (var dto in result)
                 {
@@ -264,7 +317,7 @@ namespace IMS_Application.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error searching users");
+                _logger.LogError(ex, "Error fetching suggested users");
                 return Result<List<UserDto>>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
@@ -587,6 +640,7 @@ namespace IMS_Application.Services
                 child.AssignedUser = parent.AssignedUser;
 
                 await _unitOfWork.SaveChangesAsync();
+
                 return Result<string>.Success(SuccessMessages.ChildAttachedSuccessfully);
             }
             catch (Exception ex)

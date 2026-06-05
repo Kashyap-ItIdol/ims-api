@@ -15,6 +15,8 @@ namespace IMS_Application.Interfaces
         IClientAssetRepository ClientAssets { get; }
         IAssetAssignmentRepository AssetAssignments { get; }
         ISettingRepository Settings { get; }
+        INotificationRepository Notifications { get; }
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
     }
 }

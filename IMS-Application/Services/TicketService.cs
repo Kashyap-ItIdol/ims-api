@@ -16,6 +16,7 @@ namespace IMS_Application.Services
         private readonly IMapper _mapper;
         private readonly ILogger<TicketService> _logger;
         private readonly IWebHostEnvironment _env;
+        private readonly INotificationDispatcher _notificationDispatcher;
 
         private readonly ISettingRepository _settingRepository;
         public TicketService(
@@ -23,14 +24,17 @@ namespace IMS_Application.Services
             IMapper mapper,
             ILogger<TicketService> logger,
             ISettingRepository settingRepository,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            INotificationDispatcher notificationDispatcher)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
             _settingRepository = settingRepository;
             _env = env;
+            _notificationDispatcher = notificationDispatcher;
         }
+
 
         private async Task<Dictionary<int, User>> GetUsersForTicketAsync(Ticket ticket, int currentUserId)
         {
@@ -184,7 +188,64 @@ namespace IMS_Application.Services
                     IsDeleted = false
                 });
 
+                var notificationTime = DateTime.UtcNow;
+                var notifiedUserIds = new HashSet<int>();
+
+                if (dto.assignedTo != 0)
+                    notifiedUserIds.Add(dto.assignedTo);
+
+                var allUsers = await _unitOfWork.Users.GetAllWithRolesAsync();
+                var adminUserIds = new HashSet<int>();
+                foreach (var u in allUsers)
+                {
+                    if (u?.Role?.Name == LogicStrings.AdminRole)
+                    {
+                        notifiedUserIds.Add(u.Id);
+                        adminUserIds.Add(u.Id);
+                    }
+                }
+
+                notifiedUserIds.RemoveWhere(uid => uid == createdBy && !adminUserIds.Contains(uid));
+
+                var creator = allUsers.FirstOrDefault(u => u.Id == createdBy);
+                var creatorName = creator?.FullName ?? LogicStrings.Unknown;
+
+                foreach (var userId in notifiedUserIds)
+                {
+                    var notification = new Notification
+                    {
+                        UserId = userId,
+                        Title = LogicStrings.ActionCreated,
+                        Message = $"{creatorName} created a new ticket TID-{ticket.Id}",
+                        IsRead = false,
+                        CreatedAt = notificationTime
+                    };
+
+                    await _unitOfWork.Notifications.AddAsync(notification);
+                }
+
                 await _unitOfWork.SaveChangesAsync();
+
+                foreach (var userId in notifiedUserIds)
+                {
+                    try
+                    {
+                        await _notificationDispatcher.DispatchAsync(
+                            userId,
+                            new NewNotificationDto
+                            {
+                                Title = LogicStrings.ActionCreated,
+                                Message = $"Ticket #{ticket.Id} has been created and assigned to you.",
+                                CreatedAt = notificationTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                            });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex,
+                            "Notification dispatch failed for user {UserId} (ticket {TicketId}). Notifications were persisted; dispatch is best-effort.",
+                            userId, ticket.Id);
+                    }
+                }
 
                 var usersDict = await GetUsersForTicketAsync(ticket, createdBy);
 
@@ -520,6 +581,63 @@ namespace IMS_Application.Services
                 });
                 await _unitOfWork.SaveChangesAsync();
 
+                var notificationTime = DateTime.UtcNow;
+
+                var allUsers = await _unitOfWork.Users.GetAllWithRolesAsync();
+
+                var adminUserIds = allUsers
+                    .Where(u => u?.Role?.Name == LogicStrings.AdminRole)
+                    .Select(u => u.Id)
+                    .ToHashSet();
+
+                var notifiedUserIds = new HashSet<int>(adminUserIds);
+
+                var latestAssign = updated.TicketAssignments?
+                    .Where(a => a.status == LogicStrings.Active)
+                    .OrderByDescending(a => a.assigned_at)
+                    .FirstOrDefault();
+
+                if (latestAssign != null)
+                    notifiedUserIds.Add(latestAssign.assignedTo);
+
+                foreach (var userId in notifiedUserIds)
+                {
+                    var notification = new Notification
+                    {
+                        UserId = userId,
+                        Title = LogicStrings.ActionUpdated,
+                        Message = $"Ticket TID-{updated.Id} was updated.",
+                        IsRead = false,
+                        CreatedAt = notificationTime
+                    };
+
+                    await _unitOfWork.Notifications.AddAsync(notification);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                foreach (var userId in notifiedUserIds)
+                {
+                    try
+                    {
+                        await _notificationDispatcher.DispatchAsync(
+                            userId,
+                            new NewNotificationDto
+                            {
+                                Title = LogicStrings.ActionUpdated,
+                                Message = $"Ticket #{updated.Id} was updated.",
+                                CreatedAt = notificationTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                            });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex,
+                            "Notification dispatch failed for user {UserId} (ticket {TicketId}). Notifications were persisted; dispatch is best-effort.",
+                            userId, updated.Id);
+                    }
+                }
+
+
                 var usersDict = await GetUsersForTicketAsync(updated, updatedBy);
                 return Result<TicketResponseDto>.Success(MapToTicketResponseDto(updated, usersDict), SuccessMessages.TicketUpdated);
             }
@@ -575,7 +693,65 @@ namespace IMS_Application.Services
                     await _unitOfWork.SaveChangesAsync();
                 }
 
-                return Result<UpdateTicketStatusResponseDto>.Success(_mapper.Map<UpdateTicketStatusResponseDto>(ticket), SuccessMessages.StatusUpdated);
+                _logger.LogInformation("[TICKET] UpdateStatusAsync: ticketId={TicketId}, newStatus={NewStatus}, changedBy={UserId}", ticketId, newStatus, currentUserId);
+
+                var notificationTime = DateTime.UtcNow;
+
+                var adminUsers = (await _unitOfWork.Users.GetAllWithRolesAsync())
+                    .Where(u => u?.Role?.Name == LogicStrings.AdminRole)
+                    .ToDictionary(u => u.Id, u => u);
+
+                var notifiedUserIds = new HashSet<int> { ticket.CreatedBy };
+                foreach (var admin in adminUsers.Values)
+                    notifiedUserIds.Add(admin.Id);
+
+                var adminUserIds = new HashSet<int>(adminUsers.Keys);
+                notifiedUserIds.RemoveWhere(uid => uid == currentUserId && !adminUserIds.Contains(uid));
+
+                // Get updater's name for notification
+                var updater = adminUsers.Values.FirstOrDefault(u => u.Id == currentUserId);
+                var updaterName = updater?.FullName ?? LogicStrings.Unknown;
+
+                foreach (var userId in notifiedUserIds)
+                {
+                    var notification = new Notification
+                    {
+                        UserId = userId,
+                        Title = LogicStrings.ActionUpdated,
+                        Message = $"Ticket TID-{ticket.Id} was updated to {newStatus} by {updaterName}",
+                        IsRead = false,
+                        CreatedAt = notificationTime
+                    };
+
+                    await _unitOfWork.Notifications.AddAsync(notification);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                foreach (var userId in notifiedUserIds)
+                {
+                    try
+                    {
+                        await _notificationDispatcher.DispatchAsync(
+                            userId,
+                            new NewNotificationDto
+                            {
+                                Title = LogicStrings.ActionUpdated,
+                                Message = $"Ticket #{ticket.Id} status changed to {newStatus}.",
+                                CreatedAt = notificationTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                            });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex,
+                            "Notification dispatch failed for user {UserId} (ticket {TicketId}, status {Status}).",
+                            userId, ticket.Id, newStatus);
+                    }
+                }
+
+
+                var dto = _mapper.Map<UpdateTicketStatusResponseDto>(ticket);
+                return Result<UpdateTicketStatusResponseDto>.Success(dto, SuccessMessages.StatusUpdated);
             }
             catch (Exception ex)
             {
@@ -1013,6 +1189,7 @@ namespace IMS_Application.Services
 
                 return Result<List<TicketResponseDto>>.Success(dtos, SuccessMessages.TicketFetched);
             }
+
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving support engineers");

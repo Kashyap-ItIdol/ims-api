@@ -87,13 +87,11 @@ namespace IMS_Infrastructure.Repositories
         {
             ticket.Status = newStatus;
             ticket.UpdatedAt = DateTime.UtcNow;
-            _dbSet.Update(ticket);
         }
 
         public async Task<Ticket?> GetTicketByIdAsync(int ticketId)
         {
             return await _dbSet
-                .AsNoTracking()
                 .Include(t => t.Comments.OrderByDescending(c => c.CreatedAt))
                     .ThenInclude(c => c.Likes)
                 .Include(t => t.Comments.OrderByDescending(c => c.CreatedAt))
