@@ -187,8 +187,21 @@ try
 
     using (var scope = app.Services.CreateScope())
     {
-        var emailTemplateRepository = scope.ServiceProvider.GetRequiredService<IEmailTemplateRepository>();
-        await EmailTemplateSeeder.SeedAsync(emailTemplateRepository);
+        // Seed email templates during startup, but never crash the whole API if DB/auth is not ready.
+        // Disable by setting: IMS_SEED_EMAIL_TEMPLATES=false
+        var seedEnabled = app.Configuration.GetValue("IMS_SEED_EMAIL_TEMPLATES", true);
+        if (seedEnabled)
+        {
+            try
+            {
+                var emailTemplateRepository = scope.ServiceProvider.GetRequiredService<IEmailTemplateRepository>();
+                await EmailTemplateSeeder.SeedAsync(emailTemplateRepository);
+            }
+            catch (Exception seedEx)
+            {
+                Log.Warning(seedEx, "Email template seeding failed. Continuing startup.");
+            }
+        }
     }
 
     ConfigureMiddleware(app);
