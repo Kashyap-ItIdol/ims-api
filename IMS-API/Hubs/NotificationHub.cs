@@ -27,7 +27,6 @@ namespace IMS_API.Hubs
                 var groupName = $"User_{userId}";
                 await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
 
-                // Push missed/unread notifications on connect
                 var result = await _notificationService.GetUnreadNotificationsAsync(int.Parse(userId));
 
                 if (result.IsSuccess && result.Data != null)
@@ -41,11 +40,8 @@ namespace IMS_API.Hubs
                                 Title = notification.Title,
                                 Message = notification.Message,
                                 CreatedAt = notification.CreatedAt
-
                             }
-
                         );
-
                     }
                 }
             }
@@ -68,6 +64,3 @@ namespace IMS_API.Hubs
         }
     }
 }
-
-
-

@@ -1,13 +1,10 @@
 using IMS_API.Controllers.Base;
-
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IMS_API.Controllers
 {
-
-
     [Route("api/[controller]")]
     [Authorize]
     public class NotificationController : BaseController
@@ -34,7 +31,6 @@ namespace IMS_API.Controllers
                 return FromResult(roleResult);
             }
 
-            // Admin can see all unread notifications, regular users see only their own
             var result = await _notificationService.GetUnreadNotificationsAsync(userIdResult.Data, roleResult.Data);
             return FromResult(result);
         }
@@ -57,6 +53,5 @@ namespace IMS_API.Controllers
             var result = await _notificationService.MarkAsReadAsync(id, userIdResult.Data, roleResult.Data);
             return FromResult(result);
         }
-
     }
 }
