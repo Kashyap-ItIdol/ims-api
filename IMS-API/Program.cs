@@ -24,22 +24,40 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    var certPath = Path.Combine(AppContext.BaseDirectory, "certs", "api.pfx");
-    var certPassword = "demo";
+    var certPath = Environment.GetEnvironmentVariable("IMS_CERT_PATH")
+        ?? Path.Combine(AppContext.BaseDirectory, "certs", "api.pfx");
 
-    var cert = new X509Certificate2(certPath, certPassword);
+    var certPassword = Environment.GetEnvironmentVariable("IMS_CERT_PASSWORD")
+        ?? "demo";
 
     builder.WebHost.ConfigureKestrel(options =>
     {
-        // HTTP (optional)
+        // Always enable HTTP so the API can start even if HTTPS cert is missing.
         options.ListenAnyIP(5224);
 
-        // HTTPS
-        options.ListenAnyIP(5001, listenOptions =>
+        try
         {
-            listenOptions.UseHttps(cert);
-        });
+            if (!File.Exists(certPath))
+            {
+                Log.Warning("HTTPS certificate not found at path: {CertPath}. Starting HTTP-only.", certPath);
+                return;
+            }
+
+            var cert = new X509Certificate2(certPath, certPassword);
+
+            // HTTPS
+            options.ListenAnyIP(5001, listenOptions =>
+            {
+                listenOptions.UseHttps(cert);
+            });
+        }
+        catch (Exception certEx)
+        {
+            Log.Warning(certEx, "Failed to load HTTPS certificate from {CertPath}. Starting HTTP-only.", certPath);
+            // Keep HTTP-only.
+        }
     });
+
 
 
     builder.Host.UseSerilog((context, services, configuration) => configuration
