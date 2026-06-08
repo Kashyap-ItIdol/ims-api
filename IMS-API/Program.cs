@@ -58,14 +58,12 @@ try
     });
 
     builder.Services.AddControllers();
-
-    // CORS (dev: React on http://localhost:5173)
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("DevCors", policy =>
         {
             policy
-                .WithOrigins("http://localhost:5173", "https://localhost:7165")
+                .SetIsOriginAllowed(origin => true)
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials();
@@ -212,6 +210,8 @@ static void ConfigureMiddleware(WebApplication app)
 
     app.UseExceptionHandler();
 
+    app.UseCors("DevCors");
+
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
@@ -219,9 +219,7 @@ static void ConfigureMiddleware(WebApplication app)
         c.RoutePrefix = string.Empty;
     });
 
-   app.UseHttpsRedirection();
-
-    app.UseCors("DevCors");
+    app.UseHttpsRedirection();
 
     app.UseAuthentication();
     app.UseAuthorization();
