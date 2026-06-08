@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 
@@ -22,6 +23,24 @@ try
     Log.Information("Starting IMS API up...");
 
     var builder = WebApplication.CreateBuilder(args);
+
+    var certPath = Path.Combine(AppContext.BaseDirectory, "certs", "api.pfx");
+    var certPassword = "demo";
+
+    var cert = new X509Certificate2(certPath, certPassword);
+
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        // HTTP (optional)
+        options.ListenAnyIP(5224);
+
+        // HTTPS
+        options.ListenAnyIP(5001, listenOptions =>
+        {
+            listenOptions.UseHttps(cert);
+        });
+    });
+
 
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
