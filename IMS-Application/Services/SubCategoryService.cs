@@ -209,18 +209,6 @@ namespace IMS_Application.Services
                 });
                 await _unitOfWork.SaveChangesAsync();
 
-                await _settingRepository.AddRecentActivityAsync(new RecentActivity
-                {
-                    ItemId = existingSubCategory.Id,
-                    ItemName = LogicStrings.SubCategoryItemName,
-                    Action = LogicStrings.ActionDeleted,
-                    UserId = deletedBy,
-                    Details = $"SubCategory deleted: {deletedName}",
-                    DateTime = DateTime.UtcNow,
-                    IsDeleted = true
-                });
-                await _unitOfWork.SaveChangesAsync();
-
                 return Result<bool>.Success(true, "Sub-category deleted successfully");
             }
             catch (Exception ex)
