@@ -25,7 +25,7 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     var certPath = Environment.GetEnvironmentVariable("IMS_CERT_PATH")
-        ?? "C:\\home\\demo\\ims-api\\certs\\api.pfx";
+    ?? "/home/demo/ims-api/certs/api.pfx";
 
     var certPassword = Environment.GetEnvironmentVariable("IMS_CERT_PASSWORD")
         ?? "demo";
