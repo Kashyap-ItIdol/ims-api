@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 
@@ -24,42 +23,11 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    var certPath = Environment.GetEnvironmentVariable("IMS_CERT_PATH")
-    ?? "/home/demo/ims-api/certs/api.pfx";
-
-    var certPassword = Environment.GetEnvironmentVariable("IMS_CERT_PASSWORD")
-        ?? "demo";
-
     builder.WebHost.ConfigureKestrel(options =>
     {
-        // Always enable HTTP so the API can start even if HTTPS cert is missing.
+        // HTTP only (no HTTPS configuration)
         options.ListenAnyIP(5224);
-
-        try
-        {
-            if (!File.Exists(certPath))
-            {
-                Log.Warning("HTTPS certificate not found at path: {CertPath}. Starting HTTP-only.", certPath);
-                return;
-            }
-
-            var cert = new X509Certificate2(certPath, certPassword);
-
-            // HTTPS
-            options.ListenAnyIP(5001, listenOptions =>
-            {
-                listenOptions.UseHttps(cert);
-            });
-        }
-        catch (Exception certEx)
-        {
-            Log.Warning(certEx, "Failed to load HTTPS certificate from {CertPath}. Starting HTTP-only.", certPath);
-            // Keep HTTP-only.
-        }
     });
-
-
-
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
