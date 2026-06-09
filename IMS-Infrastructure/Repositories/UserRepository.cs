@@ -1,4 +1,4 @@
-﻿﻿using IMS_Application.DTOs;
+﻿using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
@@ -47,11 +47,9 @@ namespace IMS_Infrastructure.Repositories
 
         public async Task<bool> TableAlreadyAssignedAsync(string tableNo)
         {
-            return await _dbSet
+            return await _context.AssetAssignments
                 .AsNoTracking()
-                .AnyAsync(u =>
-                    u.TableNo == tableNo &&
-                    !u.IsDeleted);
+                .AnyAsync(a => a.TableNo == tableNo && !a.IsDeleted);
         }
 
         public async Task<List<User>> GetAllWithRolesAsync()
@@ -60,17 +58,6 @@ namespace IMS_Infrastructure.Repositories
                 .AsNoTracking()
                 .Include(x => x.Role)
                 .Include(x => x.Department)
-                .Where(u => !u.IsDeleted)
-                .ToListAsync();
-        }
-
-        public async Task<List<User>> SearchAsync(string query)
-        {
-            return await _dbSet
-                .AsNoTracking()
-                .Where(u => !u.IsDeleted &&
-                    (EF.Functions.Like(u.FullName, $"%{query}%") ||
-                     EF.Functions.Like(u.Email, $"%{query}%")))
                 .ToListAsync();
         }
 
@@ -105,12 +92,12 @@ namespace IMS_Infrastructure.Repositories
 
         public async Task<List<User>> FilterAsync(UserFilterDto filter)
         {
-            return await _dbSet
+            var query = _dbSet
                 .AsNoTracking()
                 .Include(x => x.Role)
                 .Include(x => x.Department)
-                .Where(u => !u.IsDeleted)
-                .ToListAsync();
+                .AsQueryable();
+            return await query.ToListAsync();
         }
     }
 }

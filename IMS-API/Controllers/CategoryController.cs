@@ -22,9 +22,8 @@ namespace IMS_API.Controllers
         {
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
-            {
                 return FromResult(userResult);
-            }
+
             return FromResult(await _categoryService.CreateCategoryAsync(name, userResult.Data));
         }
 
@@ -45,9 +44,8 @@ namespace IMS_API.Controllers
         {
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
-            {
                 return FromResult(userResult);
-            }
+
             return FromResult(await _categoryService.UpdateCategoryAsync(id, name, userResult.Data));
         }
 
@@ -56,9 +54,8 @@ namespace IMS_API.Controllers
         {
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
-            {
                 return FromResult(userResult);
-            }
+
             return FromResult(await _categoryService.DeleteCategoryAsync(id, userResult.Data));
         }
     }

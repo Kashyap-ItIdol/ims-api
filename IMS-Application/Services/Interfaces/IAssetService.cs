@@ -1,13 +1,12 @@
 ﻿using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
-using IMS_Domain.Entities;
 
 namespace IMS_Application.Services.Interfaces
 {
     public interface IAssetService
     {
-        Task<Result<string>> AddAssetsAsync(AddAssetDto dto, int createdBy);
-        Task<Result<List<AssetResponseDto>>> GetAllAssetsAsync();
+        Task<Result<int>> AddAssetsAsync(AddAssetDto dto, int createdBy);
+        Task<Result<List<AssetResponseDto>>> GetAllAssetsAsync(int currentUserId, string currentRole);
         Task<Result<string>> UpdateAssetAsync(UpdateAssetDto dto, int updatedBy);
         Task<Result<string>> DeleteAssetAsync(int id, int deletedBy);
         Task<Result<List<UserDto>>> GetSuggestedUsersAsync();
@@ -17,7 +16,11 @@ namespace IMS_Application.Services.Interfaces
         Task<Result<string>> AttachChildAsync(AttachChildDto dto);
         Task<Result<string>> CreateAndAttachChildAsync(CreateChildAssetDto dto);
         Task<Result<string>> DetachChildAsync(DetachChildDto dto);
+        Task<Result<string>> DetachAssignmentAsync(int assetId);
         Task<Result<List<AssetListDto>>> FilterAssetsAsync(AssetFilterDto dto);
+        Task<Result<List<AssetOverviewDto>>> SearchAssetsAsync(string searchTerm);
         Task<Result<string>> AddOrUpdateNetworkAsync(int assetId, NetworkDetailsDto dto, int userId);
-    }  
+        Task<Result<byte[]>> ExportAllAssetsCsvAsync();
+        Task<Result<ImportAssetsResultDto>> ImportAssetsCsvAsync(ImportAssetsRequestDto dto, int createdBy);
+    }
 }

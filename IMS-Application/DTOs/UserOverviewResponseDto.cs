@@ -5,8 +5,8 @@ namespace IMS_Application.DTOs
 {
     public class UserOverviewResponseDto
     {
-        public UserResponseDto user { get; set; } = new();
-        public List<AssetResponseDto> assignedAssets { get; set; } = new();
-        public List<TicketResponseDto> createdTickets { get; set; } = new();
+        public UserResponseDto User { get; set; } = new();
+        public List<AssetResponseDto> AssignedAssets { get; set; } = new();
+        public List<TicketResponseDto> CreatedTickets { get; set; } = new();
     }
 }

@@ -11,8 +11,6 @@
         public int RoleId { get; set; }
         public Role Role { get; set; } = null!;
         public string? ProfileImg { get; set; }
-        public string? Location { get; set; }
-        public string? TableNo { get; set; }
         public bool IsVerified { get; set; } = false;
         public bool IsDeleted { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

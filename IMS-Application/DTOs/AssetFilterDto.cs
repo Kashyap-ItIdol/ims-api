@@ -7,6 +7,5 @@
         public List<int>? StatusIds { get; set; }
         public string? Search { get; set; }
         public string? SearchType { get; set; }
-        // values: "category", "subcategory", "status"
     }
 }

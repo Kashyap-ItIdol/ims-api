@@ -8,5 +8,6 @@
         public DateTime? ExpectedReturnDate { get; set; }
         public string? Location { get; set; }
         public string? TableNo { get; set; }
+        public int StatusId { get; set; }
     }
 }

@@ -20,17 +20,19 @@ namespace IMS_API.Controllers
         [HttpGet("recentActivities")]
         public async Task<IActionResult> GetRecentActivities(
             [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null)
         {
-            return FromResult(await _settingService.GetRecentActivitiesAsync(pageNumber, pageSize));
+            return FromResult(await _settingService.GetRecentActivitiesAsync(pageNumber, pageSize, search));
         }
 
         [HttpGet("recentDeletedActivities")]
         public async Task<IActionResult> GetRecentDeletedActivities(
             [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null)
         {
-            return FromResult(await _settingService.GetRecentDeletedActivitiesAsync(pageNumber, pageSize));
+            return FromResult(await _settingService.GetRecentDeletedActivitiesAsync(pageNumber, pageSize, search));
         }
     }
 }

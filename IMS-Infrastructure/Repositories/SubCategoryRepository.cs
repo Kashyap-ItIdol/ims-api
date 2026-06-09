@@ -29,7 +29,7 @@ namespace IMS_Infrastructure.Repositories
         {
             return await _dbSet
                 .AsNoTracking()
-                .Where(sc => sc.CategoryId == categoryId)
+                .Where(sc => sc.CategoryId == categoryId && sc.IsActive)
                 .ToListAsync();
         }
     }

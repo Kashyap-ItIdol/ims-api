@@ -16,42 +16,67 @@ namespace IMS_Infrastructure.Repositories
             await _dbSet.AddAsync(activity);
         }
 
-        public Task<List<RecentActivity>> GetRecentActivitiesAsync(int pageNumber, int pageSize)
+        public Task<List<RecentActivity>> GetRecentActivitiesAsync(int pageNumber, int pageSize, string? search)
         {
-            return _dbSet
+            var query = _dbSet
                 .AsNoTracking()
                 .Include(x => x.User)
-                .Where(x => !x.IsDeleted)
+                .Where(x => !x.IsDeleted);
+
+            return query
                 .OrderByDescending(x => x.DateTime)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
         }
 
-        public Task<int> GetRecentActivitiesTotalCountAsync()
+        public Task<int> GetRecentActivitiesTotalCountAsync(string? search)
         {
-            return _dbSet
+            var query = _dbSet
                 .AsNoTracking()
-                .CountAsync(x => !x.IsDeleted);
+                .Where(x => !x.IsDeleted);
+
+            return query.CountAsync();
         }
 
-        public Task<List<RecentActivity>> GetDeletedRecentActivitiesAsync(int pageNumber, int pageSize)
+        public Task<List<RecentActivity>> GetDeletedRecentActivitiesAsync(int pageNumber, int pageSize, string? search)
         {
-            return _dbSet
+            var query = _dbSet
                 .AsNoTracking()
                 .Include(x => x.User)
-                .Where(x => x.IsDeleted)
+                .Where(x => x.IsDeleted);
+
+            return query
                 .OrderByDescending(x => x.DateTime)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
         }
 
-        public Task<int> GetDeletedRecentActivitiesTotalCountAsync()
+        public Task<int> GetDeletedRecentActivitiesTotalCountAsync(string? search)
         {
-            return _dbSet
+            var query = _dbSet
                 .AsNoTracking()
-                .CountAsync(x => x.IsDeleted);
+                .Where(x => x.IsDeleted);
+
+            return query.CountAsync();
+        }
+        public Task<List<RecentActivity>> GetUserActivitiesAsync(int userId, DateTime? startDate, DateTime? endDate)
+        {
+            var query = _dbSet
+                .AsNoTracking()
+                .Include(x => x.User)
+                .Where(x => !x.IsDeleted && x.UserId == userId);
+
+            if (startDate.HasValue)
+                query = query.Where(x => x.DateTime >= startDate.Value);
+
+            if (endDate.HasValue)
+                query = query.Where(x => x.DateTime <= endDate.Value);
+
+            return query
+                .OrderByDescending(x => x.DateTime)
+                .ToListAsync();
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿﻿namespace IMS_Application.DTOs
+﻿namespace IMS_Application.DTOs
 {
     public class AssetResponseDto
     {
@@ -9,6 +9,7 @@
         public int CategoryId { get; set; }
         public int SubCategoryId { get; set; }
         public int ConditionId { get; set; }
+        public string? ConditionName { get; set; }
         public string Brand { get; set; } = default!;
         public string Model { get; set; } = default!;
         public string SerialNo { get; set; } = default!;
@@ -23,6 +24,9 @@
         public DateTime? ExpectedReturnDate { get; set; }
         public string? Location { get; set; }
         public string? TableNo { get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public List<AssetHistoryDto> History { get; set; } = new();
         public List<AssetResponseDto> Children { get; set; } = new();
     }
 }

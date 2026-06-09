@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
@@ -122,19 +122,20 @@ namespace IMS_Application.Services
                 _logger.LogError(ex, "Error creating asset");
                 return Result<AssetResponseDto>.Failure(ErrorMessages.UnexpectedError, 500);
             }
-
-        }
-        public async Task<Result<List<AssetResponseDto>>> GetAllAssetsAsync()
-        {
-            return await GetAll();
         }
 
-        public async Task<Result<List<AssetResponseDto>>> GetAll()
+        public async Task<Result<List<AssetResponseDto>>> GetAllAssetsAsync(int currentUserId, string currentRole)
         {
             try
             {
                 var assets = await _unitOfWork.Assets.GetAllAsync();
                 var result = _mapper.Map<List<AssetResponseDto>>(assets);
+
+                if (string.Equals(currentRole, "Employee", StringComparison.OrdinalIgnoreCase))
+                {
+                    assets = assets.Where(a => a.AssignedTo == currentUserId).ToList();
+                    result = _mapper.Map<List<AssetResponseDto>>(assets);
+                }
 
                 foreach (var dto in result)
                 {
@@ -142,13 +143,19 @@ namespace IMS_Application.Services
                     dto.Children = _mapper.Map<List<AssetResponseDto>>(children);
                 }
 
-                return Result<List<AssetResponseDto>>.Success(result);
+                return Result<List<AssetResponseDto>>.Success(result, SuccessMessages.AssetsRetrieved);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching assets");
                 return Result<List<AssetResponseDto>>.Failure(ErrorMessages.UnexpectedError, 500);
             }
+        }
+
+        [Obsolete("Use GetAllAssetsAsync(currentUserId, currentRole) instead")]
+        public async Task<Result<List<AssetResponseDto>>> GetAll()
+        {
+            return await GetAllAssetsAsync(0, string.Empty);
         }
 
         public async Task<Result<AssetResponseDto>> GetById(int id)
@@ -178,7 +185,6 @@ namespace IMS_Application.Services
 
         public async Task<Result<string>> Update(UpdateAssetDto dto, int updatedBy)
         {
-
             try
             {
                 var asset = await _unitOfWork.Assets.GetByIdAsync(dto.Id);
@@ -230,8 +236,6 @@ namespace IMS_Application.Services
 
         public async Task<Result<AssetResponseDto>> Delete(int id, int deletedBy)
         {
-
-
             try
             {
                 var asset = await _unitOfWork.Assets.GetByIdWithChildrenAsync(id);
@@ -292,12 +296,28 @@ namespace IMS_Application.Services
         {
             try
             {
-                var users = await _unitOfWork.Users.SearchAsync(query);
-                return Result<List<UserDto>>.Success(_mapper.Map<List<UserDto>>(users));
+                query ??= string.Empty;
+                query = query.Trim();
+
+                var users = await _unitOfWork.Users.GetAllWithRolesAsync();
+
+                var isNumeric = int.TryParse(query, out var userId);
+
+                var filtered = users.Where(u =>
+                    (isNumeric && u.Id == userId) ||
+                    (!string.IsNullOrEmpty(u.FullName) && u.FullName.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(u.Email) && u.Email.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (u.Department != null && !string.IsNullOrEmpty(u.Department.Name) &&
+                     u.Department.Name.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (u.Role != null && !string.IsNullOrEmpty(u.Role.Name) &&
+                     u.Role.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                ).ToList();
+
+                return Result<List<UserDto>>.Success(_mapper.Map<List<UserDto>>(filtered));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error searching users");
+                _logger.LogError(ex, "Error fetching suggested users");
                 return Result<List<UserDto>>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
@@ -306,6 +326,7 @@ namespace IMS_Application.Services
         {
             if (dto == null)
                 return Result<string>.Failure(ErrorMessages.UnexpectedError, 400);
+
             var asset = await _unitOfWork.Assets.GetByIdAsync(dto.AssetId);
             if (asset == null)
                 return Result<string>.Failure(ErrorMessages.AssetNotFound, 404);
@@ -313,7 +334,9 @@ namespace IMS_Application.Services
             asset.AssignedTo = dto.UserId;
             asset.AssignDate = dto.AssignedDate;
             asset.ExpectedReturnDate = dto.ExpectedReturnDate;
-            asset.Notes = dto.Location;
+            asset.Location = dto.Location;
+            asset.TableNo = dto.TableNo;
+            asset.StatusId = dto.StatusId;
             asset.UpdatedAt = DateTime.UtcNow;
             asset.UpdatedBy = dto.UserId;
 
@@ -339,64 +362,16 @@ namespace IMS_Application.Services
 
             await _unitOfWork.SaveChangesAsync();
 
-            var notificationTime = DateTime.UtcNow;
-
-            var allUsers = await _unitOfWork.Users.GetAllWithRolesAsync();
-            var adminUserIds = allUsers
-                .Where(u => u?.Role?.Name == LogicStrings.AdminRole)
-                .Select(u => u.Id)
-                .ToHashSet();
-
-            var notifiedUserIds = new HashSet<int>(adminUserIds);
-            if (asset.AssignedTo.HasValue)
-                notifiedUserIds.Add(asset.AssignedTo.Value);
-
-            foreach (var userId in notifiedUserIds)
-            {
-                var notification = new Notification
-                {
-                    UserId = userId,
-                    Title = LogicStrings.ActionAssigned,
-                    Message = $"Asset TID-{asset.Id} was assigned.",
-                    IsRead = false,
-                    CreatedAt = notificationTime
-                };
-
-                await _unitOfWork.Notifications.AddAsync(notification);
-            }
-
-            await _unitOfWork.SaveChangesAsync();
-
-            foreach (var userId in notifiedUserIds)
-            {
-                try
-                {
-                    await _notificationDispatcher.DispatchAsync(
-                        userId,
-                        new NewNotificationDto
-                        {
-                            Title = LogicStrings.ActionAssigned,
-                            Message = $"Asset #{asset.Id} was assigned to {asset.AssignedTo}.",
-                            CreatedAt = notificationTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
-                        });
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex,
-                        "Notification dispatch failed for user {UserId} (asset {AssetId}). Notifications were persisted; dispatch is best-effort.",
-                        userId, asset.Id);
-                }
-            }
-
             return Result<string>.Success(SuccessMessages.AssetAssignedSuccessfully);
         }
 
-        public async Task<Result<string>> AddAssetsAsync(AddAssetDto dto, int createdBy)
+        public async Task<Result<int>> AddAssetsAsync(AddAssetDto dto, int createdBy)
         {
             try
             {
                 if (dto?.Assets == null || !dto.Assets.Any())
-                    return Result<string>.Failure("No assets provided", 400);
+                    return Result<int>.Failure(ErrorMessages.AssetsListEmpty, 400);
+
 
                 var assets = new List<Asset>();
                 var now = DateTime.UtcNow;
@@ -405,24 +380,118 @@ namespace IMS_Application.Services
                 {
                     var assetCondition = await _unitOfWork.Assets.GetAssetConditionByIdAsync(assetItem.ConditionId);
                     if (assetCondition == null)
-                        return Result<string>.Failure($"Asset condition with ID {assetItem.ConditionId} does not exist for asset {assetItem.ItemName}", 400);
+                        return Result<int>.Failure($"Asset condition with ID {assetItem.ConditionId} does not exist for asset {assetItem.ItemName}", 400);
+
+                    var category = await _unitOfWork.Categories.GetByIdAsync(assetItem.CategoryId);
+                    if (category == null)
+                        return Result<int>.Failure($"Category with ID {assetItem.CategoryId} does not exist for asset {assetItem.ItemName}", 400);
+
+                    var subCategory = await _unitOfWork.SubCategories.GetByIdAsync(assetItem.SubCategoryId);
+                    if (subCategory == null)
+                        return Result<int>.Failure($"SubCategory with ID {assetItem.SubCategoryId} does not exist for asset {assetItem.ItemName}", 400);
+
+                    var status = await _unitOfWork.Assets.GetAssetStatusByIdAsync(assetItem.StatusId);
+                    if (status == null)
+                        return Result<int>.Failure($"Status with ID {assetItem.StatusId} does not exist for asset {assetItem.ItemName}", 400);
 
                     var asset = _mapper.Map<Asset>(assetItem);
+
+                    asset.Category = category;
+                    asset.SubCategory = subCategory;
+                    asset.ConditionId = assetCondition.Id;
+                    asset.StatusId = status.Id;
+
+                    asset.AssetCondition = null!;
+                    asset.AssetStatus = null!;
                     asset.CreatedBy = createdBy;
                     asset.CreatedAt = now;
-                    asset.UpdatedAt = now;
                     asset.UpdatedBy = createdBy;
+                    asset.UpdatedAt = now;
                     asset.IsActive = true;
                     asset.AssignedTo = dto.AssignedTo;
                     asset.AssignDate = dto.AssignedDate ?? now;
                     asset.ExpectedReturnDate = dto.ExpectedReturnDate;
-                    asset.Notes = dto.Location;
+                    asset.Location = dto.Location;
+                    asset.TableNo = dto.TableNo;
+
+                    // Ensure required DateTime fields are valid for SQL Server (year >= 1753)
+                    if (asset.PurchaseDate < new DateTime(1753, 1, 1))
+                        asset.PurchaseDate = now;
+
+                    _logger.LogInformation($"Asset {asset.ItemName} - SerialNo: {asset.SerialNo}, PurchaseDate: {asset.PurchaseDate}, Vendor: {asset.Vendor}");
+
                     assets.Add(asset);
                 }
+
                 await _unitOfWork.Assets.AddRangeAsync(assets);
                 await _unitOfWork.SaveChangesAsync();
 
-                // Add history + recent activities for each created asset (and optional assignment)
+                // Handle child assets if provided
+                if (dto.ChildAssets?.Any() == true && assets.Count > 0)
+                {
+                    var parentAsset = assets[0]; // First asset is the parent
+                    var childAssets = new List<Asset>();
+
+                    foreach (var childAssetDto in dto.ChildAssets)
+                    {
+                        var childAsset = _mapper.Map<Asset>(childAssetDto);
+                        childAsset.ParentAssetId = parentAsset.Id;
+                        childAsset.CreatedBy = createdBy;
+                        childAsset.CreatedAt = now;
+                        childAsset.UpdatedAt = now;
+                        childAsset.UpdatedBy = createdBy;
+                        childAsset.IsActive = true;
+
+                        // Load navigation properties for child asset
+                        var category = await _unitOfWork.Categories.GetByIdAsync(childAssetDto.CategoryId);
+                        var subCategory = await _unitOfWork.SubCategories.GetByIdAsync(childAssetDto.SubCategoryId);
+                        var condition = await _unitOfWork.Assets.GetAssetConditionByIdAsync(childAssetDto.ConditionId);
+                        var status = await _unitOfWork.Assets.GetAssetStatusByIdAsync(childAssetDto.StatusId);
+
+                        if (category == null)
+                            return Result<int>.Failure($"Category with ID {childAssetDto.CategoryId} does not exist", 400);
+                        if (subCategory == null)
+                            return Result<int>.Failure($"SubCategory with ID {childAssetDto.SubCategoryId} does not exist", 400);
+                        if (category == null)
+                            return Result<int>.Failure($"Category with ID {childAssetDto.CategoryId} does not exist", 400);
+                        if (subCategory == null)
+                            return Result<int>.Failure($"SubCategory with ID {childAssetDto.SubCategoryId} does not exist", 400);
+                        if (condition == null)
+                            return Result<int>.Failure($"Condition with ID {childAssetDto.ConditionId} does not exist", 400);
+                        if (status == null)
+                            return Result<int>.Failure($"Status with ID {childAssetDto.StatusId} does not exist", 400);
+
+                        // Check for duplicate serial number
+                        if (await _unitOfWork.Assets.SerialExistsAsync(childAssetDto.SerialNo))
+                            return Result<int>.Failure($"An asset with serial number '{childAssetDto.SerialNo}' already exists", 400);
+
+                        // Set FK IDs directly - EF will handle relationships through these
+                        childAsset.CategoryId = category.Id;
+                        childAsset.SubCategoryId = subCategory.Id;
+                        childAsset.ConditionId = condition.Id;
+                        childAsset.StatusId = status.Id;
+
+                        childAssets.Add(childAsset);
+                    }
+
+                    if (childAssets.Count > 0)
+                    {
+                        await _unitOfWork.Assets.AddRangeAsync(childAssets);
+                        await _unitOfWork.SaveChangesAsync();
+
+                        foreach (var childAsset in childAssets)
+                        {
+                            await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
+                            {
+                                AssetId = childAsset.Id,
+                                Action = LogicStrings.ActionCreated,
+                                Description = $"Child asset {childAsset.ItemName} created for parent asset {parentAsset.ItemName}",
+                                CreatedBy = createdBy
+                            });
+                        }
+                    }
+                }
+
                 foreach (var asset in assets)
                 {
                     await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
@@ -443,99 +512,50 @@ namespace IMS_Application.Services
                         DateTime = DateTime.UtcNow,
                         IsDeleted = false
                     });
-                    if (dto.AssignedTo.HasValue)
+
+                    if (dto.AssignedTo.HasValue && dto.AssignedTo.Value > 0)
                     {
                         await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                         {
                             AssetId = asset.Id,
                             Action = LogicStrings.ActionAssigned,
                             Description = $"Asset {asset.ItemName} assigned",
-                            CreatedBy = dto.AssignedTo.Value
+                            CreatedBy = createdBy
                         });
+
                         await _settingRepository.AddRecentActivityAsync(new RecentActivity
                         {
                             ItemId = asset.Id,
                             ItemName = LogicStrings.AssetItemName,
                             Action = LogicStrings.ActionAssigned,
-                            UserId = dto.AssignedTo.Value,
-                            Details = $"Asset {asset.ItemName} assigned",
+                            UserId = createdBy,
+                            Details = $"Asset {asset.ItemName} assigned to user with ID {dto.AssignedTo.Value}",
                             DateTime = DateTime.UtcNow,
                             IsDeleted = false
                         });
                     }
                 }
 
-                // Send notifications for asset creation
-                var notificationTime = DateTime.UtcNow;
-                var allUsers = await _unitOfWork.Users.GetAllWithRolesAsync();
-                var adminUserIds = allUsers
-                    .Where(u => u?.Role?.Name == LogicStrings.AdminRole)
-                    .Select(u => u.Id)
-                    .ToHashSet();
-
-                foreach (var asset in assets)
-                {
-                    var notifiedUserIds = new HashSet<int>(adminUserIds);
-                    if (asset.AssignedTo.HasValue)
-                        notifiedUserIds.Add(asset.AssignedTo.Value);
-
-                    foreach (var userId in notifiedUserIds)
-                    {
-                        var notification = new Notification
-                        {
-                            UserId = userId,
-                            Title = LogicStrings.ActionCreated,
-                            Message = $"Asset {asset.ItemName} (AID-{asset.Id}) was created.",
-                            IsRead = false,
-                            CreatedAt = notificationTime
-                        };
-
-                        await _unitOfWork.Notifications.AddAsync(notification);
-                    }
-                }
-
                 await _unitOfWork.SaveChangesAsync();
 
-                // Dispatch notifications
-                foreach (var asset in assets)
-                {
-                    var notifiedUserIds = new HashSet<int>(adminUserIds);
-                    if (asset.AssignedTo.HasValue)
-                        notifiedUserIds.Add(asset.AssignedTo.Value);
-
-                    foreach (var userId in notifiedUserIds)
-                    {
-                        try
-                        {
-                            await _notificationDispatcher.DispatchAsync(
-                                userId,
-                                new NewNotificationDto
-                                {
-                                    Title = LogicStrings.ActionCreated,
-                                    Message = $"Asset #{asset.Id} was created.",
-                                    CreatedAt = notificationTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
-                                });
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex,
-                                "Notification dispatch failed for user {UserId} (asset {AssetId}). Notifications were persisted; dispatch is best-effort.",
-                                userId, asset.Id);
-                        }
-                    }
-                }
-
-                await _unitOfWork.SaveChangesAsync();
-                return Result<string>.Success(SuccessMessages.AssetsAddedSuccessfully);
+                // Return the created asset ID so frontend can attach child assets
+                var createdAssetId = assets[0].Id;
+                return Result<int>.Success(createdAssetId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding assets");
-                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
-
+                var detailedError = $"Error: {ex.Message}";
+                if (ex.InnerException != null)
+                {
+                    detailedError += $" | Inner: {ex.InnerException.Message}";
+                    if (ex.InnerException.InnerException != null)
+                        detailedError += $" | Inner2: {ex.InnerException.InnerException.Message}";
+                }
+                _logger.LogError(ex, "Error adding assets. {DetailedError}", detailedError);
+                return Result<int>.Failure(detailedError, 500);
             }
-
         }
+
         public async Task<Result<GetAssetByIdResponseDto>> GetAssetByIdAsync(int id)
         {
             try
@@ -546,6 +566,23 @@ namespace IMS_Application.Services
 
                 var response = _mapper.Map<GetAssetByIdResponseDto>(asset);
                 response.Overview.Children = _mapper.Map<List<ChildAssetDto>>(asset.ChildAssets?.Where(c => c.IsActive).ToList() ?? new List<Asset>());
+
+                // Manually populate ID fields for dropdown population
+                response.Overview.StatusId = asset.StatusId;
+                response.Overview.CategoryId = asset.CategoryId;
+                response.Overview.SubCategoryId = asset.SubCategoryId;
+                response.Overview.ConditionId = asset.ConditionId;
+
+                if (!string.IsNullOrEmpty(asset.Location))
+                    response.Assignment.OfficeNo = asset.Location;
+
+                if (!string.IsNullOrEmpty(asset.TableNo))
+                    response.Assignment.TableNo = asset.TableNo;
+
+                // Retrieve and populate history
+                var history = await _unitOfWork.Assets.GetHistoryByAssetIdAsync(asset.Id);
+                if (history != null && history.Any())
+                    response.Assignment.History = _mapper.Map<List<AssetHistoryDto>>(history);
 
                 var network = await _unitOfWork.NetworkDetails.GetByAssetIdAsync(asset.Id);
                 if (network != null)
@@ -600,7 +637,10 @@ namespace IMS_Application.Services
                     Description = $"Attached to parent asset {parent.ItemName}"
                 });
 
+                child.AssignedUser = parent.AssignedUser;
+
                 await _unitOfWork.SaveChangesAsync();
+
                 return Result<string>.Success(SuccessMessages.ChildAttachedSuccessfully);
             }
             catch (Exception ex)
@@ -660,21 +700,24 @@ namespace IMS_Application.Services
                 if (child == null || child.ParentAssetId == null)
                     return Result<string>.Failure(ErrorMessages.InvalidChildAsset, 400);
 
+                // Detach requested asset from its parent and clear its assignment.
                 child.UpdatedAt = DateTime.UtcNow;
                 child.ParentAssetId = null;
                 child.AssignedTo = null;
                 child.AssignDate = null;
-                child.StatusId = 1;
+                child.ExpectedReturnDate = null;
+                child.StatusId = 1; 
 
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
                 {
                     AssetId = child.Id,
                     Action = LogicStrings.ActionDetached,
-                    Description = "Removed from parent asset"
+                    Description = LogicStrings.RemovedFromParentAsset
                 });
 
                 await _unitOfWork.SaveChangesAsync();
+
                 return Result<string>.Success(SuccessMessages.ChildDetachedSuccessfully);
             }
             catch (Exception ex)
@@ -684,17 +727,145 @@ namespace IMS_Application.Services
             }
         }
 
+        public async Task<Result<string>> DetachAssignmentAsync(int assetId)
+        {
+            try
+            {
+                var asset = await _unitOfWork.Assets.GetByIdAsync(assetId);
+                if (asset == null)
+                    return Result<string>.Failure(ErrorMessages.AssetNotFound, 404);
+
+                var allAssets = _unitOfWork.Assets.GetAllWithIncludesQueryable().ToList();
+
+                // Find descendants (direct + indirect) using ParentAssetId links from the current DB state.
+                var descendants = new List<Asset>();
+                var queue = new Queue<Asset>();
+                queue.Enqueue(asset);
+
+                while (queue.Count > 0)
+                {
+                    var current = queue.Dequeue();
+                    var children = allAssets.Where(x => x.ParentAssetId == current.Id).ToList();
+                    foreach (var child in children)
+                    {
+                        descendants.Add(child);
+                        queue.Enqueue(child);
+                    }
+                }
+
+                var assetsToUpdate = new List<Asset>(descendants.Count + 1) { asset };
+                assetsToUpdate.AddRange(descendants);
+
+                // Clear the fields.
+                foreach (var a in assetsToUpdate)
+                {
+                    a.UpdatedAt = DateTime.UtcNow;
+                    a.AssignedTo = null;
+                    a.ParentAssetId = null;
+                    a.AssignDate = null;
+                    a.ExpectedReturnDate = null;
+                    a.Location = null;
+                    a.TableNo = null;
+                    a.StatusId = 1; // Available
+
+                    // Ensure EF marks the entity as updated (especially for ParentAssetId).
+                    _unitOfWork.Assets.Update(a);
+
+                    await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
+                    {
+                        AssetId = a.Id,
+                        Action = LogicStrings.ActionDetached,
+                        Description = a.Id == asset.Id
+                            ? "Assignment detached"
+                            : "Assignment detached and parent link removed"
+                    });
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                return Result<string>.Success(SuccessMessages.AssetAssignmentReturned);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during detaching assignment {AssetId}", assetId);
+                return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+        }
+
+
         public async Task<Result<List<AssetListDto>>> FilterAssetsAsync(AssetFilterDto dto)
         {
             try
             {
-                var assets = await _unitOfWork.Assets.FilterAsync(dto);
+                var query = _unitOfWork.Assets.GetAllWithIncludesQueryable();
+
+                if (dto.CategoryIds?.Any() == true)
+                    query = query.Where(a => dto.CategoryIds.Contains(a.CategoryId));
+
+                if (dto.SubCategoryIds?.Any() == true)
+                    query = query.Where(a => dto.SubCategoryIds.Contains(a.SubCategoryId));
+
+                if (dto.StatusIds?.Any() == true)
+                    query = query.Where(a => dto.StatusIds.Contains(a.StatusId));
+
+                if (!string.IsNullOrWhiteSpace(dto.Search) && !string.IsNullOrWhiteSpace(dto.SearchType))
+                {
+                    var search = dto.Search.ToLower();
+
+                    switch (dto.SearchType.ToLower())
+                    {
+                        case "category":
+                            query = query.Where(a => a.Category.Name.ToLower().Contains(search));
+                            break;
+
+                        case "subcategory":
+                            query = query.Where(a => a.SubCategory.Name.ToLower().Contains(search));
+                            break;
+
+                        case "status":
+                            query = query.Where(a => a.AssetStatus.Status.ToLower().Contains(search));
+                            break;
+                    }
+                }
+
+                var assets = query.ToList();
                 return Result<List<AssetListDto>>.Success(_mapper.Map<List<AssetListDto>>(assets));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error during filtering assets");
                 return Result<List<AssetListDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+        }
+
+        public async Task<Result<List<AssetOverviewDto>>> SearchAssetsAsync(string searchTerm)
+        {
+            try
+            {
+                var query = _unitOfWork.Assets.GetAllWithIncludesQueryable();
+                
+                // Business logic: Apply search filtering at database level
+                if (!string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    var search = searchTerm.ToLower();
+                    query = query.Where(a =>
+                        a.ItemName.ToLower().Contains(search) ||
+                        a.SerialNo.ToLower().Contains(search) ||
+                        a.Brand.ToLower().Contains(search) ||
+                        a.Model.ToLower().Contains(search) ||
+                        a.Category.Name.ToLower().Contains(search) ||
+                        a.SubCategory.Name.ToLower().Contains(search) ||
+                        a.AssetStatus.Status.ToLower().Contains(search)
+                    );
+                }
+                
+                var assets = query.ToList();
+                return Result<List<AssetOverviewDto>>.Success(_mapper.Map<List<AssetOverviewDto>>(assets));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during searching assets");
+                return Result<List<AssetOverviewDto>>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
 
@@ -710,10 +881,18 @@ namespace IMS_Application.Services
 
                 if (existing == null)
                 {
-                    var newNetwork = _mapper.Map<NetworkDetail>(dto);
-                    newNetwork.AssetId = assetId;
-                    newNetwork.createdBy = userId.ToString();
-                    newNetwork.updatedBy = userId.ToString();
+                    var newNetwork = new NetworkDetail
+                    {
+                        AssetId = assetId,
+                        IPAddress = dto.IPAddress,
+                        MacAddress = dto.MacAddress,
+                        Hostname = dto.Hostname,
+                        SubnetMask = dto.SubnetMask,
+                        Gateway = dto.Gateway,
+                        DNS = dto.DNS,
+                        createdBy = userId.ToString(),
+                        updatedBy = userId.ToString()
+                    };
 
                     await _unitOfWork.NetworkDetails.AddAsync(newNetwork);
 
@@ -726,7 +905,12 @@ namespace IMS_Application.Services
                 }
                 else
                 {
-                    _mapper.Map(dto, existing);
+                    existing.IPAddress = dto.IPAddress;
+                    existing.MacAddress = dto.MacAddress;
+                    existing.Hostname = dto.Hostname;
+                    existing.SubnetMask = dto.SubnetMask;
+                    existing.Gateway = dto.Gateway;
+                    existing.DNS = dto.DNS;
                     existing.updatedBy = userId.ToString();
                     _unitOfWork.NetworkDetails.Update(existing);
 
@@ -746,6 +930,488 @@ namespace IMS_Application.Services
                 _logger.LogError(ex, "Unexpected error during adding/updating network for asset {AssetId}", assetId);
                 return Result<string>.Failure(ErrorMessages.UnexpectedError, 500);
             }
+        }
+
+        public async Task<Result<byte[]>> ExportAllAssetsCsvAsync()
+        {
+            try
+            {
+                var currentRole = "";
+                var currentUserId = 0;
+                var assetsResult = await GetAllAssetsAsync(currentUserId, currentRole);
+                if (!assetsResult.IsSuccess)
+                    return Result<byte[]>.Failure(ErrorMessages.UnexpectedError, assetsResult.StatusCode);
+
+                var assets = assetsResult.Data ?? new List<AssetResponseDto>();
+
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine(LogicStrings.AssetsCsvHeader);
+
+
+                foreach (var a in assets)
+                {
+                    sb.AppendLine(string.Join(",",
+                        EscapeCsv(a.ItemName),
+                        EscapeCsv(a.StatusId.ToString()),
+                        EscapeCsv(a.CategoryId.ToString()),
+                        EscapeCsv(a.SubCategoryId.ToString()),
+                        EscapeCsv(a.Brand),
+                        EscapeCsv(a.Model),
+                        EscapeCsv(a.SerialNo),
+                        EscapeCsv(a.ConditionName ?? string.Empty),
+                        EscapeCsv(a.Vendor),
+                        EscapeCsv(a.PurchaseCost.ToString()),
+                        EscapeCsv(a.PurchaseDate?.ToString("yyyy-MM-dd") ?? string.Empty),
+                        EscapeCsv(a.InvoiceNumber ?? string.Empty),
+                        EscapeCsv(a.WarrantyExpiry?.ToString("yyyy-MM-dd") ?? string.Empty),
+                        EscapeCsv(a.AmcExpiry?.ToString("yyyy-MM-dd") ?? string.Empty)
+                    ));
+                }
+
+                var bytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+                return Result<byte[]>.Success(bytes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting assets to CSV");
+                return Result<byte[]>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+        }
+
+        public async Task<Result<ImportAssetsResultDto>> ImportAssetsCsvAsync(ImportAssetsRequestDto dto, int createdBy)
+        {
+
+            try
+            {
+                var result = new ImportAssetsResultDto();
+
+                using var stream = dto.CsvFile.OpenReadStream();
+                using var reader = new System.IO.StreamReader(stream);
+                var csvText = await reader.ReadToEndAsync();
+                if (string.IsNullOrWhiteSpace(csvText))
+                {
+                    return Result<ImportAssetsResultDto>.Success(result);
+                }
+
+                List<string[]> rows;
+                try
+                {
+                    rows = ParseCsv(csvText);
+                    _logger.LogInformation($"Import CSV: Parsed {rows.Count} rows from CSV file");
+                }
+                catch (Exception parseEx)
+                {
+                    _logger.LogError(parseEx, "Failed to parse import CSV");
+                    return Result<ImportAssetsResultDto>.Failure(ErrorMessages.UnexpectedError, 400);
+                }
+
+                if (rows.Count < 2)
+                {
+                    _logger.LogWarning($"Import CSV: Not enough rows to process (header + data). Total rows: {rows.Count}");
+                    return Result<ImportAssetsResultDto>.Success(result);
+                }
+
+                var header = rows[0];
+                var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                for (var i = 0; i < header.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(header[i]))
+                        headerMap[header[i].Trim()] = i;
+                }
+
+                static string NormalizeHeader(string value)
+                {
+                    if (value == null) return string.Empty;
+
+                    var trimmed = value.Trim();
+                    var noSpaces = System.Text.RegularExpressions.Regex.Replace(trimmed, @"\s+", "");
+                    var noSeparators = noSpaces.Replace("_", "", StringComparison.OrdinalIgnoreCase)
+                                             .Replace("-", "");
+                    return noSeparators;
+                }
+
+
+                var normalizedHeaderMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                for (var i = 0; i < header.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(header[i]))
+
+                    {
+                        var key = NormalizeHeader(header[i]);
+                        if (!string.IsNullOrWhiteSpace(key))
+                            normalizedHeaderMap[key] = i;
+                    }
+                }
+
+                int GetIndex(string expectedHeader)
+                {
+                    var directKey = NormalizeHeader(expectedHeader);
+                    if (normalizedHeaderMap.TryGetValue(directKey, out var directIdx))
+                        return directIdx;
+
+                    return -1;
+                }
+
+                int idxItemName = GetIndex(LogicStrings.CsvHeaderItemName);
+                int idxStatus = GetIndex(LogicStrings.CsvHeaderStatus);
+                int idxCategory = GetIndex(LogicStrings.CsvHeaderCategory);
+                int idxSubCategory = GetIndex(LogicStrings.CsvHeaderSubCategory);
+                int idxBrand = GetIndex(LogicStrings.CsvHeaderBrand);
+                int idxModel = GetIndex(LogicStrings.CsvHeaderModel);
+                int idxSerialNo = GetIndex(LogicStrings.CsvHeaderSerialNumber);
+                int idxCondition = GetIndex(LogicStrings.CsvHeaderCondition);
+                int idxVendor = GetIndex(LogicStrings.CsvHeaderVendorName);
+                int idxPurchaseCost = GetIndex(LogicStrings.CsvHeaderPurchaseCost);
+                int idxPurchaseDate = GetIndex(LogicStrings.CsvHeaderPurchaseDate);
+                int idxInvoiceNumber = GetIndex(LogicStrings.CsvHeaderInvoiceNumber);
+                int idxWarrantyExpiry = GetIndex(LogicStrings.CsvHeaderWarrantyExpiryDate);
+                int idxAmcExpiry = GetIndex(LogicStrings.CsvHeaderAmcExpiryDate);
+
+                int idxAssignedTo = GetIndex(LogicStrings.CsvHeaderAssignedTo);
+                int idxAssignedDate = GetIndex(LogicStrings.CsvHeaderAssignedDate);
+                int idxNotes = GetIndex(LogicStrings.CsvHeaderNotes);
+
+                // Only check for required fields based on AssetItemDto
+                if (idxItemName < 0 || idxSerialNo < 0 || idxStatus < 0 || idxCategory < 0 || idxSubCategory < 0 || idxBrand < 0 || idxModel < 0 || idxCondition < 0)
+                    return Result<ImportAssetsResultDto>.Failure(LogicStrings.CsvHeaderMismatchMessage, 400);
+                result.TotalRows = rows.Count - 1;
+                var now = DateTime.UtcNow;
+                var assetsToInsert = new List<Asset>();
+
+                _logger.LogInformation($"Import CSV: Total rows to process: {result.TotalRows}");
+
+                for (var rowNumber = 1; rowNumber < rows.Count; rowNumber++)
+                {
+                    var row = rows[rowNumber];
+                    string Get(string col, int idx)
+                    {
+                        if (idx < 0) return string.Empty;
+                        if (idx >= row.Length) return string.Empty;
+                        return row[idx]?.Trim() ?? string.Empty;
+                    }
+
+                    string itemName = Get("Item Name", idxItemName);
+                    string serialNo = Get("Serial Number", idxSerialNo);
+                    string categoryStr = Get("Category", idxCategory);
+                    string subCategoryStr = Get("Subcategory", idxSubCategory);
+                    string statusStr = Get("Status", idxStatus);
+                    string brand = Get("Brand", idxBrand);
+                    string model = Get("Model", idxModel);
+                    string vendor = Get("Vendor Name", idxVendor);
+                    string conditionStr = Get("Condition", idxCondition);
+                    string purchaseCostStr = Get("Purchase Cost", idxPurchaseCost);
+                    string purchaseDateStr = Get("Purchase Date", idxPurchaseDate);
+                    string invoiceNumber = Get("Invoice Number", idxInvoiceNumber);
+                    invoiceNumber = string.IsNullOrWhiteSpace(invoiceNumber) ? null : invoiceNumber;
+
+                    var assignedToId = (int?)null;
+                    var notes = (string?)null;
+                    var assignedDateStr = (string?)null;
+
+                    if (string.IsNullOrWhiteSpace(itemName) || string.IsNullOrWhiteSpace(serialNo))
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportItemNameAndSerialNoRequired });
+                        _logger.LogWarning($"Row {rowNumber}: Skipped - Missing ItemName or SerialNo");
+                        continue;
+                    }
+
+                    _logger.LogInformation($"Row {rowNumber}: Processing item '{itemName}' with serial '{serialNo}'");
+
+                    if (!int.TryParse(categoryStr, out var categoryId) || categoryId <= 0)
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportCategoryIdInvalid });
+                        _logger.LogWarning($"Row {rowNumber}: Skipped - Invalid CategoryId: '{categoryStr}'");
+                        continue;
+                    }
+
+                    if (!int.TryParse(subCategoryStr, out var subCategoryId) || subCategoryId <= 0)
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportSubCategoryIdInvalid });
+                        _logger.LogWarning($"Row {rowNumber}: Skipped - Invalid SubCategoryId: '{subCategoryStr}'");
+                        continue;
+                    }
+
+                    if (!int.TryParse(statusStr, out var statusId) || statusId <= 0)
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportStatusIdInvalid });
+                        _logger.LogWarning($"Row {rowNumber}: Skipped - Invalid StatusId: '{statusStr}'");
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(brand) || string.IsNullOrWhiteSpace(model))
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = "Brand and Model are required." });
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(conditionStr) || !int.TryParse(conditionStr, out var conditionId))
+                    {
+                        result.Failed++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportConditionIdInvalid });
+                        continue;
+                    }
+
+                    // Optional fields - parse if present, otherwise use null
+                    decimal? purchaseCost = null;
+                    if (!string.IsNullOrWhiteSpace(purchaseCostStr))
+                    {
+                        if (!decimal.TryParse(
+                                purchaseCostStr,
+                                System.Globalization.NumberStyles.Any,
+                                System.Globalization.CultureInfo.InvariantCulture,
+                                out var parsedPurchaseCost))
+                        {
+                            if (!decimal.TryParse(purchaseCostStr, out parsedPurchaseCost))
+                            {
+                                result.Failed++;
+                                result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportPurchaseCostInvalidDecimal });
+                                continue;
+                            }
+                        }
+                        purchaseCost = parsedPurchaseCost;
+                    }
+
+                    DateTime? purchaseDate = null;
+                    if (!string.IsNullOrWhiteSpace(purchaseDateStr))
+                    {
+                        if (!DateTime.TryParse(purchaseDateStr.Trim(), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var parsedPurchaseDate))
+                        {
+                            if (!DateTime.TryParse(purchaseDateStr.Trim(), out parsedPurchaseDate))
+                            {
+                                result.Failed++;
+                                result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = LogicStrings.ImportPurchaseDateInvalid });
+                                continue;
+                            }
+                        }
+                        purchaseDate = parsedPurchaseDate;
+                    }
+
+                    if (await _unitOfWork.Assets.SerialExistsAsync(serialNo))
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = $"SerialNo '{serialNo}' already exists." });
+                        continue;
+                    }
+
+                    if (await _unitOfWork.Categories.GetByIdAsync(categoryId) == null)
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = $"CategoryId {categoryId} does not exist." });
+                        continue;
+                    }
+
+                    if (await _unitOfWork.SubCategories.GetByIdAsync(subCategoryId) == null)
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = $"SubCategoryId {subCategoryId} does not exist." });
+                        continue;
+                    }
+
+                    if (await _unitOfWork.Assets.GetAssetStatusByIdAsync(statusId) == null)
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = $"StatusId {statusId} does not exist." });
+                        continue;
+                    }
+
+                    if (await _unitOfWork.Assets.GetAssetConditionByIdAsync(conditionId) == null)
+                    {
+                        result.Skipped++;
+                        result.Errors.Add(new ImportAssetRowErrorDto { RowNumber = rowNumber, Message = $"ConditionId {conditionId} does not exist." });
+                        continue;
+                    }
+
+                    if (false)
+                    {
+                    }
+
+                    var asset = new Asset
+                    {
+                        ItemName = itemName,
+                        SerialNo = serialNo,
+                        CategoryId = categoryId,
+                        SubCategoryId = subCategoryId,
+                        StatusId = statusId,
+                        ConditionId = conditionId,
+                        Brand = brand,
+                        Model = model,
+                        Vendor = string.IsNullOrWhiteSpace(vendor) ? null : vendor,
+                        Notes = string.IsNullOrWhiteSpace(notes) ? null : notes,
+                        PurchaseCost = purchaseCost ?? 0m,
+                        PurchaseDate = purchaseDate ?? DateTime.UtcNow,
+                        InvoiceNumber = invoiceNumber,
+                        WarrantyExpiry = TryParseNullableDate(Get("Warranty Expiry Date", idxWarrantyExpiry)),
+                        AmcExpiry = TryParseNullableDate(Get("AMC Expiry Date", idxAmcExpiry)),
+                        IsActive = true,
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                        CreatedBy = createdBy,
+                        UpdatedBy = createdBy,
+                        AssignedTo = assignedToId,
+                        AssignDate = ParseNullableDate(assignedDateStr),
+                        ExpectedReturnDate = null
+                    };
+
+
+                    assetsToInsert.Add(asset);
+                    _logger.LogInformation($"Row {rowNumber}: Asset '{itemName}' added to insert list (total: {assetsToInsert.Count})");
+                }
+
+                _logger.LogInformation($"Import CSV: Processing complete. Total: {result.TotalRows}, ToInsert: {assetsToInsert.Count}, Skipped: {result.Skipped}, Failed: {result.Failed}");
+
+                if (assetsToInsert.Any())
+                {
+                    try
+                    {
+                        _logger.LogInformation($"Import CSV: Inserting {assetsToInsert.Count} assets into database");
+                        await _unitOfWork.Assets.AddRangeAsync(assetsToInsert);
+                        await _unitOfWork.SaveChangesAsync();
+
+                        foreach (var asset in assetsToInsert)
+                        {
+                            await _unitOfWork.Assets.AddHistoryAsync(new AssetHistory
+                            {
+                                AssetId = asset.Id,
+                                Action = LogicStrings.ActionCreated,
+                                Description = $"Asset {asset.ItemName} created",
+                                CreatedBy = createdBy
+                            });
+
+                            await _settingRepository.AddRecentActivityAsync(new RecentActivity
+                            {
+                                ItemId = asset.Id,
+                                ItemName = LogicStrings.AssetItemName,
+                                Action = LogicStrings.ActionCreated,
+                                UserId = createdBy,
+                                Details = $"Asset {asset.ItemName} created",
+                                DateTime = DateTime.UtcNow,
+                                IsDeleted = false
+                            });
+                        }
+
+                        await _unitOfWork.SaveChangesAsync();
+                        _logger.LogInformation($"Import CSV: Successfully inserted {assetsToInsert.Count} assets");
+                    }
+                    catch (Exception dbEx)
+                    {
+                        _logger.LogError(dbEx, "Error saving imported assets CSV");
+
+                        result.Failed += assetsToInsert.Count;
+                        result.Errors.Add(new ImportAssetRowErrorDto
+                        {
+                            RowNumber = 0,
+                            Message = $"Database error while inserting assets: {dbEx.InnerException?.Message ?? dbEx.Message}"
+                        });
+
+                        result.Inserted = 0;
+                        return Result<ImportAssetsResultDto>.Success(result);
+                    }
+                }
+
+                result.Inserted = assetsToInsert.Count;
+                return Result<ImportAssetsResultDto>.Success(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error importing assets CSV");
+                return Result<ImportAssetsResultDto>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+
+            static int? ParseNullableInt(string value)
+            {
+                if (string.IsNullOrWhiteSpace(value)) return null;
+                return int.TryParse(value.Trim(), out var i) ? i : null;
+            }
+
+            static DateTime? ParseNullableDate(string value)
+            {
+                if (string.IsNullOrWhiteSpace(value)) return null;
+                if (DateTime.TryParse(value.Trim(), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var dt))
+                    return dt;
+                return DateTime.TryParse(value.Trim(), out dt) ? dt : null;
+            }
+
+            static DateTime? TryParseNullableDate(string value)
+            {
+                if (string.IsNullOrWhiteSpace(value)) return null;
+                if (DateTime.TryParse(value.Trim(), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var dt))
+                    return dt;
+                return DateTime.TryParse(value.Trim(), out dt) ? dt : null;
+            }
+        }
+
+        private static List<string[]> ParseCsv(string csvText)
+        {
+            var rows = new List<string[]>();
+            var row = new List<string>();
+            var current = new System.Text.StringBuilder();
+            bool inQuotes = false;
+
+            for (int i = 0; i < csvText.Length; i++)
+            {
+                char c = csvText[i];
+
+                if (c == '"')
+                {
+                    if (inQuotes && i + 1 < csvText.Length && csvText[i + 1] == '"')
+                    {
+                        current.Append('"');
+                        i++;
+                        continue;
+                    }
+
+                    inQuotes = !inQuotes;
+                    continue;
+                }
+
+                if (!inQuotes)
+                {
+                    if (c == ',')
+                    {
+                        row.Add(current.ToString());
+                        current.Clear();
+                        continue;
+                    }
+
+                    if (c == '\r')
+                        continue;
+
+                    if (c == '\n')
+                    {
+                        row.Add(current.ToString());
+                        current.Clear();
+                        if (row.Count > 0 || current.Length > 0)
+                        {
+                            rows.Add(row.ToArray());
+                        }
+                        row = new List<string>();
+                        continue;
+                    }
+                }
+
+                current.Append(c);
+            }
+
+            if (current.Length > 0 || row.Count > 0)
+            {
+                row.Add(current.ToString());
+                rows.Add(row.ToArray());
+            }
+
+            return rows;
+        }
+
+        private static string EscapeCsv(string? value)
+        {
+            value ??= string.Empty;
+            var needsQuotes = value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r');
+            value = value.Replace('"', '"');
+            return needsQuotes ? $"\"{value}\"" : value;
         }
     }
 }

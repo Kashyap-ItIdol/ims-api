@@ -1,4 +1,4 @@
-﻿using IMS_Application.DTOs;
+using IMS_Application.DTOs;
 using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
@@ -16,12 +16,14 @@ namespace IMS_Infrastructure.Repositories
         {
             await _dbSet.AddRangeAsync(assets);
         }
+
         public async Task<bool> SerialExistsAsync(string serialNo)
         {
             return await _dbSet
                 .AsNoTracking()
                 .AnyAsync(x => x.SerialNo == serialNo && x.IsActive);
         }
+
         public async Task<List<Asset>> GetAllAsync()
         {
             return await _dbSet
@@ -38,7 +40,7 @@ public async Task<Asset?> GetByIdAsync(int id)
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 
-public async Task<Asset?> GetByIdWithChildrenAsync(int id)
+        public async Task<Asset?> GetByIdWithChildrenAsync(int id)
         {
             return await _dbSet
                 .IgnoreQueryFilters()
@@ -77,6 +79,7 @@ public async Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId)
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
+
         public async Task<List<AssetHistory>> GetHistoryByAssetIdsAsync(List<int> assetIds)
         {
             return await _context.Set<AssetHistory>()
@@ -86,6 +89,7 @@ public async Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId)
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
+
         public Task<AssetCondition?> GetAssetConditionByIdAsync(int id)
             => _context.Set<AssetCondition>()
                 .AsNoTracking()
@@ -115,28 +119,19 @@ public async Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId)
             if (dto.StatusIds?.Any() == true)
                 query = query.Where(a => dto.StatusIds.Contains(a.StatusId));
 
-            if (!string.IsNullOrWhiteSpace(dto.Search) && !string.IsNullOrWhiteSpace(dto.SearchType))
-            {
-                var search = dto.Search;
-
-                switch (dto.SearchType.ToLower())
-                {
-                    case "category":
-                        query = query.Where(a => EF.Functions.Like(a.Category.Name, $"%{search}%"));
-                        break;
-
-                    case "subcategory":
-                        query = query.Where(a => EF.Functions.Like(a.SubCategory.Name, $"%{search}%"));
-                        break;
-
-                    case "status":
-                        query = query.Where(a => EF.Functions.Like(a.AssetStatus.Status, $"%{search}%"));
-                        break;
-                }
-            }
-
             return await query.ToListAsync();
+        }
+
+        public IQueryable<Asset> GetAllWithIncludesQueryable()
+        {
+            return _dbSet
+                .AsNoTracking()
+                .Include(a => a.Category)
+                .Include(a => a.SubCategory)
+                .Include(a => a.AssetStatus)
+                .Include(a => a.AssetCondition)
+                .Include(a => a.AssignedUser)
+                .Where(a => a.IsActive);
         }
     }
 }
-

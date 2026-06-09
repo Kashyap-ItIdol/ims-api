@@ -1,4 +1,4 @@
-﻿namespace IMS_Application.DTOs
+namespace IMS_Application.DTOs
 {
     public class UserResponseDto
     {
@@ -8,6 +8,7 @@
         public string Email { get; set; } = null!;
         public string Role { get; set; } = null!;
         public string? Department { get; set; }
+        public string? ProfileImg { get; set; }
         public bool IsDeleted { get; set; }
         public string Status => IsDeleted ? "Inactive" : "Active";
     }

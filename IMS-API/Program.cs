@@ -23,6 +23,11 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        // HTTP only (no HTTPS configuration)
+        options.ListenAnyIP(5224);
+    });
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
@@ -58,6 +63,18 @@ try
     });
 
     builder.Services.AddControllers();
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("DevCors", policy =>
+        {
+            policy
+                .SetIsOriginAllowed(origin => true)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        });
+    });
+
 
     builder.Services.Configure<ApiBehaviorOptions>(options =>
     {
@@ -173,13 +190,32 @@ try
 
     using (var scope = app.Services.CreateScope())
     {
-        var emailTemplateRepository = scope.ServiceProvider.GetRequiredService<IEmailTemplateRepository>();
-        await EmailTemplateSeeder.SeedAsync(emailTemplateRepository);
+        // Seed email templates during startup, but never crash the whole API if DB/auth is not ready.
+        // Disable by setting: IMS_SEED_EMAIL_TEMPLATES=false
+        var seedEnabled = app.Configuration.GetValue("IMS_SEED_EMAIL_TEMPLATES", true);
+        if (seedEnabled)
+        {
+            try
+            {
+                var emailTemplateRepository = scope.ServiceProvider.GetRequiredService<IEmailTemplateRepository>();
+                await EmailTemplateSeeder.SeedAsync(emailTemplateRepository);
+            }
+            catch (Exception seedEx)
+            {
+                Log.Warning(seedEx, "Email template seeding failed. Continuing startup.");
+            }
+        }
     }
 
+    ConfigureMiddleware(app);
+
+static void ConfigureMiddleware(WebApplication app)
+{
     app.UseSerilogRequestLogging();
 
     app.UseExceptionHandler();
+
+    app.UseCors("DevCors");
 
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -188,7 +224,6 @@ try
         c.RoutePrefix = string.Empty;
     });
 
-   app.UseHttpsRedirection();
 
     app.UseAuthentication();
     app.UseAuthorization();
@@ -201,6 +236,8 @@ try
 
     app.Run();
 }
+}
+
 catch (Exception ex)
 {
     Log.Fatal(ex, "IMS API terminated unexpectedly during startup");

@@ -2,22 +2,20 @@ using AutoMapper;
 using IMS_Application.Interfaces;
 using IMS_Domain.Entities;
 using IMS_Infrastructure.Data;
+using IMS_Infrastructure.Repositories;
 
 namespace IMS_Infrastructure.Repositories
 {
     public class UnitOfWork : IUnitOfWork, IDisposable
     {
         private readonly AppDbContext _context;
-        private readonly IMapper _mapper;
 
         public UnitOfWork(AppDbContext context)
         {
             _context = context;
         }
 
-
         private IUserRepository? _users;
-
         public IUserRepository Users =>
             _users ??= new UserRepository(_context);
 
@@ -65,20 +63,14 @@ namespace IMS_Infrastructure.Repositories
         public INotificationRepository Notifications =>
             _notifications ??= new NotificationRepository(_context);
 
-
-        public UnitOfWork(AppDbContext context, IMapper mapper)
-        {
-            _context = context;
-            _mapper = mapper;
-        }
+        private ISettingRepository? _settings;
+        public ISettingRepository Settings =>
+            _settings ??= new SettingRepository(_context);
 
         public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-
         {
             return await _context.SaveChangesAsync(cancellationToken);
         }
-
-
 
         public void Dispose()
         {

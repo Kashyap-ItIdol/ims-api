@@ -1,4 +1,4 @@
-﻿using IMS_API.Controllers.Base;
+using IMS_API.Controllers.Base;
 using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -17,6 +17,18 @@ namespace IMS_API.Controllers
         {
             _userService = userService;
         }
+
+        [AllowAnonymous]
+        [HttpGet("me")]
+        public async Task<IActionResult> GetMyProfile()
+        {
+            var userResult = GetCurrentUserId();
+            if (!userResult.IsSuccess)
+                return FromResult(userResult);
+
+            return FromResult(await _userService.GetMyProfileAsync(userResult.Data));
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create(CreateUserDto dto)
         {
@@ -24,8 +36,7 @@ namespace IMS_API.Controllers
             if (!userResult.IsSuccess)
                 return FromResult(userResult);
 
-            var result = await _userService.CreateUserAsync(dto, userResult.Data);
-            return FromResult(result);
+            return FromResult(await _userService.CreateUserAsync(dto, userResult.Data));
         }
 
         [HttpPut]
@@ -35,22 +46,25 @@ namespace IMS_API.Controllers
             if (!userResult.IsSuccess)
                 return FromResult(userResult);
 
-            var result = await _userService.UpdateUserAsync(dto, userResult.Data);
-            return FromResult(result);
+            return FromResult(await _userService.UpdateUserAsync(dto, userResult.Data));
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var data = await _userService.GetAllUsersAsync();
-            return FromResult(data);
+            return FromResult(await _userService.GetAllUsersAsync());
         }
 
         [HttpGet("{id}/overview")]
         public async Task<IActionResult> GetOverviewById(int id)
         {
-            var data = await _userService.GetUserOverviewByIdAsync(id);
-            return FromResult(data);
+            return FromResult(await _userService.GetUserOverviewByIdAsync(id));
+        }
+
+        [HttpGet("{id}/activity")]
+        public async Task<IActionResult> GetActivityById(int id, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+        {
+            return FromResult(await _userService.GetUserActivitiesByIdAsync(id, startDate, endDate));
         }
 
         [HttpDelete("{id}")]
@@ -60,22 +74,25 @@ namespace IMS_API.Controllers
             if (!userResult.IsSuccess)
                 return FromResult(userResult);
 
-            var result = await _userService.DeleteUserAsync(id, userResult.Data);
-            return FromResult(result);
+            return FromResult(await _userService.DeleteUserAsync(id, userResult.Data));
         }
 
         [HttpPost("filter")]
         public async Task<IActionResult> Filter([FromBody] UserFilterDto filter)
         {
-            var data = await _userService.FilterUsersAsync(filter ?? new UserFilterDto());
-            return FromResult(data);
+            return FromResult(await _userService.FilterUsersAsync(filter ?? new UserFilterDto()));
         }
 
         [HttpGet("filter/options")]
         public async Task<IActionResult> GetFilterOptions()
         {
-            var data = await _userService.GetUserFilterOptionsAsync();
-            return FromResult(data);
+            return FromResult(await _userService.GetUserFilterOptionsAsync());
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string query)
+        {
+            return FromResult(await _userService.SearchUsersAsync(query));
         }
     }
 }

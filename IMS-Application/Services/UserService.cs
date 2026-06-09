@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
@@ -80,15 +80,7 @@ namespace IMS_Application.Services
                 if (user == null)
                     return Result<string>.Failure(ErrorMessages.UserNotFound, 404);
 
-                if (user.RoleId != RoleConstants.Employee &&
-                    user.RoleId != RoleConstants.SupportEngineer)
-                {
-                    return Result<string>.Failure(ErrorMessages.OnlyEmployeeOrSupportCanUpdate, 400);
-                }
-
-                if (dto.RoleId == RoleConstants.Admin)
-                    return Result<string>.Failure(ErrorMessages.CannotAssignAdminRole, 400);
-
+                
                 var email = dto.Email?.Trim().ToLower();
                 if (!string.IsNullOrEmpty(email) && email != user.Email)
                 {
@@ -151,10 +143,9 @@ namespace IMS_Application.Services
                 if (user == null)
                     return Result<string>.Failure(ErrorMessages.UserNotFound, 404);
 
-                if (user.RoleId != RoleConstants.Employee &&
-                    user.RoleId != RoleConstants.SupportEngineer)
+                if (id == currentUserId)
                 {
-                    return Result<string>.Failure(ErrorMessages.OnlyEmployeeOrSupportCanDelete, 400);
+                    return Result<string>.Failure("You cannot delete your own account", 400);
                 }
 
                 user.IsDeleted = true;
@@ -208,6 +199,7 @@ namespace IMS_Application.Services
                 var roleName = user.Role?.Name ?? string.Empty;
                 var tickets = await _unitOfWork.Tickets.GetTicketsForUserAsync(id, roleName);
 
+                // My Profile: all users see only their created tickets
                 tickets = tickets.Where(t => t.CreatedBy == id).ToList();
 
                 var ticketDtos = new List<TicketResponseDto>();
@@ -247,9 +239,9 @@ namespace IMS_Application.Services
 
                 return Result<UserOverviewResponseDto>.Success(new UserOverviewResponseDto
                 {
-                    user = userDto,
-                    assignedAssets = assetDtos,
-                    createdTickets = ticketDtos
+                    User = userDto,
+                    AssignedAssets = assetDtos,
+                    CreatedTickets = ticketDtos
                 });
             }
             catch (Exception ex)
@@ -259,11 +251,136 @@ namespace IMS_Application.Services
             }
         }
 
+        public async Task<Result<UserOverviewResponseDto>> GetMyProfileAsync(int currentUserId)
+        {
+            try
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(currentUserId);
+                if (user == null)
+                    return Result<UserOverviewResponseDto>.Failure(ErrorMessages.UserNotFound, 404);
+
+                var userDto = _mapper.Map<UserResponseDto>(user);
+
+                var assignedAssetIdsFromAssignments = (await _unitOfWork.AssetAssignments.GetAllAsync())
+                    .Where(a => a.EmployeeId == currentUserId)
+                    .Select(a => a.AssetId)
+                    .Distinct()
+                    .ToList();
+
+                var assignedAssetIdsFromAssetTable = (await _unitOfWork.Assets.GetAllAsync())
+                    .Where(a => a.AssignedTo == currentUserId)
+                    .Select(a => a.Id)
+                    .Distinct()
+                    .ToList();
+
+                var assignedAssetIds = assignedAssetIdsFromAssignments
+                    .Concat(assignedAssetIdsFromAssetTable)
+                    .Distinct()
+                    .ToList();
+
+                var assignedAssets = (await _unitOfWork.Assets.GetAllAsync())
+                    .Where(a => assignedAssetIds.Contains(a.Id))
+                    .ToList();
+
+                var assetDtos = _mapper.Map<List<AssetResponseDto>>(assignedAssets);
+
+                // My Profile: all users see only their created tickets
+                var tickets = await _unitOfWork.Tickets.GetTicketsForUserAsync(currentUserId, "Employee");
+
+                var ticketDtos = new List<TicketResponseDto>();
+                foreach (var ticket in tickets)
+                {
+                    var creator = new UserInfo
+                    {
+                        id = ticket.CreatedBy,
+                        name = user.FullName
+                    };
+
+                    var latestAssign = ticket.TicketAssignments?
+                        .Where(a => a.status == IMS_Application.Common.Constants.LogicStrings.Active)
+                        .OrderByDescending(a => a.assigned_at)
+                        .FirstOrDefault();
+
+                    UserInfo? assignedToInfo = null;
+                    if (latestAssign != null)
+                    {
+                        assignedToInfo = new UserInfo { id = latestAssign.assignedTo, name = LogicStrings.Unassigned };
+                    }
+
+                    var mappedTicketInfo = _mapper.Map<TicketInfo>(ticket);
+
+                    mappedTicketInfo.createdBy = creator;
+                    mappedTicketInfo.assignedTo = assignedToInfo;
+
+                    var dto = new TicketResponseDto
+                    {
+                        ticket = mappedTicketInfo,
+                        comments = _mapper.Map<List<TicketCommentInfo>>(ticket.Comments ?? new List<TicketComment>()),
+                        attachments = _mapper.Map<List<TicketAttachmentInfo>>(ticket.Attachments ?? new List<TicketAttachment>())
+                    };
+
+                    ticketDtos.Add(dto);
+                }
+
+                return Result<UserOverviewResponseDto>.Success(new UserOverviewResponseDto
+                {
+                    User = userDto,
+                    AssignedAssets = assetDtos,
+                    CreatedTickets = ticketDtos
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving my profile for id {UserId}", currentUserId);
+                return Result<UserOverviewResponseDto>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+        }
+
+        public async Task<Result<List<UserResponseDto>>> SearchUsersAsync(string query)
+        {
+            try
+            {
+                query ??= string.Empty;
+                query = query.Trim();
+
+                var users = await _unitOfWork.Users.GetAllWithRolesAsync();
+
+                var isNumeric = int.TryParse(query, out var userId);
+
+                var filtered = users.Where(u =>
+                    (isNumeric && u.Id == userId) ||
+                    (!string.IsNullOrEmpty(u.FullName) && u.FullName.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(u.Email) && u.Email.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (u.Department != null && !string.IsNullOrEmpty(u.Department.Name) &&
+                     u.Department.Name.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    (u.Role != null && !string.IsNullOrEmpty(u.Role.Name) &&
+                     u.Role.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                ).ToList();
+
+                return Result<List<UserResponseDto>>.Success(filtered.Select((u, index) => new UserResponseDto
+                {
+                    Id = u.Id,
+                    EmpCode = $"EMP-{(index + 1).ToString("D3")}",
+                    FullName = u.FullName,
+                    Email = u.Email,
+                    Role = u.Role?.Name ?? string.Empty,
+                    Department = u.Department != null ? u.Department.Name : null,
+                    IsDeleted = u.IsDeleted
+                }).ToList());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching users");
+                return Result<List<UserResponseDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+        }
+
         public async Task<Result<List<UserResponseDto>>> FilterUsersAsync(UserFilterDto filter)
         {
             try
             {
                 filter ??= new UserFilterDto();
+
 
                 // Repository is intentionally kept simple; apply the filter logic in the service.
                 var users = await _unitOfWork.Users.FilterAsync(filter);
@@ -273,14 +390,13 @@ namespace IMS_Application.Services
 
                 if (filter.RoleKeys != null && filter.RoleKeys.Count > 0 && !filter.RoleKeys.Contains("all"))
                 {
-                    var wantEmployee = filter.RoleKeys.Contains("employee");
-                    var wantSupport = filter.RoleKeys.Contains("support-engineer");
+                    var roleIds = new List<int>();
+                    if (filter.RoleKeys.Contains("admin")) roleIds.Add(RoleConstants.Admin);
+                    if (filter.RoleKeys.Contains("employee")) roleIds.Add(RoleConstants.Employee);
+                    if (filter.RoleKeys.Contains("support-engineer")) roleIds.Add(RoleConstants.SupportEngineer);
 
-                    if (wantEmployee && !wantSupport)
-                        users = users.Where(u => u.RoleId == RoleConstants.Employee).ToList();
-                    else if (!wantEmployee && wantSupport)
-                        users = users.Where(u => u.RoleId == RoleConstants.SupportEngineer).ToList();
-                    // if both selected => no extra filter
+                    if (roleIds.Count > 0)
+                        users = users.Where(u => roleIds.Contains(u.RoleId)).ToList();
                 }
 
                 if (filter.DepartmentNames != null && filter.DepartmentNames.Count > 0 && !filter.DepartmentNames.Contains("all"))
@@ -296,7 +412,9 @@ namespace IMS_Application.Services
                         users = users.Where(u => !u.IsDeleted).ToList();
                     else if (!wantActive && wantInactive)
                         users = users.Where(u => u.IsDeleted).ToList();
-                    // if both selected => no extra filter
+                    else if (wantActive && wantInactive)
+                        // both selected - show all users (no filter)
+                        users = users.ToList();
                 }
 
                 // mapping should match GetAllUsersAsync
@@ -370,6 +488,30 @@ namespace IMS_Application.Services
                 return Result<UserFilterOptionsDto>.Failure(ErrorMessages.UnexpectedError, 500);
             }
         }
+        public async Task<Result<List<UserActivityResponseDto>>> GetUserActivitiesByIdAsync(int id, DateTime? startDate, DateTime? endDate)
+        {
+            try
+            {
+                var activities = await _unitOfWork.Settings.GetUserActivitiesAsync(id, startDate, endDate);
+
+                var mapped = activities.Select(a => new UserActivityResponseDto
+                {
+                    Id = a.Id,
+                    Timestamp = a.DateTime,
+                    DateTime = a.DateTime,
+                    Description = a.Action,
+                    Type = a.ItemName,
+                    RelatedId = a.ItemId.ToString(),
+                    User = a.User != null ? a.User.FullName : a.UserId.ToString()
+                }).ToList();
+
+                return Result<List<UserActivityResponseDto>>.Success(mapped);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving user activities for id {UserId}", id);
+                return Result<List<UserActivityResponseDto>>.Failure(ErrorMessages.UnexpectedError, 500);
+            }
+        }
     }
 }
-

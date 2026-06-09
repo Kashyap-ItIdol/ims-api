@@ -17,6 +17,7 @@ namespace IMS_Infrastructure.Repositories
         }
         public async Task<T?> GetByIdAsync(int id)
                     => await _dbSet.FindAsync(id);
+
         public async Task<IEnumerable<T>> GetAllAsync()
                     => await _dbSet.AsNoTracking().ToListAsync();
         public async Task<PagedResult<T>> GetPagedAsync(int pageNumber, int pageSize)

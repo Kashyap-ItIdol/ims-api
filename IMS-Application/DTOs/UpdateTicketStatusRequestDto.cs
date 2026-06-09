@@ -1,5 +1,3 @@
-
-
 namespace IMS_Application.DTOs
 {
     public class UpdateTicketStatusRequestDto

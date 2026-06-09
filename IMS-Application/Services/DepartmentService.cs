@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using IMS_Application.Common.Constants;
 using IMS_Application.Common.Models;
 using IMS_Application.DTOs;
@@ -21,14 +21,14 @@ namespace IMS_Application.Services
             _mapper = mapper;
             _logger = logger;
         }
+
         public async Task<Result<IEnumerable<Department>>> GetAllDepartmentsAsync()
         {
             try
             {
                 var departments = await _unitOfWork.Departments.GetAllAsync();
                 var dtos = _mapper.Map<IEnumerable<Department>>(departments);
-
-                return Result<IEnumerable<Department>>.Success(dtos,SuccessMessages.RetrievedSuccessfully);
+                return Result<IEnumerable<Department>>.Success(dtos, SuccessMessages.RetrievedSuccessfully);
             }
             catch (Exception ex)
             {

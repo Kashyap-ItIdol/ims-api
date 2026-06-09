@@ -1,7 +1,7 @@
 using IMS_Application.DTOs;
 using IMS_Application.Services.Interfaces;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using IMS_API.Controllers.Base;
 
 namespace IMS_API.Controllers
@@ -21,43 +21,33 @@ namespace IMS_API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] AssetAssignmentDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
                 return FromResult(userResult);
 
-            var result = await _service.AssignAssetAsync(dto, userResult.Data);
-            return FromResult(result);
+            return FromResult(await _service.AssignAssetAsync(dto, userResult.Data));
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var result = await _service.GetAllAsync();
-            return FromResult(result);
+            return FromResult(await _service.GetAllAsync());
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var result = await _service.GetByIdAsync(id);
-            return FromResult(result);
+            return FromResult(await _service.GetByIdAsync(id));
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] AssetAssignmentDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
                 return FromResult(userResult);
 
-            var result = await _service.UpdateAssetAsync(id, dto, userResult.Data);
-            return FromResult(result);
+            return FromResult(await _service.UpdateAssetAsync(id, dto, userResult.Data));
         }
 
         [HttpPost("{id}/return")]
@@ -67,8 +57,7 @@ namespace IMS_API.Controllers
             if (!userResult.IsSuccess)
                 return FromResult(userResult);
 
-            var result = await _service.ReturnAssetAsync(id, DateTime.UtcNow, userResult.Data);
-            return FromResult(result);
+            return FromResult(await _service.ReturnAssetAsync(id, DateTime.UtcNow, userResult.Data));
         }
 
         [HttpDelete("{id}")]
@@ -78,16 +67,12 @@ namespace IMS_API.Controllers
             if (!userResult.IsSuccess)
                 return FromResult(userResult);
 
-            var result = await _service.DeleteAssetAsync(id, userResult.Data);
-            return FromResult(result);
+            return FromResult(await _service.DeleteAssetAsync(id, userResult.Data));
         }
 
         [HttpPost("create-and-assign")]
         public async Task<IActionResult> CreateAndAssign([FromBody] CreateAndAssignAssetDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var userResult = GetCurrentUserId();
             if (!userResult.IsSuccess)
                 return FromResult(userResult);
@@ -95,8 +80,7 @@ namespace IMS_API.Controllers
             if (dto.EmployeeId <= 0)
                 dto.EmployeeId = userResult.Data;
 
-            var result = await _service.CreateAndAssignAssetAsync(dto, userResult.Data);
-            return FromResult(result);
+            return FromResult(await _service.CreateAndAssignAssetAsync(dto, userResult.Data));
         }
     }
 }

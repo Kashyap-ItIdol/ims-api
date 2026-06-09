@@ -24,22 +24,43 @@ namespace IMS_Application.Services
             _mapper = mapper;
         }
 
-        public async Task<Result<PagedResult<RecentActivityItemDto>>> GetRecentActivitiesAsync(int pageNumber, int pageSize)
+        private static Func<IMS_Domain.Entities.RecentActivity, bool> ApplySearchFilter(string? search, bool includeUser = true)
+        {
+            if (string.IsNullOrWhiteSpace(search))
+                return _ => true;
+
+            var q = search.Trim();
+
+            int? itemId = null;
+            if (int.TryParse(q, out var parsedId))
+                itemId = parsedId;
+            return x =>
+                (x.ItemName != null && x.ItemName.Contains(q)) ||
+                (x.Action != null && x.Action.Contains(q)) ||
+                (x.Details != null && x.Details.Contains(q)) ||
+                (itemId.HasValue && x.ItemId == itemId.Value) ||
+                (includeUser && x.User != null && x.User.FullName != null && x.User.FullName.Contains(q));
+        }
+
+        public async Task<Result<PagedResult<RecentActivityItemDto>>> GetRecentActivitiesAsync(int pageNumber, int pageSize, string? search)
         {
             if (pageNumber < 1 || pageSize < 1)
                 return Result<PagedResult<RecentActivityItemDto>>.Failure(ErrorMessages.InvalidPagination, 400);
 
             try
             {
-                var activities = await _settingRepository.GetRecentActivitiesAsync(pageNumber, pageSize);
-                var items = activities
+                var activities = await _settingRepository.GetRecentActivitiesAsync(pageNumber, pageSize, search);
+
+                var filter = ApplySearchFilter(search, includeUser: true);
+                var filteredItems = activities
+                    .Where(filter)
                     .OrderByDescending(x => x.DateTime)
                     .ToList();
 
                 var pagedResult = new PagedResult<RecentActivityItemDto>
                 {
-                    Items = _mapper.Map<List<RecentActivityItemDto>>(items),
-                    TotalCount = await _settingRepository.GetRecentActivitiesTotalCountAsync(),
+                    Items = _mapper.Map<List<RecentActivityItemDto>>(filteredItems),
+                    TotalCount = await _settingRepository.GetRecentActivitiesTotalCountAsync(search),
                     PageNumber = pageNumber,
                     PageSize = pageSize
                 };
@@ -54,23 +75,30 @@ namespace IMS_Application.Services
             }
         }
 
-        public async Task<Result<PagedResult<RecentActivityItemDto>>> GetRecentDeletedActivitiesAsync(int pageNumber, int pageSize)
+        public async Task<Result<PagedResult<RecentActivityItemDto>>> GetRecentDeletedActivitiesAsync(int pageNumber, int pageSize, string? search)
         {
             if (pageNumber < 1 || pageSize < 1)
                 return Result<PagedResult<RecentActivityItemDto>>.Failure(ErrorMessages.InvalidPagination, 400);
 
             try
             {
-                var activities = await _settingRepository.GetDeletedRecentActivitiesAsync(pageNumber, pageSize);
+                var allDeletedActivities = await _settingRepository.GetDeletedRecentActivitiesAsync(1, int.MaxValue, null);
 
-                var items = activities
+                var filter = ApplySearchFilter(search, includeUser: true);
+                var filteredItems = allDeletedActivities
+                    .Where(filter)
                     .OrderByDescending(x => x.DateTime)
+                    .ToList();
+
+                var paged = filteredItems
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
                     .ToList();
 
                 var pagedResult = new PagedResult<RecentActivityItemDto>
                 {
-                    Items = _mapper.Map<List<RecentActivityItemDto>>(items),
-                    TotalCount = await _settingRepository.GetDeletedRecentActivitiesTotalCountAsync(),
+                    Items = _mapper.Map<List<RecentActivityItemDto>>(paged),
+                    TotalCount = filteredItems.Count,
                     PageNumber = pageNumber,
                     PageSize = pageSize
                 };

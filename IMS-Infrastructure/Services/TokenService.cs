@@ -29,8 +29,9 @@ namespace IMS_Infrastructure.Services
                 new Claim(ClaimTypes.Role, user.Role.Name),
                 new Claim("userId", user.Id.ToString())
             };
-            return GenerateJwtToken(claims, 15); // 15 min
+            return GenerateJwtToken(claims, 30);
         }
+
         public string GenerateRefreshToken()
         {
             var randomNumber = new byte[64];
@@ -45,8 +46,9 @@ namespace IMS_Infrastructure.Services
                 new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
                 new Claim("purpose", "password_reset")
             };
-            return GenerateJwtToken(claims, 15); // 15 min
+            return GenerateJwtToken(claims, 30);
         }
+
         public int? ValidateResetToken(string token)
         {
             try

@@ -7,6 +7,7 @@ namespace IMS_Application.DTOs
         public string Action { get; set; } = string.Empty;
         public string User { get; set; } = string.Empty;
         public string Details { get; set; } = string.Empty;
+        public string ItemType { get; set; } = string.Empty;
         public DateTime DateTime { get; set; }
     }
 }

@@ -3,11 +3,12 @@ using IMS_Domain.Entities;
 
 namespace IMS_Application.Interfaces
 {
-    public interface IAssetRepository
+    public interface IAssetRepository : IRepository<Asset>
     {
         Task AddRangeAsync(List<Asset> assets);
         Task<bool> SerialExistsAsync(string serialNo);
         Task<List<Asset>> GetAllAsync();
+        IQueryable<Asset> GetAllWithIncludesQueryable();
         Task<Asset?> GetByIdWithChildrenAsync(int id);
         Task<Asset?> GetByIdAsync(int id);
         Task<Asset?> GetPrimaryAssetByUserIdAsync(int userId);
