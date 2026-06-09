@@ -256,7 +256,6 @@ static void ConfigureMiddleware(WebApplication app)
         c.RoutePrefix = string.Empty;
     });
 
-    app.UseHttpsRedirection();
 
     app.UseAuthentication();
     app.UseAuthorization();
